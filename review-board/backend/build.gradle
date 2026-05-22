@@ -61,6 +61,8 @@ dependencies {
 	// 結合テストは Testcontainers PostgreSQL（テスト計画書 §4。本番同等で方言差を避ける）
 	testImplementation 'org.testcontainers:junit-jupiter'
 	testImplementation 'org.testcontainers:postgresql'
+	// SEC-8 アップロードは本番同等の MinIO（S3 互換）で結合テストする。
+	testImplementation 'org.testcontainers:minio'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 

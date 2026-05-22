@@ -1,23 +1,30 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchPost, updatePost } from '../api/posts';
+import ScreenshotUploader from '../components/ScreenshotUploader';
 
 // F-POST-02 投稿の編集（所有者のみ。非所有者は backend が 404）。
 export default function PostEditPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [form, setForm] = useState(null);
+  const [screenshotUrl, setScreenshotUrl] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     fetchPost(id)
-      .then((p) => setForm({
-        title: p.title,
-        description: p.description,
-        repoUrl: p.repoUrl ?? '',
-        demoUrl: p.demoUrl ?? '',
-      }))
+      .then((p) => {
+        setForm({
+          title: p.title,
+          description: p.description,
+          repoUrl: p.repoUrl ?? '',
+          demoUrl: p.demoUrl ?? '',
+          // 未変更なら既存 key を維持。差し替え時に Uploader が新 key を入れる。
+          screenshotKey: p.screenshotKey ?? null,
+        });
+        setScreenshotUrl(p.screenshotUrl ?? '');
+      })
       .catch((e) => setError(e.response?.status === 404 ? 'この投稿は編集できません' : '取得に失敗しました'));
   }, [id]);
 
@@ -33,6 +40,7 @@ export default function PostEditPage() {
         description: form.description,
         repoUrl: form.repoUrl || null,
         demoUrl: form.demoUrl || null,
+        screenshotKey: form.screenshotKey || null,
       });
       navigate(`/posts/${id}`, { replace: true });
     } catch (err) {
@@ -57,7 +65,8 @@ export default function PostEditPage() {
         <label className="mb-1 block text-sm text-gray-600">リポジトリ URL（任意）</label>
         <input type="url" value={form.repoUrl} onChange={set('repoUrl')} className="mb-4 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" />
         <label className="mb-1 block text-sm text-gray-600">デモ URL（任意）</label>
-        <input type="url" value={form.demoUrl} onChange={set('demoUrl')} className="mb-6 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" />
+        <input type="url" value={form.demoUrl} onChange={set('demoUrl')} className="mb-4 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" />
+        <ScreenshotUploader initialUrl={screenshotUrl} onChange={(key) => setForm((p) => ({ ...p, screenshotKey: key }))} />
         <div className="flex gap-3">
           <button type="submit" disabled={busy} className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
             {busy ? '更新中…' : '更新する'}

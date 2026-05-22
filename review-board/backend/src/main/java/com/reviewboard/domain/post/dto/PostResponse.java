@@ -17,16 +17,21 @@ public record PostResponse(
         String repoUrl,
         String demoUrl,
         String screenshotKey,
+        String screenshotUrl,
         RecruitStatus recruitStatus,
         int reviewCount,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt) {
 
-    public static PostResponse from(Post p) {
+    /**
+     * @param screenshotUrl 表示用の署名付き GET URL（SEC-8：private 保存・短命 URL のみ公開）。
+     *                      key が無ければ null。生成は {@code StorageService} が担い、Controller で渡す。
+     */
+    public static PostResponse from(Post p, String screenshotUrl) {
         return new PostResponse(
                 p.getId(), p.getAuthorUserId(), p.getCohortId(),
                 p.getTitle(), p.getDescription(), p.getRepoUrl(), p.getDemoUrl(),
-                p.getScreenshotKey(), p.getRecruitStatus(), p.getReviewCount(),
+                p.getScreenshotKey(), screenshotUrl, p.getRecruitStatus(), p.getReviewCount(),
                 p.getCreatedAt(), p.getUpdatedAt());
     }
 }
