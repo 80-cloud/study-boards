@@ -29,6 +29,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(ApiError.of("VALIDATION_ERROR", msg));
     }
 
+    /** リソース無し/他 cohort/他人の資源/削除済み（404・存在を漏らさず IDOR 遮断） */
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ApiError> handleNotFound(ResourceNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiError.of("NOT_FOUND", "対象が見つかりません"));
+    }
+
     /** 認可不可（403）：ロール不足など */
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException ex) {
