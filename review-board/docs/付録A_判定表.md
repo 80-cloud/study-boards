@@ -17,7 +17,7 @@
 
 | 軸 | 床（A判定）の状態 | 要点 |
 |---|---|---|
-| セキュリティ（★S軸） | **MUST 全達成（SEC-8 は機能未実装のため簡素化明記）** | S基準4項目も達成 → **S判定：S** |
+| セキュリティ（★S軸） | **MUST 全達成（SEC-8 も #123 で実装・A 化）** | S基準4項目も達成 → **S判定：S** |
 | 安定性・信頼性 | 一部未達（S-2 デプロイ未／定期再計算バッチ未） | 学習スコープの簡素化。Phase3 で A 化予定 |
 | 保守性・拡張性 | ほぼ達成（CI の build/test 化が follow-up） | 依存スキャン CI は常設済 |
 | 性能・UX | 一部未達（P-1 目標値未定義／フロント由来の P-9 等） | バックエンドの P-2/P-3/P-5 は達成 |
@@ -52,7 +52,7 @@
 | SEC-5 XSS 対策 | MUST | A | レビュー本文等はプレーンテキスト（JSON 自動エスケープ）。HTML 化なし。**フロント実装時に DOMPurify/CSP を確認** |
 | SEC-6 SQLi 対策 | MUST | A | Spring Data JPA／パラメータバインドのみ。文字列結合クエリなし |
 | SEC-7 JWT in HttpOnly Cookie＋rotation＋reuse 検知 | MUST | A | `JwtService`／`RefreshTokenService.rotate`（SHA-256 ハッシュ・使い捨て・盗用全失効）／`AuthCookies`（HttpOnly+Secure+SameSite=Strict） |
-| SEC-8 アップロードはマジックバイト判定・外部隔離 | MUST | 対象外（簡素化） | スクショは `screenshotKey` 文字列のみ・**アップロード経路未実装**。実装時に SEC-8（マジックバイト・サイズ上限・S3 隔離）必須 |
+| SEC-8 アップロードはマジックバイト判定・外部隔離 | MUST | **A** | #123 で実装。`POST /api/uploads/screenshot`＝**先頭バイトで PNG/JPEG/WebP 判定**（拡張子・Content-Type 不信）・5MB 上限（multipart＋サービス二重）・**private バケット保存＋短命署名 URL**（直アクセス 403 を実機確認）。Testcontainers MinIO で 200/400/401 回帰 |
 | SEC-9 機密は env 駆動・平文禁止 | MUST | A | JWT secret／DB／seed すべて env・fail-fast。平文ハードコードなし（機密スキャン済） |
 | SEC-10 DTO で Entity を直接出さない | SHOULD | A | 全レスポンスは `*Response` DTO（UserResponse/PostResponse/ReviewResponse/…） |
 | SEC-11 CORS は自オリジンのみ | MUST | A | `CorsConfig` が単一オリジン（env `CORS_ALLOWED_ORIGIN`＝localhost:5175）のみ許可 |
@@ -110,7 +110,7 @@
 
 ## 2. S判定表（宣言した S軸：セキュリティ・認可）
 
-> A基準（床）＝セキュリティ軸の MUST 全件 A。SEC-8 は機能未実装の簡素化（明記済）であり、現スコープに違反対象が存在しないため床は割れていない。**残る SEC MUST は全て A。**
+> A基準（床）＝セキュリティ軸の MUST 全件 A。SEC-8 も #123 で実装し A 化（magic byte 判定・サイズ上限・private 隔離＋署名 URL）。**SEC MUST は全て A。**
 
 | S基準（要件 §0 で定義した測定可能条件） | 判定 | 根拠 |
 |---|---|---|
@@ -136,7 +136,6 @@
 | 性能目標値の定義 | P-1 | follow-up（API 応答 P95 等を要件に明記） |
 | 冗長化・ゼロダウンタイム | S-2/S-7 | Phase3（AWS デプロイ時） |
 | 実ブラウザ検証・a11y・楽観的UI | M-13/P-9/P-8 | フロントエンド実装時 |
-| アップロード安全化 | SEC-8 | スクショ実アップロード（MinIO 連携）実装時 |
 
 ---
 

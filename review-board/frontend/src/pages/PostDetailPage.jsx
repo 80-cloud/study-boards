@@ -64,6 +64,9 @@ export default function PostDetailPage() {
           )}
         </div>
         <p className="mt-3 whitespace-pre-wrap text-sm text-gray-700">{post.description}</p>
+        {post.screenshotUrl && (
+          <img src={post.screenshotUrl} alt={`${post.title} のスクリーンショット`} className="mt-4 max-h-96 rounded border border-gray-200" />
+        )}
         <div className="mt-3 flex gap-4 text-sm">
           {post.repoUrl && <a href={post.repoUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">リポジトリ</a>}
           {post.demoUrl && <a href={post.demoUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">デモ</a>}

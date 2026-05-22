@@ -23,6 +23,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.testcontainers.containers.MinIOContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.time.OffsetDateTime;
@@ -50,8 +51,15 @@ public abstract class AbstractIntegrationTest {
      */
     static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16");
 
+    /**
+     * SEC-8 アップロードを本番同等で検証するための MinIO（S3 互換）。Postgres と同じく singleton で
+     * 一度だけ起動し JVM 終了まで止めない（全テストクラスで Spring コンテキストを共有・再起動コストを避ける）。
+     */
+    static final MinIOContainer MINIO = new MinIOContainer("minio/minio:latest");
+
     static {
         POSTGRES.start();
+        MINIO.start();
     }
 
     @DynamicPropertySource
@@ -60,6 +68,9 @@ public abstract class AbstractIntegrationTest {
         registry.add("spring.datasource.username", POSTGRES::getUsername);
         registry.add("spring.datasource.password", POSTGRES::getPassword);
         registry.add("app.jwt.secret", () -> "test-secret-please-change-32chars-minimum");
+        registry.add("app.storage.s3.endpoint", MINIO::getS3URL);
+        registry.add("app.storage.s3.access-key", MINIO::getUserName);
+        registry.add("app.storage.s3.secret-key", MINIO::getPassword);
     }
 
     protected static final String PASSWORD = "correct-horse-battery";

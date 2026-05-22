@@ -9,6 +9,7 @@ import org.springframework.security.authentication.AuthenticationCredentialsNotF
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 /**
  * 例外 → 共通エラーレスポンスの変換（機能一覧.md §共通仕様）。
@@ -33,6 +34,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidRequestException.class)
     public ResponseEntity<ApiError> handleInvalidRequest(InvalidRequestException ex) {
         return ResponseEntity.badRequest().body(ApiError.of("INVALID_REQUEST", ex.getMessage()));
+    }
+
+    /** アップロード上限超過（413・SEC-8 のサイズ防御。multipart 段で弾く） */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiError> handleMaxUpload(MaxUploadSizeExceededException ex) {
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+                .body(ApiError.of("PAYLOAD_TOO_LARGE", "ファイルサイズが上限を超えています"));
     }
 
     /** リソース無し/他 cohort/他人の資源/削除済み（404・存在を漏らさず IDOR 遮断） */
