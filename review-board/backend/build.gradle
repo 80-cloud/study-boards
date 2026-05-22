@@ -34,6 +34,9 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	// 4 ゴールデンシグナルの収集（母 §3-1）。http.server.requests（Latency/Traffic/Errors）と
+	// Hikari/JVM（Saturation）を Micrometer が Actuator 経由で /actuator/prometheus に公開する。
+	runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
 	// ★S軸の中核：RBAC + 認可（SecurityConfig）
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	// JWT (HS256, HttpOnly Cookie 認証。技術スタック.md §2-4)
