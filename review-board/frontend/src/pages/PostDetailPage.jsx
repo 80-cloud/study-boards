@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { fetchPost } from '../api/posts';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { fetchPost, deletePost } from '../api/posts';
 import { fetchReviews } from '../api/reviews';
 import { fetchEvaluation } from '../api/evaluations';
 import { useAuth } from '../context/AuthContext';
@@ -11,6 +11,7 @@ import EvaluationPanel from '../components/EvaluationPanel';
 // 投稿詳細：本体＋レビュー一覧＋レビュー投稿＋講師評価。
 export default function PostDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [post, setPost] = useState(null);
   const [reviews, setReviews] = useState([]);
@@ -38,12 +39,30 @@ export default function PostDetailPage() {
   const isAuthor = user?.id === post.authorUserId;
   const isTeacher = user?.role === 'TEACHER';
 
+  const removePost = async () => {
+    if (!window.confirm('この投稿を削除しますか？')) return;
+    try {
+      await deletePost(post.id);
+      navigate('/', { replace: true });
+    } catch {
+      setError('削除に失敗しました');
+    }
+  };
+
   return (
     <main className="mx-auto max-w-3xl space-y-6 p-6">
       <Link to="/" className="text-sm text-blue-600 hover:underline">← 一覧へ</Link>
 
       <article className="rounded-lg border border-gray-200 bg-white p-6">
-        <h2 className="text-xl font-bold text-gray-800">{post.title}</h2>
+        <div className="flex items-start justify-between">
+          <h2 className="text-xl font-bold text-gray-800">{post.title}</h2>
+          {isAuthor && (
+            <div className="flex gap-3 text-sm">
+              <Link to={`/posts/${post.id}/edit`} className="text-blue-600 hover:underline">編集</Link>
+              <button onClick={removePost} className="text-red-500 hover:underline">削除</button>
+            </div>
+          )}
+        </div>
         <p className="mt-3 whitespace-pre-wrap text-sm text-gray-700">{post.description}</p>
         <div className="mt-3 flex gap-4 text-sm">
           {post.repoUrl && <a href={post.repoUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">リポジトリ</a>}
@@ -60,7 +79,13 @@ export default function PostDetailPage() {
         ) : (
           <ul className="mb-4 space-y-3">
             {reviews.map((r) => (
-              <ReviewItem key={r.id} review={r} canThank={isAuthor} onThanked={loadReviews} />
+              <ReviewItem
+                key={r.id}
+                review={r}
+                canThank={isAuthor}
+                isOwner={user?.id === r.reviewerUserId}
+                onChanged={loadReviews}
+              />
             ))}
           </ul>
         )}

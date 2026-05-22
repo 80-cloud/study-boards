@@ -8,5 +8,12 @@ export const fetchReviews = (postId) =>
 export const createReview = (postId, body) =>
   client.post(`/posts/${postId}/reviews`, body).then((r) => r.data);
 
+// F-REV 編集（所有者のみ・backend が非所有者を 404）
+export const updateReview = (reviewId, body) =>
+  client.put(`/reviews/${reviewId}`, body).then((r) => r.data);
+
+// F-REV 論理削除（所有者のみ）
+export const deleteReview = (reviewId) => client.delete(`/reviews/${reviewId}`);
+
 // F-REV-03 ありがとう（投稿者のみ・冪等）
 export const sendThanks = (reviewId) => client.post(`/reviews/${reviewId}/thanks`);
