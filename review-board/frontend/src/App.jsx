@@ -5,6 +5,7 @@ import Header from './components/Header';
 import LoginPage from './pages/LoginPage';
 import PostsPage from './pages/PostsPage';
 import NewPostPage from './pages/NewPostPage';
+import PostEditPage from './pages/PostEditPage';
 import PostDetailPage from './pages/PostDetailPage';
 import ProfilePage from './pages/ProfilePage';
 
@@ -27,6 +28,7 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/" element={<Shell><PostsPage /></Shell>} />
         <Route path="/posts/new" element={<Shell><NewPostPage /></Shell>} />
+        <Route path="/posts/:id/edit" element={<Shell><PostEditPage /></Shell>} />
         <Route path="/posts/:id" element={<Shell><PostDetailPage /></Shell>} />
         <Route path="/users/:id/profile" element={<Shell><ProfilePage /></Shell>} />
       </Routes>
