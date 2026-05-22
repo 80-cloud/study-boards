@@ -1,12 +1,21 @@
 plugins {
 	id 'java'
 	id 'jacoco'
-	id 'org.springframework.boot' version '3.5.5'
+	id 'org.springframework.boot' version '3.5.14'
 	id 'io.spring.dependency-management' version '1.1.7'
 }
 
 group = 'com.reviewboard'
 version = '0.0.1-SNAPSHOT'
+
+// ★S軸：依存脆弱性スキャン(CI/Trivy)で検出された High/Critical を 0 件に保つための
+// バージョン上書き。Spring Boot 3.5.14 で大半が解消するが、BOM 管理版より新しい
+// 修正版が必要なものは spring-boot-dependencies の version property を上書きする。
+// 各値は Trivy が示した fixed version に対応（更新時は CI の検出結果で再確認すること）。
+ext['tomcat.version'] = '10.1.55'              // CVE-2026-41293 ほか tomcat 系
+ext['spring-framework.version'] = '6.2.11'     // CVE-2025-41249
+ext['spring-security.version'] = '6.5.9'       // CVE-2026-22732 / CVE-2025-41248
+ext['postgresql.version'] = '42.7.11'          // CVE-2026-42198
 
 java {
 	// Java 25 (LTS)。技術スタック.md §2-1 / §8。foojay resolver により
