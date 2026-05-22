@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: review-board
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5434/reviewboard}
+    username: ${DATABASE_USERNAME:reviewboard}
+    # パスワードはデフォルト値を持たせない（未設定なら起動失敗＝fail-fast。機密ハードコード禁止）
+    password: ${DATABASE_PASSWORD}
+  jpa:
+    # スキーマの正は Flyway。Hibernate には作らせない（none）。
+    # 全エンティティが出揃ったら validate に切り替えて drift を検出する（M-14 の精神。TODO）。
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+server:
+  port: 8082
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+# アプリ固有設定（env 駆動。.env.example 参照）
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    access-ttl-seconds: 900       # 15 分（短命 access）
+    refresh-ttl-seconds: 1209600  # 14 日（refresh、DB rotation）
+    cookie-secure: ${JWT_COOKIE_SECURE:false}
+  cors:
+    allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:5175}
+  storage:
+    s3:
+      endpoint: ${S3_ENDPOINT:http://localhost:9002}
+      bucket: ${S3_BUCKET:review-board}
+      region: ${S3_REGION:ap-northeast-1}

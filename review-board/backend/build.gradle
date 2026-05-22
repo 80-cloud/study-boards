@@ -1,0 +1,76 @@
+plugins {
+	id 'java'
+	id 'jacoco'
+	id 'org.springframework.boot' version '3.5.5'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.reviewboard'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	// Java 25 (LTS)。技術スタック.md §2-1 / §8。foojay resolver により
+	// ローカル JDK が 21 でも Gradle が JDK 25 を自動取得してコンパイルする。
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(25)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	// ★S軸の中核：RBAC + 認可（SecurityConfig）
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	// JWT (HS256, HttpOnly Cookie 認証。技術スタック.md §2-4)
+	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+	runtimeOnly 'org.postgresql:postgresql'
+	implementation 'org.flywaydb:flyway-core'
+	implementation 'org.flywaydb:flyway-database-postgresql'
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+	// AWS SDK v2 S3（成果物スクショ。ローカルは MinIO を S3 互換として使う。
+	// 重い Netty を持ち込まず url-connection-client を使う）
+	implementation platform('software.amazon.awssdk:bom:2.31.78')
+	implementation('software.amazon.awssdk:s3') {
+		exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
+	}
+	implementation 'software.amazon.awssdk:url-connection-client'
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.security:spring-security-test'
+	// 結合テストは Testcontainers PostgreSQL（テスト計画書 §4。本番同等で方言差を避ける）
+	testImplementation 'org.testcontainers:junit-jupiter'
+	testImplementation 'org.testcontainers:postgresql'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+	// env-var 駆動の application.yml（${DATABASE_PASSWORD} 等、fail-fast）を test fork に継承。
+	// 必要な key のみ allow-list で渡し、機密が test heap に乗らないようにする。
+	['DATABASE_URL', 'DATABASE_USERNAME', 'DATABASE_PASSWORD',
+	 'JWT_SECRET', 'JWT_COOKIE_SECURE', 'SPRING_PROFILES_ACTIVE'].each { key ->
+		def value = System.getenv(key)
+		if (value != null) {
+			environment key, value
+		}
+	}
+	finalizedBy jacocoTestReport
+}
+
+// JaCoCo カバレッジ。Phase 1 はレポート生成のみ・閾値ゲートなし（テスト計画書 §5）。
+jacocoTestReport {
+	dependsOn test
+	reports {
+		xml.required = true
+		html.required = true
+	}
+}
