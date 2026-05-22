@@ -39,6 +39,7 @@ management:
       application: review-board
     distribution:
       # 主要 API の P95/P99 を出せるようヒストグラムを有効化（P-1 性能目標と対）。
+      # P95/P99 は bucket から histogram_quantile 相当で算出する（Prometheus 標準）。
       percentiles-histogram:
         http.server.requests: true
 
