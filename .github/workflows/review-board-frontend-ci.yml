@@ -1,0 +1,54 @@
+name: review-board Frontend CI (lint & build)
+
+# ============================================================
+# 母 M-6：CI は Fail Fast（lint→build）。backend CI と並列のフロント版。
+# review-board/frontend の lint（ESLint）→ build（Vite）を回す。
+# ============================================================
+
+on:
+  pull_request:
+    paths:
+      - 'review-board/frontend/**'
+      - '.github/workflows/review-board-frontend-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'review-board/frontend/**'
+      - '.github/workflows/review-board-frontend-ci.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: rb-fe-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: review-board/frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: review-board/frontend/package-lock.json
+
+      - name: Install (npm ci)
+        run: npm ci
+
+      # Fail Fast：lint（軽量）→ build。
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
