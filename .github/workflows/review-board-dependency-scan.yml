@@ -58,7 +58,7 @@ jobs:
       # fat jar を走査。HIGH/CRITICAL を検出したら exit-code 1 で fail。
       # ignore-unfixed: 修正版が無い脆弱性は対処不能なため除外（0 件維持の対象は修正可能なもの）。
       - name: Trivy scan (fail on HIGH/CRITICAL)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           scan-type: rootfs
           scan-ref: review-board/backend/build/libs
