@@ -103,7 +103,7 @@
 
 | 横断要件 | 判定 | 根拠・備考 |
 |---|---|---|
-| §3-1 ログ・監視・オブザーバビリティ | 一部A | 監査ログ（誰が・何を）は audit_logs で **A**。構造化ログ/MDC・メトリクス/アラートは未実装＝要改善（本実装で追加。設計は設計書に記載） |
+| §3-1 ログ・監視・オブザーバビリティ | **A**（自動アラートのみ Phase3） | 監査ログ（誰が・何を）は audit_logs で **A**。構造化ログ/MDC（requestId/userId）・Micrometer 4ゴールデンシグナル（`/actuator/prometheus`・運用ロール限定）を **#121 で実装済＝A**。閾値超の自動アラート連携のみ Phase3（AWS）で追加 |
 | §3-2 設定・機密の外部化 | A | JWT secret/DB/seed すべて env 駆動・fail-fast・平文ハードコードなし（SEC-9 と一致） |
 | §3-3 エラーハンドリング標準 | A | `GlobalExceptionHandler` で一元化（401/403/404/400・silent catch なし） |
 | §3-4 リリース・運用フロー（誤操作多層防御） | A | Issue→PR→squash・main 保護・CI（build/test・依存スキャン・lint）。CLAUDE.md §12 の多層防御を継承 |

@@ -26,7 +26,22 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        # health は監視プローブ用（SecurityConfig で permitAll）。
+        # metrics/prometheus は運用観測（SecurityConfig で ROLE_TEACHER 限定）。
+        include: health,info,metrics,prometheus
+  metrics:
+    tags:
+      application: review-board
+    distribution:
+      # 主要 API の P95/P99 を出せるようヒストグラムを有効化（P-1 性能目標と対）。
+      percentiles-histogram:
+        http.server.requests: true
+
+# ログ：1リクエストを横断追跡できるよう MDC の requestId/userId を出力する（母 §3-1）。
+# dev は読みやすいプレーンログ＋[requestId,userId]。prod は下の prod プロファイルで JSON 化。
+logging:
+  pattern:
+    correlation: "[%X{requestId:-},%X{userId:-}] "
 
 # アプリ固有設定（env 駆動。.env.example 参照）
 app:
@@ -42,3 +57,16 @@ app:
       endpoint: ${S3_ENDPOINT:http://localhost:9002}
       bucket: ${S3_BUCKET:review-board}
       region: ${S3_REGION:ap-northeast-1}
+
+---
+# prod プロファイル（M-5：dev/prod 分離）。
+# 本番は機械解析可能な JSON 構造化ログ（ECS 形式）を標準出力に流す。
+# MDC の requestId/userId は ECS の構造化フィールドとして自動的に含まれる。
+spring:
+  config:
+    activate:
+      on-profile: prod
+logging:
+  structured:
+    format:
+      console: ecs

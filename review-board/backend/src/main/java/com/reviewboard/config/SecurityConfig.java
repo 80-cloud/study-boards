@@ -3,6 +3,7 @@ package com.reviewboard.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.reviewboard.common.ApiError;
 import com.reviewboard.domain.auth.JwtAuthenticationFilter;
+import com.reviewboard.observability.MdcLoggingFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
@@ -36,7 +37,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtFilter) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtFilter,
+                                           MdcLoggingFilter mdcFilter) throws Exception {
         http
             .cors(Customizer.withDefaults())
             // JWT in HttpOnly Cookie + SameSite=Strict 方式。CSRF は SameSite で緩和する
@@ -44,8 +46,12 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                // health は監視プローブ用に開放（liveness/readiness）。
                 .requestMatchers("/actuator/health",
                         "/api/auth/login", "/api/auth/refresh", "/api/auth/logout").permitAll()
+                // 運用メトリクスは情報漏えいを避けるため運用ロール（講師）限定（SEC-2/SEC-11）。
+                // 誰でも JVM ヒープ・Hikari プール・流量を覗ける状態にしない。
+                .requestMatchers("/actuator/**").hasRole("TEACHER")
                 .anyRequest().authenticated())
             .exceptionHandling(ex -> ex
                 .authenticationEntryPoint((req, res, e) ->
@@ -54,7 +60,9 @@ public class SecurityConfig {
                         writeError(res, HttpStatus.FORBIDDEN, "FORBIDDEN", "この操作を行う権限がありません")))
             .httpBasic(basic -> basic.disable())
             .formLogin(form -> form.disable())
-            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+            // jwt の後段で MDC に requestId/userId を載せる（SecurityContext 確立後）。
+            .addFilterAfter(mdcFilter, JwtAuthenticationFilter.class);
         return http.build();
     }
 
