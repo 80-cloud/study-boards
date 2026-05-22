@@ -1,0 +1,37 @@
+# review-board ローカル開発インフラ（要件定義書 ローカルポート表・CLAUDE.md §10）
+# task-board / sns-board / slack-board と同時起動できるようポートを分離。
+services:
+  db:
+    image: postgres:16
+    container_name: review-board-db
+    environment:
+      POSTGRES_DB: reviewboard
+      POSTGRES_USER: reviewboard
+      # 機密はハードコードせず .env から渡す（母 SEC-9）
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-change-me-in-local}
+    ports:
+      - "5434:5432"
+    volumes:
+      - review-board-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U reviewboard -d reviewboard"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    container_name: review-board-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin}
+    ports:
+      - "9002:9000"   # S3 API
+      - "9003:9001"   # Console
+    volumes:
+      - review-board-minio-data:/data
+
+volumes:
+  review-board-db-data:
+  review-board-minio-data:
