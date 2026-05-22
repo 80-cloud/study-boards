@@ -18,11 +18,11 @@
 | 軸 | 床（A判定）の状態 | 要点 |
 |---|---|---|
 | セキュリティ（★S軸） | **MUST 全達成（SEC-8 も #123 で実装・A 化）** | S基準4項目も達成 → **S判定：S** |
-| 安定性・信頼性 | 一部未達（S-2 デプロイ未／定期再計算バッチ未） | 学習スコープの簡素化。Phase3 で A 化予定 |
-| 保守性・拡張性 | ほぼ達成（CI の build/test 化が follow-up） | 依存スキャン CI は常設済 |
-| 性能・UX | 一部未達（P-1 目標値未定義／フロント由来の P-9 等） | バックエンドの P-2/P-3/P-5 は達成 |
+| 安定性・信頼性 | 一部未達（S-2 デプロイ未／S-3 定期再計算バッチ未） | 学習スコープの簡素化。Phase3 で A 化予定 |
+| 保守性・拡張性 | **MUST 全達成**（CI 3本常設＝M-6 A・実ブラウザ検証＝M-13 A） | SHOULD の一部が N/A |
+| 性能・UX | 一部未達（P-1 目標値未定義／P-9 a11y 未監査） | バックエンドの P-2/P-3/P-5 は達成 |
 
-> **正直な現状認識**：S軸（セキュリティ）は MUST 全達成で S 基準も満たし **S を名乗れる**。一方、他3軸はフロント未実装・未デプロイ・性能目標未定義に由来する未達 MUST が残るため、**現時点で「オールA床 完成」は宣言しない**。実装の進捗に応じて本表を更新する（生きた文書）。
+> **正直な現状認識**：S軸（セキュリティ）は MUST 全達成で S 基準も満たし **S を名乗れる**。保守性は CI・実ブラウザ検証の充足で MUST 全達成。一方、安定性（S-2 未デプロイ／S-3 再計算バッチ未）・性能/UX（P-1 性能目標値未定義／P-9 a11y 未監査）に未達 MUST が残るため、**現時点で「オールA床 完成」は宣言しない**。実装の進捗に応じて本表を更新する（生きた文書）。
 
 ---
 
@@ -68,14 +68,14 @@
 | M-3 層分離 | MUST | A | Controller / Service / Repository を分離。認可は Service に一元化 |
 | M-4 グローバル例外一元化 | MUST | A | `GlobalExceptionHandler`（401/403/404/400/validation）。silent catch なし |
 | M-5 プロファイルで環境差 | MUST | A | `DevDataSeeder` は `@Profile("dev")`。application.yml は env 駆動 |
-| M-6 CI は Fail Fast（lint→build→test） | MUST | 要改善 | **依存脆弱性スキャン CI は常設済**だが、build/test の CI 化は未（ローカル実行）＝follow-up |
+| M-6 CI は Fail Fast（lint→build→test） | MUST | A | backend CI（#108・build→test／Testcontainers）＋frontend CI（#114・lint→build）＋依存脆弱性スキャン（Trivy）の3本を常設。すべて Fail Fast・paths で review-board 配下に限定 |
 | M-7 テストピラミッド | MUST | A | 結合テスト（Testcontainers）中心。ロジックが単純なため単体は最小限 |
 | M-8 テスト状態分離 | MUST | A | Testcontainers で本番同等 DB・`AbstractIntegrationTest` が毎回 FK 順クリーンアップ |
 | M-9 カバレッジ目安＋境界値 | SHOULD | N/A | JaCoCo はレポートのみ（ゲートなし・テスト計画書 §5）。認可の境界（ロール×所有者×cohort）は網羅 |
 | M-10 flaky 対策（条件待ち） | SHOULD | A | 固定 sleep なし（MockMvc 同期実行） |
 | M-11 抽象化で交換可能 | SHOULD | N/A | S3/MinIO は AWS SDK 直利用。抽象化層は本実装時に検討 |
 | M-12 AI レビューは補完＋型 | MUST | A | `claude-code-review.yml`＋Java の静的型 |
-| M-13 UI 変更は実ブラウザ検証 | MUST | 対象外（簡素化） | フロントエンド未実装（UI 変更なし）。フロント着手時に必須 |
+| M-13 UI 変更は実ブラウザ検証 | MUST | A | フロント実装済（#110〜#116）。Chrome DevTools で「ログイン→投稿→レビュー→評価→成長記録」通し e2e をコンソールエラー 0 で実証 |
 | M-14 IaC | SHOULD | N/A | 未デプロイ。インフラは別 PJ で管理 |
 | M-15 コンテナ化 | SHOULD | A | `docker-compose.yml`（PostgreSQL 5434・MinIO） |
 
@@ -90,8 +90,8 @@
 | P-5 キャッシュ規律 | MUST | A | キャッシュ未使用（認可情報をキャッシュしない＝規律遵守） |
 | P-6 コネクションプール | MUST | A | HikariCP 既定。常時接続なし |
 | P-7 検索の段階最適化 | SHOULD | N/A | 検索は Phase2 |
-| P-8 楽観的UI更新 | SHOULD | N/A | フロント未実装 |
-| P-9 アクセシビリティ WCAG A | MUST | 対象外（簡素化） | フロントエンド未実装。フロント着手時に必須 |
+| P-8 楽観的UI更新 | SHOULD | N/A | フロント実装済だが楽観更新は未採用（再取得方式）。SHOULD のため床は割れない。フロント深掘り時に検討 |
+| P-9 アクセシビリティ WCAG A | MUST | 要改善 | フロントは実装済だが **WCAG A 準拠は未監査**（正直評価＝A にしない）。follow-up：Lighthouse a11y 監査・ラベル/コントラスト/キーボード操作の確認 |
 | P-10 画像は外部ストレージ | SHOULD | A | `screenshot_key` で外部参照（MinIO/S3）。バイナリを DB に保存しない設計 |
 
 ---
@@ -132,10 +132,11 @@
 | 項目 | 要件 | 対応フェーズ |
 |---|---|---|
 | 定期再計算バッチ | S-3 | follow-up（カウンタ整合のズレ補正） |
-| build/test の CI 化 | M-6 | follow-up（依存スキャン CI に lint/test を追加） |
-| 性能目標値の定義 | P-1 | follow-up（API 応答 P95 等を要件に明記） |
+| 性能目標値の定義 | P-1 | follow-up（API 応答 P95 等を要件に明記。#121 のメトリクスで実測可能に） |
+| a11y WCAG A 監査 | P-9 | フロント深掘り（Lighthouse a11y・ラベル/コントラスト/キーボード） |
 | 冗長化・ゼロダウンタイム | S-2/S-7 | Phase3（AWS デプロイ時） |
-| 実ブラウザ検証・a11y・楽観的UI | M-13/P-9/P-8 | フロントエンド実装時 |
+
+> **済**：M-6（CI Fail Fast）＝backend/frontend/依存スキャンの3本常設で A。M-13（実ブラウザ検証）＝通し e2e で A。
 
 ---
 
