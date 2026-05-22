@@ -29,6 +29,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(ApiError.of("VALIDATION_ERROR", msg));
     }
 
+    /** ビジネスルール違反（400）：自己レビュー・観点重複など */
+    @ExceptionHandler(InvalidRequestException.class)
+    public ResponseEntity<ApiError> handleInvalidRequest(InvalidRequestException ex) {
+        return ResponseEntity.badRequest().body(ApiError.of("INVALID_REQUEST", ex.getMessage()));
+    }
+
     /** リソース無し/他 cohort/他人の資源/削除済み（404・存在を漏らさず IDOR 遮断） */
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiError> handleNotFound(ResourceNotFoundException ex) {
