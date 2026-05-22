@@ -1,12 +1,21 @@
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-
-const ROLE_LABEL = { STUDENT: '受講生', TEACHER: '講師' };
+import { ROLE_LABEL } from '../constants';
 
 export default function Header() {
   const { user, logout } = useAuth();
   return (
     <header className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-3">
-      <h1 className="text-lg font-bold text-gray-800">review-board</h1>
+      <div className="flex items-center gap-6">
+        <Link to="/" className="text-lg font-bold text-gray-800">review-board</Link>
+        {user && (
+          <nav className="flex gap-4 text-sm text-gray-600">
+            <Link to="/" className="hover:text-gray-900">投稿一覧</Link>
+            <Link to="/posts/new" className="hover:text-gray-900">新規投稿</Link>
+            <Link to={`/users/${user.id}/profile`} className="hover:text-gray-900">自分の成長記録</Link>
+          </nav>
+        )}
+      </div>
       {user && (
         <div className="flex items-center gap-4 text-sm">
           <span className="text-gray-600">
