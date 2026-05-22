@@ -1,6 +1,9 @@
 package com.reviewboard.domain.post;
 
 import com.reviewboard.common.ResourceNotFoundException;
+import com.reviewboard.domain.audit.AuditAction;
+import com.reviewboard.domain.audit.AuditService;
+import com.reviewboard.domain.audit.AuditTargetType;
 import com.reviewboard.domain.auth.AuthPrincipal;
 import com.reviewboard.domain.post.dto.PostCreateRequest;
 import com.reviewboard.domain.post.dto.PostUpdateRequest;
@@ -21,9 +24,11 @@ import java.time.OffsetDateTime;
 public class PostService {
 
     private final PostRepository postRepository;
+    private final AuditService auditService;
 
-    public PostService(PostRepository postRepository) {
+    public PostService(PostRepository postRepository, AuditService auditService) {
         this.postRepository = postRepository;
+        this.auditService = auditService;
     }
 
     /** F-POST-01 作成。cohort と author は principal（検証済み）から導出する。 */
@@ -41,7 +46,9 @@ public class PostService {
         post.setRecruitStatus(RecruitStatus.OPEN);
         post.setCreatedAt(now);
         post.setUpdatedAt(now);
-        return postRepository.save(post);
+        postRepository.save(post);
+        auditService.record(principal, AuditAction.POST_CREATED, AuditTargetType.POST, post.getId());
+        return post;
     }
 
     /** F-POST-03 単体取得。自 cohort かつ未削除のみ可視（他は 404）。 */
@@ -67,6 +74,7 @@ public class PostService {
         post.setDemoUrl(req.demoUrl());
         post.setScreenshotKey(req.screenshotKey());
         post.setUpdatedAt(OffsetDateTime.now());
+        auditService.record(principal, AuditAction.POST_UPDATED, AuditTargetType.POST, postId);
         return post;
     }
 
@@ -75,6 +83,7 @@ public class PostService {
     public void delete(AuthPrincipal principal, Long postId) {
         Post post = loadOwned(principal, postId);
         post.setDeletedAt(OffsetDateTime.now());
+        auditService.record(principal, AuditAction.POST_DELETED, AuditTargetType.POST, postId);
     }
 
     /**

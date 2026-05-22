@@ -2,6 +2,9 @@ package com.reviewboard.domain.review;
 
 import com.reviewboard.common.InvalidRequestException;
 import com.reviewboard.common.ResourceNotFoundException;
+import com.reviewboard.domain.audit.AuditAction;
+import com.reviewboard.domain.audit.AuditService;
+import com.reviewboard.domain.audit.AuditTargetType;
 import com.reviewboard.domain.auth.AuthPrincipal;
 import com.reviewboard.domain.post.Post;
 import com.reviewboard.domain.post.PostRepository;
@@ -33,17 +36,20 @@ public class ReviewService {
     private final ThanksRepository thanksRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final AuditService auditService;
 
     public ReviewService(ReviewRepository reviewRepository,
                          ReviewAxisCommentRepository axisCommentRepository,
                          ThanksRepository thanksRepository,
                          PostRepository postRepository,
-                         UserRepository userRepository) {
+                         UserRepository userRepository,
+                         AuditService auditService) {
         this.reviewRepository = reviewRepository;
         this.axisCommentRepository = axisCommentRepository;
         this.thanksRepository = thanksRepository;
         this.postRepository = postRepository;
         this.userRepository = userRepository;
+        this.auditService = auditService;
     }
 
     /** F-REV-01 作成。同 cohort の投稿のみ・自己レビュー禁止。 */
@@ -69,6 +75,8 @@ public class ReviewService {
         post.setReviewCount(post.getReviewCount() + 1);
         adjustCount(principal.userId(), 0, +1);            // reviewer の「したレビュー」
         adjustCount(post.getAuthorUserId(), +1, 0);        // author の「もらったレビュー」
+
+        auditService.record(principal, AuditAction.REVIEW_CREATED, AuditTargetType.REVIEW, review.getId());
 
         User reviewer = userRepository.findById(principal.userId()).orElseThrow();
         return ReviewResponse.from(review, reviewer.getDisplayName(), reviewer.getRole(), axisComments);
@@ -126,6 +134,7 @@ public class ReviewService {
             adjustCount(p.getAuthorUserId(), -1, 0);
         });
         adjustCount(principal.userId(), 0, -1);
+        auditService.record(principal, AuditAction.REVIEW_DELETED, AuditTargetType.REVIEW, reviewId);
     }
 
     /** F-REV-03 ありがとう（投稿者のみ・冪等）。reviewer の実績に反映。 */
@@ -151,6 +160,7 @@ public class ReviewService {
 
         review.setThanksCount(review.getThanksCount() + 1);
         adjustThanksReceived(review.getReviewerUserId(), +1);
+        auditService.record(principal, AuditAction.THANKS_SENT, AuditTargetType.REVIEW, reviewId);
     }
 
     // ---- helpers ----

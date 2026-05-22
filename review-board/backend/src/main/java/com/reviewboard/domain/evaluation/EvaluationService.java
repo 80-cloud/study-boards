@@ -1,6 +1,9 @@
 package com.reviewboard.domain.evaluation;
 
 import com.reviewboard.common.ResourceNotFoundException;
+import com.reviewboard.domain.audit.AuditAction;
+import com.reviewboard.domain.audit.AuditService;
+import com.reviewboard.domain.audit.AuditTargetType;
 import com.reviewboard.domain.auth.AuthPrincipal;
 import com.reviewboard.domain.evaluation.dto.EvaluationRequest;
 import com.reviewboard.domain.post.Post;
@@ -21,10 +24,13 @@ public class EvaluationService {
 
     private final EvaluationRepository evaluationRepository;
     private final PostRepository postRepository;
+    private final AuditService auditService;
 
-    public EvaluationService(EvaluationRepository evaluationRepository, PostRepository postRepository) {
+    public EvaluationService(EvaluationRepository evaluationRepository, PostRepository postRepository,
+                             AuditService auditService) {
         this.evaluationRepository = evaluationRepository;
         this.postRepository = postRepository;
+        this.auditService = auditService;
     }
 
     /**
@@ -46,7 +52,12 @@ public class EvaluationService {
         eval.setComment(req.comment());
         eval.setLatest(true);
         eval.setCreatedAt(OffsetDateTime.now());
-        return evaluationRepository.save(eval);
+        evaluationRepository.save(eval);
+
+        AuditAction action = req.result() == EvaluationResult.APPROVED
+                ? AuditAction.EVALUATION_APPROVED : AuditAction.EVALUATION_RETURNED;
+        auditService.record(principal, action, AuditTargetType.EVALUATION, eval.getId());
+        return eval;
     }
 
     /** 最新評価の取得（同 cohort のみ可視）。未評価は 404。 */
