@@ -1,36 +1,14 @@
 package com.reviewboard.domain.profile;
 
-import com.reviewboard.domain.auth.AuthCookies;
-import com.reviewboard.domain.auth.RefreshTokenRepository;
 import com.reviewboard.domain.cohort.Cohort;
-import com.reviewboard.domain.cohort.CohortRepository;
-import com.reviewboard.domain.evaluation.EvaluationRepository;
-import com.reviewboard.domain.post.PostRepository;
-import com.reviewboard.domain.review.ReviewAxisCommentRepository;
-import com.reviewboard.domain.review.ReviewRepository;
-import com.reviewboard.domain.review.ThanksRepository;
 import com.reviewboard.domain.user.User;
-import com.reviewboard.domain.user.UserRepository;
 import com.reviewboard.domain.user.UserRole;
-import com.jayway.jsonpath.JsonPath;
+import com.reviewboard.support.AbstractIntegrationTest;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.time.OffsetDateTime;
-
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -39,34 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 投稿履歴/もらったレビュー(講師強調)/合格バッジ/したレビュー実績の集約と、
  * cohort 境界（他 cohort は 404）・未認証を検証する。
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@Testcontainers
-class ProfileAuthorizationIntegrationTest {
-
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16");
-
-    @DynamicPropertySource
-    static void props(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
-        registry.add("app.jwt.secret", () -> "test-secret-please-change-32chars-minimum");
-    }
-
-    @Autowired MockMvc mockMvc;
-    @Autowired CohortRepository cohortRepository;
-    @Autowired UserRepository userRepository;
-    @Autowired PostRepository postRepository;
-    @Autowired ReviewRepository reviewRepository;
-    @Autowired ReviewAxisCommentRepository axisCommentRepository;
-    @Autowired ThanksRepository thanksRepository;
-    @Autowired EvaluationRepository evaluationRepository;
-    @Autowired RefreshTokenRepository refreshTokenRepository;
-    @Autowired PasswordEncoder passwordEncoder;
-
-    private static final String PW = "correct-horse-battery";
+class ProfileAuthorizationIntegrationTest extends AbstractIntegrationTest {
 
     private long authorId;
     private long reviewerId;
@@ -76,16 +27,7 @@ class ProfileAuthorizationIntegrationTest {
     private String bEmail;
 
     @BeforeEach
-    void setUp() throws Exception {
-        thanksRepository.deleteAll();
-        axisCommentRepository.deleteAll();
-        evaluationRepository.deleteAll();
-        reviewRepository.deleteAll();
-        postRepository.deleteAll();
-        refreshTokenRepository.deleteAll();
-        userRepository.deleteAll();
-        cohortRepository.deleteAll();
-
+    void seed() throws Exception {
         Cohort a = newCohort("A");
         Cohort b = newCohort("B");
         User author = newUser("author@example.com", UserRole.STUDENT, a.getId());
@@ -113,12 +55,9 @@ class ProfileAuthorizationIntegrationTest {
         mockMvc.perform(get("/api/users/" + authorId + "/profile").cookie(login(authorEmail)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.posts.length()").value(2))
-                // 新しい順：作品2 が先頭、作品1 は合格バッジ付き
                 .andExpect(jsonPath("$.posts[?(@.title == '作品1')].approved").value(true))
-                // もらったレビューは2件（受講生＋講師）、講師レビューが強調対象
                 .andExpect(jsonPath("$.receivedReviews.length()").value(2))
                 .andExpect(jsonPath("$.receivedReviews[?(@.teacherReview == true)].reviewerRole").value("TEACHER"))
-                // F-PROF-03 もらったレビュー数（author 視点）
                 .andExpect(jsonPath("$.stats.receivedReviewsCount").value(2));
     }
 
@@ -178,39 +117,5 @@ class ProfileAuthorizationIntegrationTest {
                         .contentType("application/json")
                         .content("{\"result\":\"" + result + "\",\"comment\":\"" + comment + "\"}"))
                 .andExpect(status().isOk());
-    }
-
-    private long readId(MvcResult res) throws Exception {
-        return JsonPath.parse(res.getResponse().getContentAsString()).read("$.id", Integer.class).longValue();
-    }
-
-    private Cookie login(String email) throws Exception {
-        MvcResult res = mockMvc.perform(post("/api/auth/login")
-                        .contentType("application/json")
-                        .content("{\"email\":\"" + email + "\",\"password\":\"" + PW + "\"}"))
-                .andExpect(status().isOk()).andReturn();
-        Cookie access = res.getResponse().getCookie(AuthCookies.ACCESS);
-        assertThat(access).isNotNull();
-        return access;
-    }
-
-    private Cohort newCohort(String name) {
-        Cohort c = new Cohort();
-        c.setName(name);
-        c.setCreatedAt(OffsetDateTime.now());
-        return cohortRepository.save(c);
-    }
-
-    private User newUser(String email, UserRole role, Long cohortId) {
-        OffsetDateTime now = OffsetDateTime.now();
-        User u = new User();
-        u.setEmail(email);
-        u.setPasswordHash(passwordEncoder.encode(PW));
-        u.setDisplayName(email);
-        u.setRole(role);
-        u.setCohortId(cohortId);
-        u.setCreatedAt(now);
-        u.setUpdatedAt(now);
-        return userRepository.save(u);
     }
 }
