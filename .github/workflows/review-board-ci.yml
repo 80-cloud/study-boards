@@ -1,0 +1,68 @@
+name: review-board CI (build & test)
+
+# ============================================================
+# 母 M-6：CI は Fail Fast（lint→build→test）。問題は安く速く落とす。
+# 本ワークフローは review-board/backend の build（compile）→ test を回す。
+# test は Testcontainers(PostgreSQL) を使うため runner の Docker を利用する。
+# 依存脆弱性スキャンは review-board-dependency-scan.yml に分離（並列実行）。
+# ============================================================
+
+on:
+  pull_request:
+    paths:
+      - 'review-board/backend/**'
+      - '.github/workflows/review-board-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'review-board/backend/**'
+      - '.github/workflows/review-board-ci.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: rb-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: review-board/backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      # JDK 21 を入れ、Gradle の foojay toolchain が JDK 25 を自動取得する
+      # （ローカルと同条件。技術スタック.md M-14）。
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # Fail Fast：まずコンパイル（軽量）で速く落とす。
+      - name: Build (compile)
+        run: ./gradlew compileJava compileTestJava --no-daemon
+
+      # 結合テスト（Testcontainers PostgreSQL）。runner には Docker が同梱。
+      - name: Test
+        run: ./gradlew test --no-daemon
+
+      # 失敗時にテストレポートを保全（M-10：ログを残す）。
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: review-board/backend/build/reports/tests/test
+          retention-days: 7
+          if-no-files-found: ignore
