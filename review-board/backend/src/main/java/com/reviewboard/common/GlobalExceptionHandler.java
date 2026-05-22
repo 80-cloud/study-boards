@@ -1,5 +1,7 @@
 package com.reviewboard.common;
 
+import com.reviewboard.domain.auth.BadCredentialsException;
+import com.reviewboard.domain.auth.InvalidRefreshTokenException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -39,5 +41,19 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleUnauthenticated(AuthenticationCredentialsNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(ApiError.of("UNAUTHORIZED", "ログインが必要です"));
+    }
+
+    /** ログイン認証失敗（401・存在を漏らさない汎用メッセージ） */
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ApiError> handleBadCredentials(BadCredentialsException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiError.of("BAD_CREDENTIALS", ex.getMessage()));
+    }
+
+    /** refresh トークン無効（401・未知/期限切れ/reuse 検知） */
+    @ExceptionHandler(InvalidRefreshTokenException.class)
+    public ResponseEntity<ApiError> handleInvalidRefresh(InvalidRefreshTokenException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiError.of("INVALID_REFRESH_TOKEN", "再ログインが必要です"));
     }
 }

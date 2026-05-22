@@ -56,13 +56,22 @@ tasks.named('test') {
 	useJUnitPlatform()
 	// env-var 駆動の application.yml（${DATABASE_PASSWORD} 等、fail-fast）を test fork に継承。
 	// 必要な key のみ allow-list で渡し、機密が test heap に乗らないようにする。
+	// DOCKER_API_VERSION: Testcontainers(docker-java) が daemon の対応上限を超える API
+	// バージョンを要求して 400 になる環境向けの安全弁（設定時のみ伝播。未設定なら無影響）。
 	['DATABASE_URL', 'DATABASE_USERNAME', 'DATABASE_PASSWORD',
-	 'JWT_SECRET', 'JWT_COOKIE_SECURE', 'SPRING_PROFILES_ACTIVE'].each { key ->
+	 'JWT_SECRET', 'JWT_COOKIE_SECURE', 'SPRING_PROFILES_ACTIVE',
+	 'DOCKER_API_VERSION'].each { key ->
 		def value = System.getenv(key)
 		if (value != null) {
 			environment key, value
 		}
 	}
+	// Testcontainers(docker-java) は新しめの API バージョンを要求し、Docker Desktop の対応上限を
+	// 超えると /info が 400 になって "Could not find a valid Docker environment" で失敗する。
+	// docker-java が直接読む system property `api.version` で保守的な版に固定して回避する。
+	// 既定 1.44 は daemon 最小要件(1.40)以上で広く互換。新しい daemon に合わせたい場合は
+	// DOCKER_API_VERSION env で上書き可能。
+	systemProperty 'api.version', System.getenv('DOCKER_API_VERSION') ?: '1.44'
 	finalizedBy jacocoTestReport
 }
 
