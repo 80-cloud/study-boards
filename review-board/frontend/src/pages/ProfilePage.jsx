@@ -1,17 +1,23 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { fetchProfile } from '../api/profile';
+import { fetchProfile, updateMyProfile } from '../api/profile';
 import { ROLE_LABEL, EVAL_LABEL } from '../constants';
+import { useAuth } from '../context/AuthContext';
+import Avatar from '../components/Avatar';
+import ScreenshotUploader from '../components/ScreenshotUploader';
 
-// F-PROF：成長記録ページ（本アプリの主役）。投稿履歴・もらったレビュー・実績・合格バッジ。
+// F-PROF：成長記録ページ（本アプリの主役）。投稿履歴・もらったレビュー・実績・合格バッジ・継続。
 export default function ProfilePage() {
   const { id } = useParams();
+  const { user } = useAuth();
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     setLoading(true);
+    setEditing(false);
     fetchProfile(id)
       .then(setProfile)
       .catch((e) => setError(e.response?.status === 404 ? 'この成長記録は閲覧できません' : '取得に失敗しました'))
@@ -21,20 +27,36 @@ export default function ProfilePage() {
   if (loading) return <p className="p-6 text-gray-500">読み込み中…</p>;
   if (error) return <p className="p-6 text-red-600">{error}</p>;
 
-  const { displayName, role, stats, streak, posts, receivedReviews } = profile;
+  const { displayName, role, bio, avatarUrl, stats, streak, posts, receivedReviews } = profile;
+  const isOwn = user?.id === profile.userId;
 
   return (
     <main className="mx-auto max-w-3xl space-y-6 p-6">
       <header className="rounded-lg border border-gray-200 bg-white p-6">
-        <h2 className="text-xl font-bold text-gray-800">
-          {displayName}
-          <span className="ml-2 rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-500">{ROLE_LABEL[role] ?? role}</span>
-        </h2>
-        <div className="mt-4 grid grid-cols-3 gap-4 text-center">
-          <Stat label="もらったレビュー" value={stats.receivedReviewsCount} />
-          <Stat label="したレビュー" value={stats.givenReviewsCount} />
-          <Stat label="もらった🙏" value={stats.thanksReceivedCount} />
-        </div>
+        {editing ? (
+          <ProfileEditor profile={profile} onSaved={(p) => { setProfile(p); setEditing(false); }} onCancel={() => setEditing(false)} />
+        ) : (
+          <>
+            <div className="flex items-start gap-4">
+              <Avatar url={avatarUrl} name={displayName} size="lg" />
+              <div className="flex-1">
+                <h2 className="text-xl font-bold text-gray-800">
+                  {displayName}
+                  <span className="ml-2 rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-500">{ROLE_LABEL[role] ?? role}</span>
+                </h2>
+                {bio && <p className="mt-1 whitespace-pre-wrap text-sm text-gray-600">{bio}</p>}
+              </div>
+              {isOwn && (
+                <button onClick={() => setEditing(true)} className="text-sm text-blue-600 hover:underline">プロフィール編集</button>
+              )}
+            </div>
+            <div className="mt-4 grid grid-cols-3 gap-4 text-center">
+              <Stat label="もらったレビュー" value={stats.receivedReviewsCount} />
+              <Stat label="したレビュー" value={stats.givenReviewsCount} />
+              <Stat label="もらった🙏" value={stats.thanksReceivedCount} />
+            </div>
+          </>
+        )}
       </header>
 
       {streak && <StreakCard streak={streak} />}
@@ -77,6 +99,57 @@ export default function ProfilePage() {
         )}
       </section>
     </main>
+  );
+}
+
+// F-PROF（S-04）プロフィール編集：アバター差し替え＋自己紹介。本人のみ（backend が principal で限定）。
+// avatarKey は現在値を初期値に持ち、差し替え時のみ更新。bio＋avatarKey を常に送って全置換する
+// （送らないと backend が null 扱いで既存アバターを消すため）。
+function ProfileEditor({ profile, onSaved, onCancel }) {
+  const [bio, setBio] = useState(profile.bio ?? '');
+  const [avatarKey, setAvatarKey] = useState(profile.avatarKey ?? null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+
+  const save = async () => {
+    setBusy(true);
+    setErr('');
+    try {
+      const updated = await updateMyProfile({ bio: bio || null, avatarKey });
+      onSaved(updated);
+    } catch {
+      setErr('保存に失敗しました');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <h2 className="font-bold text-gray-800">プロフィール編集</h2>
+      {err && <p className="rounded bg-red-50 px-3 py-2 text-sm text-red-600">{err}</p>}
+      <div className="flex items-start gap-4">
+        <Avatar url={profile.avatarUrl} name={profile.displayName} size="lg" />
+        <div className="flex-1">
+          <p className="mb-1 text-sm text-gray-600">アバター画像（PNG/JPEG/WebP・5MB まで）</p>
+          <ScreenshotUploader initialUrl={profile.avatarUrl ?? ''} onChange={(key) => setAvatarKey(key)} />
+        </div>
+      </div>
+      <label className="block text-sm text-gray-600">自己紹介</label>
+      <textarea
+        value={bio}
+        onChange={(e) => setBio(e.target.value)}
+        rows={3}
+        maxLength={500}
+        className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+      />
+      <div className="flex gap-2">
+        <button onClick={save} disabled={busy} className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
+          {busy ? '保存中…' : '保存'}
+        </button>
+        <button onClick={onCancel} className="rounded border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">キャンセル</button>
+      </div>
+    </div>
   );
 }
 

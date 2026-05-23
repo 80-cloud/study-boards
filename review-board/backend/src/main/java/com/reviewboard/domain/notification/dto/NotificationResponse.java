@@ -13,14 +13,15 @@ public record NotificationResponse(
         NotificationType type,
         Long actorUserId,
         String actorDisplayName,
+        String actorAvatarUrl,
         Long postId,
         Long reviewId,
         boolean read,
         OffsetDateTime createdAt) {
 
-    public static NotificationResponse from(Notification n, String actorDisplayName) {
+    public static NotificationResponse from(Notification n, String actorDisplayName, String actorAvatarUrl) {
         return new NotificationResponse(
-                n.getId(), n.getType(), n.getActorUserId(), actorDisplayName,
+                n.getId(), n.getType(), n.getActorUserId(), actorDisplayName, actorAvatarUrl,
                 n.getPostId(), n.getReviewId(), n.getReadAt() != null, n.getCreatedAt());
     }
 }

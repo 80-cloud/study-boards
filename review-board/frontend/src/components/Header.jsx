@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ROLE_LABEL } from '../constants';
 import { fetchUnreadCount } from '../api/notifications';
+import Avatar from './Avatar';
 
 // F-NOTIF-01：未読通知数のポーリング間隔（WebSocket は使わない）。
 const POLL_MS = 30000;
@@ -44,9 +45,10 @@ export default function Header() {
               </span>
             )}
           </Link>
-          <span className="text-gray-600">
+          <span className="flex items-center gap-2 text-gray-600">
+            <Avatar url={user.avatarUrl} name={user.displayName} size="sm" />
             {user.displayName}
-            <span className="ml-2 rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
+            <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
               {ROLE_LABEL[user.role] ?? user.role}
             </span>
           </span>

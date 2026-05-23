@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchNotifications, markNotificationRead, markAllNotificationsRead } from '../api/notifications';
+import Avatar from '../components/Avatar';
 
 // F-NOTIF-01 通知センター（S-03）。新着順に並べ、クリックで既読化＋該当投稿へ遷移。
 const MESSAGE = {
@@ -61,6 +62,7 @@ export default function NotificationsPage() {
                 className={`flex w-full items-start gap-3 rounded-lg border p-4 text-left hover:border-blue-300 ${n.read ? 'border-gray-200 bg-white' : 'border-blue-200 bg-blue-50'}`}
               >
                 {!n.read && <span className="mt-1 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" aria-label="未読" />}
+                <Avatar url={n.actorAvatarUrl} name={n.actorDisplayName} size="sm" />
                 <span className="flex-1 text-sm text-gray-700">
                   {ICON[n.type] ?? '🔔 '}
                   {(MESSAGE[n.type]?.(n)) ?? '新しい通知があります'}

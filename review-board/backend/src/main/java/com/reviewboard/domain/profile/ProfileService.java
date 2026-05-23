@@ -40,13 +40,29 @@ public class ProfileService {
     private final PostRepository postRepository;
     private final ReviewRepository reviewRepository;
     private final EvaluationRepository evaluationRepository;
+    private final com.reviewboard.storage.StorageService storageService;
 
     public ProfileService(UserRepository userRepository, PostRepository postRepository,
-                         ReviewRepository reviewRepository, EvaluationRepository evaluationRepository) {
+                         ReviewRepository reviewRepository, EvaluationRepository evaluationRepository,
+                         com.reviewboard.storage.StorageService storageService) {
         this.userRepository = userRepository;
         this.postRepository = postRepository;
         this.reviewRepository = reviewRepository;
         this.evaluationRepository = evaluationRepository;
+        this.storageService = storageService;
+    }
+
+    /**
+     * F-PROF（S-04）プロフィール編集。★本人のみ（principal から導出するため他人は編集できない）。
+     * bio と avatarKey を更新し、更新後のプロフィールを返す。
+     */
+    @Transactional
+    public ProfileResponse updateOwnProfile(AuthPrincipal principal, String bio, String avatarKey) {
+        User me = userRepository.findById(principal.userId())
+                .orElseThrow(() -> new ResourceNotFoundException("user not found: " + principal.userId()));
+        me.setBio(bio);
+        me.setAvatarKey(avatarKey);
+        return getProfile(principal, principal.userId());
     }
 
     @Transactional(readOnly = true)
@@ -100,6 +116,7 @@ public class ProfileService {
 
         return new ProfileResponse(
                 target.getId(), target.getDisplayName(), target.getRole(), target.getBio(),
+                target.getAvatarKey(), storageService.presignedGetUrl(target.getAvatarKey()),
                 stats, streak, postEntries, received);
     }
 }
