@@ -16,6 +16,10 @@ import com.reviewboard.domain.user.UserRole;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -28,6 +32,9 @@ import java.util.stream.Collectors;
  */
 @Service
 public class ProfileService {
+
+    /** 「活動日」を判定するタイムゾーン。利用者は日本の受講生のため JST 固定（§1-6）。 */
+    private static final ZoneId DISPLAY_ZONE = ZoneId.of("Asia/Tokyo");
 
     private final UserRepository userRepository;
     private final PostRepository postRepository;
@@ -83,8 +90,16 @@ public class ProfileService {
                 target.getReceivedReviewsCount(), target.getGivenReviewsCount(),
                 target.getThanksReceivedCount());
 
+        // F-STREAK-01：活動日 = 投稿した日 ＋ レビューを実施した日（本人視点）。
+        List<Review> givenReviews = reviewRepository.findByReviewerUserIdAndDeletedAtIsNull(userId);
+        List<OffsetDateTime> activities = new ArrayList<>();
+        posts.forEach(p -> activities.add(p.getCreatedAt()));
+        givenReviews.forEach(r -> activities.add(r.getCreatedAt()));
+        ProfileResponse.Streak streak = StreakCalculator.compute(
+                activities, LocalDate.now(DISPLAY_ZONE), DISPLAY_ZONE);
+
         return new ProfileResponse(
                 target.getId(), target.getDisplayName(), target.getRole(), target.getBio(),
-                stats, postEntries, received);
+                stats, streak, postEntries, received);
     }
 }
