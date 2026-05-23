@@ -1,8 +1,15 @@
 import client from './client';
 
-// F-POST-03 一覧（同 cohort・ページネーション）。Spring の Slice 形（content[]）を返す。
-export const fetchPosts = (page = 0, size = 20) =>
-  client.get('/posts', { params: { page, size } }).then((r) => r.data);
+// F-POST-03 一覧 ＋ F-SEARCH-01 検索 ＋ F-FILTER-01 絞り込み/並び替え。
+// opts: { q, status, unreviewed, sort }（すべて任意）。Spring の Slice 形（content[]）を返す。
+export const fetchPosts = (opts = {}, page = 0, size = 20) => {
+  const params = { page, size };
+  if (opts.q) params.q = opts.q;
+  if (opts.status) params.status = opts.status;
+  if (opts.unreviewed) params.unreviewed = true;
+  if (opts.sort) params.sort = opts.sort;
+  return client.get('/posts', { params }).then((r) => r.data);
+};
 
 // F-POST-03 単体取得
 export const fetchPost = (id) => client.get(`/posts/${id}`).then((r) => r.data);

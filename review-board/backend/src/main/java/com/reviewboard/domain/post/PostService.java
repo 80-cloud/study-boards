@@ -7,8 +7,10 @@ import com.reviewboard.domain.audit.AuditTargetType;
 import com.reviewboard.domain.auth.AuthPrincipal;
 import com.reviewboard.domain.post.dto.PostCreateRequest;
 import com.reviewboard.domain.post.dto.PostUpdateRequest;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,10 +60,24 @@ public class PostService {
                 .orElseThrow(() -> new ResourceNotFoundException("post not found: " + postId));
     }
 
-    /** F-POST-03 一覧。自 cohort かつ未削除のみ。ページネーション（母 P-2）。 */
+    /**
+     * F-POST-03 一覧 ＋ F-SEARCH-01 検索 ＋ F-FILTER-01 絞り込み/並び替え。
+     * 自 cohort・未削除のみ（IDOR 遮断は Repository クエリで常時担保）。ページネーション（母 P-2）。
+     *
+     * @param q             キーワード（タイトル/説明の部分一致。空/ null は無視）
+     * @param status        募集状態フィルタ（null は無視）
+     * @param unreviewedOnly 未レビュー（review_count=0）のみに絞る
+     * @param sort          並び順："reviews"（レビュー数降順）／それ以外は新着降順
+     */
     @Transactional(readOnly = true)
-    public Slice<Post> listForCohort(AuthPrincipal principal, Pageable pageable) {
-        return postRepository.findByCohortIdAndDeletedAtIsNull(principal.cohortId(), pageable);
+    public Slice<Post> search(AuthPrincipal principal, String q, RecruitStatus status,
+                              boolean unreviewedOnly, String sort, Pageable pageable) {
+        String keyword = (q == null || q.isBlank()) ? null : q.trim();
+        Sort order = "reviews".equals(sort)
+                ? Sort.by(Sort.Direction.DESC, "reviewCount").and(Sort.by(Sort.Direction.DESC, "createdAt"))
+                : Sort.by(Sort.Direction.DESC, "createdAt");
+        Pageable sorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), order);
+        return postRepository.search(principal.cohortId(), keyword, status, unreviewedOnly, sorted);
     }
 
     /** F-POST-02 編集。所有者のみ（不一致・他 cohort・削除済みは 404）。 */

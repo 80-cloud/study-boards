@@ -46,11 +46,19 @@ public class PostController {
                 .body(toResponse(post));
     }
 
-    /** F-POST-03 一覧（同 cohort・未削除・ページネーション） */
+    /**
+     * F-POST-03 一覧 ＋ F-SEARCH-01 検索 ＋ F-FILTER-01 絞り込み/並び替え（同 cohort・未削除）。
+     * すべて任意パラメータ。未指定なら従来どおり新着降順の全件（cohort 内）。
+     */
     @GetMapping
     public Slice<PostSummaryResponse> list(@AuthenticationPrincipal AuthPrincipal principal,
+                                           @RequestParam(required = false) String q,
+                                           @RequestParam(required = false) RecruitStatus status,
+                                           @RequestParam(defaultValue = "false") boolean unreviewed,
+                                           @RequestParam(defaultValue = "newest") String sort,
                                            @PageableDefault(size = 20) Pageable pageable) {
-        return postService.listForCohort(principal, pageable).map(PostSummaryResponse::from);
+        return postService.search(principal, q, status, unreviewed, sort, pageable)
+                .map(PostSummaryResponse::from);
     }
 
     /** F-POST-03 単体取得 */
