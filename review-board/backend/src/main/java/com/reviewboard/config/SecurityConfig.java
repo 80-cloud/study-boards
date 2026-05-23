@@ -38,12 +38,25 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtFilter,
-                                           MdcLoggingFilter mdcFilter) throws Exception {
+                                           MdcLoggingFilter mdcFilter,
+                                           @org.springframework.beans.factory.annotation.Value(
+                                                   "${app.embedding.frame-ancestors:'none'}")
+                                           String frameAncestors) throws Exception {
         http
             .cors(Customizer.withDefaults())
             // JWT in HttpOnly Cookie + SameSite=Strict 方式。CSRF は SameSite で緩和する
             // （ステートレス API のため CSRF トークンは持たない。テスト計画書 §7）。
             .csrf(csrf -> csrf.disable())
+            // 組み込み(モデルB)の継ぎ目：既定は現状どおり frame 拒否（X-Frame-Options: DENY）。
+            // app.embedding.frame-ancestors に顧客オリジンを設定したときだけ、X-Frame-Options を外し
+            // CSP frame-ancestors で許可オリジンに限定して iframe 埋め込みを解放する。
+            .headers(h -> {
+                if (!isFramingLocked(frameAncestors)) {
+                    h.frameOptions(fo -> fo.disable())
+                     .contentSecurityPolicy(csp -> csp.policyDirectives("frame-ancestors " + frameAncestors));
+                }
+                // ロック時（既定）は Spring 既定の X-Frame-Options: DENY をそのまま維持する。
+            })
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 // health は監視プローブ用に開放（liveness/readiness）。
@@ -64,6 +77,15 @@ public class SecurityConfig {
             // jwt の後段で MDC に requestId/userId を載せる（SecurityContext 確立後）。
             .addFilterAfter(mdcFilter, JwtAuthenticationFilter.class);
         return http.build();
+    }
+
+    /** frame-ancestors が未設定または {@code 'none'} なら「埋め込み拒否（現状維持）」とみなす。 */
+    private boolean isFramingLocked(String frameAncestors) {
+        if (frameAncestors == null) {
+            return true;
+        }
+        String v = frameAncestors.trim();
+        return v.isEmpty() || v.equals("'none'") || v.equalsIgnoreCase("none");
     }
 
     private void writeError(jakarta.servlet.http.HttpServletResponse res, HttpStatus status,

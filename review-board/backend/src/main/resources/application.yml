@@ -56,8 +56,20 @@ app:
     access-ttl-seconds: 900       # 15 分（短命 access）
     refresh-ttl-seconds: 1209600  # 14 日（refresh、DB rotation）
     cookie-secure: ${JWT_COOKIE_SECURE:false}
+  # 認証の継ぎ目（外部連携A/組み込みB）。既定 false＝Cookie 認証のみ（現状と同一）。
+  # ON で Authorization: Bearer ヘッダ認証も受理（公開API/M2M/widget 向け）。
+  auth:
+    bearer-enabled: ${AUTH_BEARER_ENABLED:false}
+  # 組み込みの継ぎ目（モデルB）。既定 'none'＝iframe 拒否（X-Frame-Options: DENY 維持）。
+  # 顧客オリジンを設定すると CSP frame-ancestors で限定的に埋め込みを解放する。
+  embedding:
+    frame-ancestors: ${EMBEDDING_FRAME_ANCESTORS:'none'}
   cors:
+    # 単一オリジン（後方互換）。複数許可は allowed-origins（カンマ区切り）を使う。
     allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:5175}
+    # 連携/組み込みの継ぎ目：顧客オリジンを増やす場合はここにカンマ区切りで列挙。
+    # 未指定時は allowed-origin にフォールバック（既定は単一オリジンのまま）。
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:${CORS_ALLOWED_ORIGIN:http://localhost:5175}}
   storage:
     s3:
       endpoint: ${S3_ENDPOINT:http://localhost:9002}
