@@ -1,14 +1,33 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AXES } from '../constants';
 import { createReview } from '../api/reviews';
+import { useDraft } from '../hooks/useDraft';
+import DraftNotice from './DraftNotice';
 
 // F-REV-01：良かった点・改善提案は必須、観点別コメント（4軸）は任意。
+// F-DRAFT-01：入力を localStorage に自動保存（postId 単位）し、再訪時に復元する。
 export default function ReviewForm({ postId, onCreated }) {
   const [good, setGood] = useState('');
   const [improvement, setImprovement] = useState('');
   const [axis, setAxis] = useState({});
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // 下書き：postId 単位で分離（投稿ごとにレビュー下書きを保持）。
+  const { restored, save, clear } = useDraft(`review-${postId}`, (d) => {
+    if (d.good != null) setGood(d.good);
+    if (d.improvement != null) setImprovement(d.improvement);
+    if (d.axis) setAxis(d.axis);
+  });
+  const dirty = !!(good || improvement || Object.values(axis).some((v) => v?.trim()));
+  useEffect(() => { if (dirty) save({ good, improvement, axis }); }, [good, improvement, axis, dirty, save]);
+
+  const discardDraft = () => {
+    clear();
+    setGood('');
+    setImprovement('');
+    setAxis({});
+  };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -23,6 +42,7 @@ export default function ReviewForm({ postId, onCreated }) {
       setGood('');
       setImprovement('');
       setAxis({});
+      clear(); // 投稿成功で下書きは不要
       onCreated?.(created);
     } catch (err) {
       const s = err.response?.status;
@@ -37,6 +57,7 @@ export default function ReviewForm({ postId, onCreated }) {
   return (
     <form onSubmit={submit} className="rounded-lg border border-gray-200 bg-white p-4">
       <h3 className="mb-3 font-medium text-gray-800">レビューを書く</h3>
+      {restored && <DraftNotice onDiscard={discardDraft} />}
       {error && <p className="mb-3 rounded bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
       <label className="mb-1 block text-sm text-gray-600">✅ 良かった点（必須）</label>
       <textarea
