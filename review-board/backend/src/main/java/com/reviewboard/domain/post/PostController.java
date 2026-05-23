@@ -1,6 +1,7 @@
 package com.reviewboard.domain.post;
 
 import com.reviewboard.domain.auth.AuthPrincipal;
+import com.reviewboard.domain.post.dto.BestReviewRequest;
 import com.reviewboard.domain.post.dto.PostCreateRequest;
 import com.reviewboard.domain.post.dto.PostResponse;
 import com.reviewboard.domain.post.dto.PostSummaryResponse;
@@ -82,5 +83,13 @@ public class PostController {
                                        @PathVariable Long id) {
         postService.delete(principal, id);
         return ResponseEntity.noContent().build();
+    }
+
+    /** F-REV-05 ベストレビュー選択（投稿者のみ・他人は 404） */
+    @PutMapping("/{id}/best-review")
+    public PostResponse selectBestReview(@AuthenticationPrincipal AuthPrincipal principal,
+                                         @PathVariable Long id,
+                                         @Valid @RequestBody BestReviewRequest request) {
+        return toResponse(postService.selectBestReview(principal, id, request.reviewId()));
     }
 }
