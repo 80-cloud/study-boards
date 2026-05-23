@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchPost, updatePost } from '../api/posts';
 import ScreenshotUploader from '../components/ScreenshotUploader';
+import ReviewPrefFields from '../components/ReviewPrefFields';
 
 // F-POST-02 投稿の編集（所有者のみ。非所有者は backend が 404）。
 export default function PostEditPage() {
@@ -22,6 +23,8 @@ export default function PostEditPage() {
           demoUrl: p.demoUrl ?? '',
           // 未変更なら既存 key を維持。差し替え時に Uploader が新 key を入れる。
           screenshotKey: p.screenshotKey ?? null,
+          reviewTone: p.reviewTone ?? null,
+          reviewAspects: p.reviewAspects ?? [],
         });
         setScreenshotUrl(p.screenshotUrl ?? '');
       })
@@ -41,6 +44,8 @@ export default function PostEditPage() {
         repoUrl: form.repoUrl || null,
         demoUrl: form.demoUrl || null,
         screenshotKey: form.screenshotKey || null,
+        reviewTone: form.reviewTone,
+        reviewAspects: form.reviewAspects,
       });
       navigate(`/posts/${id}`, { replace: true });
     } catch (err) {
@@ -67,6 +72,12 @@ export default function PostEditPage() {
         <label className="mb-1 block text-sm text-gray-600">デモ URL（任意）</label>
         <input type="url" value={form.demoUrl} onChange={set('demoUrl')} className="mb-4 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" />
         <ScreenshotUploader initialUrl={screenshotUrl} onChange={(key) => setForm((p) => ({ ...p, screenshotKey: key }))} />
+        <ReviewPrefFields
+          tone={form.reviewTone}
+          aspects={form.reviewAspects}
+          onToneChange={(v) => setForm((p) => ({ ...p, reviewTone: v }))}
+          onAspectsChange={(v) => setForm((p) => ({ ...p, reviewAspects: v }))}
+        />
         <div className="flex gap-3">
           <button type="submit" disabled={busy} className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
             {busy ? '更新中…' : '更新する'}
