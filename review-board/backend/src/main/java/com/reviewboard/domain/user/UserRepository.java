@@ -9,6 +9,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByEmail(String email);
 
+    /** アカウント発行時の重複チェック（email は unique）。 */
+    boolean existsByEmail(String email);
+
+    /** 初期管理者 bootstrap の冪等判定（ADMIN が既に居れば作成しない）。 */
+    boolean existsByRole(UserRole role);
+
     /** cohort 境界での取得（IDOR 防止。プロフィール閲覧は同 cohort のみ） */
     Optional<User> findByIdAndCohortId(Long id, Long cohortId);
 
