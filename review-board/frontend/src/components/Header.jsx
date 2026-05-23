@@ -38,7 +38,7 @@ export default function Header() {
       {user && (
         <div className="flex items-center gap-4 text-sm">
           <Link to="/notifications" className="relative text-gray-600 hover:text-gray-900" aria-label={`通知${unread > 0 ? `（未読 ${unread} 件）` : ''}`}>
-            <span className="text-lg">🔔</span>
+            <span className="relative top-1 inline-block text-xl leading-none">🔔</span>
             {unread > 0 && (
               <span className="absolute -right-2 -top-1 rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">
                 {unread > 99 ? '99+' : unread}
