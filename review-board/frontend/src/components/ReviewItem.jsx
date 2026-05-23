@@ -5,7 +5,7 @@ import { sendThanks, updateReview, deleteReview } from '../api/reviews';
 
 // 1 件のレビュー表示。講師レビューは特別表示（F-REV-02）。
 // 投稿者には「ありがとう」（F-REV-03）、レビュー所有者には編集/削除を出す（権限は backend が判定）。
-export default function ReviewItem({ review, canThank, isOwner, onChanged }) {
+export default function ReviewItem({ review, canThank, isOwner, isBest, canSelectBest, onSelectBest, onChanged }) {
   const [thanks, setThanks] = useState(review.thanksCount);
   const [thanked, setThanked] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -52,13 +52,16 @@ export default function ReviewItem({ review, canThank, isOwner, onChanged }) {
   };
 
   return (
-    <li className={`rounded-lg border p-4 ${review.teacherReview ? 'border-amber-300 bg-amber-50' : 'border-gray-200 bg-white'}`}>
+    <li className={`rounded-lg border p-4 ${isBest ? 'border-yellow-400 bg-yellow-50' : review.teacherReview ? 'border-amber-300 bg-amber-50' : 'border-gray-200 bg-white'}`}>
       <div className="mb-2 flex items-center gap-2 text-sm">
         <Link to={`/users/${review.reviewerUserId}/profile`} className="font-medium text-gray-800 hover:underline">
           {review.reviewerDisplayName}
         </Link>
         {review.teacherReview && (
           <span className="rounded bg-amber-200 px-2 py-0.5 text-xs text-amber-800">講師レビュー</span>
+        )}
+        {isBest && (
+          <span className="rounded bg-yellow-300 px-2 py-0.5 text-xs font-medium text-yellow-900">⭐ ベストレビュー</span>
         )}
       </div>
 
@@ -99,6 +102,12 @@ export default function ReviewItem({ review, canThank, isOwner, onChanged }) {
             <button onClick={() => setEditing(true)} className="text-blue-600 hover:underline">編集</button>
             <button onClick={remove} disabled={busy} className="text-red-500 hover:underline disabled:opacity-50">削除</button>
           </>
+        )}
+        {/* F-REV-05：投稿者だけが、まだベストでないレビューを選べる */}
+        {canSelectBest && !isBest && (
+          <button onClick={() => onSelectBest?.(review.id)} className="text-yellow-700 hover:underline">
+            ⭐ ベストに選ぶ
+          </button>
         )}
       </div>
     </li>

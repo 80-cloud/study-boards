@@ -22,3 +22,7 @@ export const updatePost = (id, data) => client.put(`/posts/${id}`, data).then((r
 
 // F-POST-02 論理削除（所有者のみ）
 export const deletePost = (id) => client.delete(`/posts/${id}`);
+
+// F-REV-05 ベストレビュー選択（投稿者のみ・backend が非所有者を 404）
+export const selectBestReview = (postId, reviewId) =>
+  client.put(`/posts/${postId}/best-review`, { reviewId }).then((r) => r.data);

@@ -52,6 +52,10 @@ public class Post {
     @Column(name = "review_count", nullable = false)
     private int reviewCount = 0;
 
+    /** F-REV-05 ベストレビュー：投稿者が選んだ最も役立ったレビューの ID（未選択は null）。 */
+    @Column(name = "best_review_id")
+    private Long bestReviewId;
+
     @Column(name = "deleted_at")
     private OffsetDateTime deletedAt;
 

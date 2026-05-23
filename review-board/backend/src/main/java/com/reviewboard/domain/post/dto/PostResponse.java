@@ -20,6 +20,7 @@ public record PostResponse(
         String screenshotUrl,
         RecruitStatus recruitStatus,
         int reviewCount,
+        Long bestReviewId,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt) {
 
@@ -32,6 +33,6 @@ public record PostResponse(
                 p.getId(), p.getAuthorUserId(), p.getCohortId(),
                 p.getTitle(), p.getDescription(), p.getRepoUrl(), p.getDemoUrl(),
                 p.getScreenshotKey(), screenshotUrl, p.getRecruitStatus(), p.getReviewCount(),
-                p.getCreatedAt(), p.getUpdatedAt());
+                p.getBestReviewId(), p.getCreatedAt(), p.getUpdatedAt());
     }
 }

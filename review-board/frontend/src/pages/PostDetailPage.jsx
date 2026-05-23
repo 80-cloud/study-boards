@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { fetchPost, deletePost } from '../api/posts';
+import { fetchPost, deletePost, selectBestReview } from '../api/posts';
 import { fetchReviews } from '../api/reviews';
 import { fetchEvaluation } from '../api/evaluations';
 import { useAuth } from '../context/AuthContext';
@@ -49,6 +49,16 @@ export default function PostDetailPage() {
     }
   };
 
+  // F-REV-05 ベストレビュー選択（投稿者のみ）。成功したら投稿を再取得してバッジを反映。
+  const chooseBest = async (reviewId) => {
+    try {
+      const updated = await selectBestReview(post.id, reviewId);
+      setPost(updated);
+    } catch {
+      setError('ベストレビューの選択に失敗しました');
+    }
+  };
+
   return (
     <main className="mx-auto max-w-3xl space-y-6 p-6">
       <Link to="/" className="text-sm text-blue-600 hover:underline">← 一覧へ</Link>
@@ -87,6 +97,9 @@ export default function PostDetailPage() {
                 review={r}
                 canThank={isAuthor}
                 isOwner={user?.id === r.reviewerUserId}
+                isBest={post.bestReviewId === r.id}
+                canSelectBest={isAuthor}
+                onSelectBest={chooseBest}
                 onChanged={loadReviews}
               />
             ))}

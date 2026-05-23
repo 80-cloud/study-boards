@@ -1,5 +1,6 @@
 package com.reviewboard.domain.post;
 
+import com.reviewboard.common.InvalidRequestException;
 import com.reviewboard.common.ResourceNotFoundException;
 import com.reviewboard.domain.audit.AuditAction;
 import com.reviewboard.domain.audit.AuditService;
@@ -7,6 +8,8 @@ import com.reviewboard.domain.audit.AuditTargetType;
 import com.reviewboard.domain.auth.AuthPrincipal;
 import com.reviewboard.domain.post.dto.PostCreateRequest;
 import com.reviewboard.domain.post.dto.PostUpdateRequest;
+import com.reviewboard.domain.review.Review;
+import com.reviewboard.domain.review.ReviewRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -26,10 +29,13 @@ import java.time.OffsetDateTime;
 public class PostService {
 
     private final PostRepository postRepository;
+    private final ReviewRepository reviewRepository;
     private final AuditService auditService;
 
-    public PostService(PostRepository postRepository, AuditService auditService) {
+    public PostService(PostRepository postRepository, ReviewRepository reviewRepository,
+                       AuditService auditService) {
         this.postRepository = postRepository;
+        this.reviewRepository = reviewRepository;
         this.auditService = auditService;
     }
 
@@ -91,6 +97,23 @@ public class PostService {
         post.setScreenshotKey(req.screenshotKey());
         post.setUpdatedAt(OffsetDateTime.now());
         auditService.record(principal, AuditAction.POST_UPDATED, AuditTargetType.POST, postId);
+        return post;
+    }
+
+    /**
+     * F-REV-05 ベストレビュー選択。★投稿者のみ（loadOwned で 404）。
+     * 指定レビューが当該投稿の未削除レビューであることを検証（他投稿/削除済みは弾く）。
+     */
+    @Transactional
+    public Post selectBestReview(AuthPrincipal principal, Long postId, Long reviewId) {
+        Post post = loadOwned(principal, postId);
+        Review review = reviewRepository.findByIdAndDeletedAtIsNull(reviewId)
+                .orElseThrow(() -> new ResourceNotFoundException("review not found: " + reviewId));
+        if (!review.getPostId().equals(postId)) {
+            throw new InvalidRequestException("そのレビューはこの投稿のものではありません");
+        }
+        post.setBestReviewId(reviewId);
+        post.setUpdatedAt(OffsetDateTime.now());
         return post;
     }
 
