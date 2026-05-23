@@ -8,6 +8,7 @@ import com.reviewboard.domain.cohort.CohortRepository;
 import com.reviewboard.domain.evaluation.EvaluationRepository;
 import com.reviewboard.domain.post.PostRepository;
 import com.reviewboard.domain.review.ReviewAxisCommentRepository;
+import com.reviewboard.domain.review.ReviewReplyRepository;
 import com.reviewboard.domain.review.ReviewRepository;
 import com.reviewboard.domain.review.ThanksRepository;
 import com.reviewboard.domain.user.User;
@@ -82,6 +83,7 @@ public abstract class AbstractIntegrationTest {
     @Autowired protected ReviewRepository reviewRepository;
     @Autowired protected ReviewAxisCommentRepository axisCommentRepository;
     @Autowired protected ThanksRepository thanksRepository;
+    @Autowired protected ReviewReplyRepository replyRepository;
     @Autowired protected EvaluationRepository evaluationRepository;
     @Autowired protected AuditLogRepository auditLogRepository;
     @Autowired protected RefreshTokenRepository refreshTokenRepository;
@@ -91,6 +93,7 @@ public abstract class AbstractIntegrationTest {
     @BeforeEach
     void cleanDatabase() {
         auditLogRepository.deleteAll();
+        replyRepository.deleteAll();
         thanksRepository.deleteAll();
         axisCommentRepository.deleteAll();
         evaluationRepository.deleteAll();
