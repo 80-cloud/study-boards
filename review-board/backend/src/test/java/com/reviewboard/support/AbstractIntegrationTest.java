@@ -6,6 +6,7 @@ import com.reviewboard.domain.auth.RefreshTokenRepository;
 import com.reviewboard.domain.cohort.Cohort;
 import com.reviewboard.domain.cohort.CohortRepository;
 import com.reviewboard.domain.evaluation.EvaluationRepository;
+import com.reviewboard.domain.notification.NotificationRepository;
 import com.reviewboard.domain.post.PostRepository;
 import com.reviewboard.domain.review.ReviewAxisCommentRepository;
 import com.reviewboard.domain.review.ReviewReplyRepository;
@@ -85,6 +86,7 @@ public abstract class AbstractIntegrationTest {
     @Autowired protected ThanksRepository thanksRepository;
     @Autowired protected ReviewReplyRepository replyRepository;
     @Autowired protected EvaluationRepository evaluationRepository;
+    @Autowired protected NotificationRepository notificationRepository;
     @Autowired protected AuditLogRepository auditLogRepository;
     @Autowired protected RefreshTokenRepository refreshTokenRepository;
     @Autowired protected org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
@@ -93,6 +95,7 @@ public abstract class AbstractIntegrationTest {
     @BeforeEach
     void cleanDatabase() {
         auditLogRepository.deleteAll();
+        notificationRepository.deleteAll();
         replyRepository.deleteAll();
         thanksRepository.deleteAll();
         axisCommentRepository.deleteAll();

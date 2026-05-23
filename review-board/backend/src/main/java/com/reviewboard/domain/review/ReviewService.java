@@ -6,6 +6,8 @@ import com.reviewboard.domain.audit.AuditAction;
 import com.reviewboard.domain.audit.AuditService;
 import com.reviewboard.domain.audit.AuditTargetType;
 import com.reviewboard.domain.auth.AuthPrincipal;
+import com.reviewboard.domain.notification.NotificationService;
+import com.reviewboard.domain.notification.NotificationType;
 import com.reviewboard.domain.post.Post;
 import com.reviewboard.domain.post.PostRepository;
 import com.reviewboard.domain.review.dto.ReplyResponse;
@@ -39,6 +41,7 @@ public class ReviewService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final AuditService auditService;
+    private final NotificationService notificationService;
 
     public ReviewService(ReviewRepository reviewRepository,
                          ReviewAxisCommentRepository axisCommentRepository,
@@ -46,7 +49,8 @@ public class ReviewService {
                          ReviewReplyRepository replyRepository,
                          PostRepository postRepository,
                          UserRepository userRepository,
-                         AuditService auditService) {
+                         AuditService auditService,
+                         NotificationService notificationService) {
         this.reviewRepository = reviewRepository;
         this.axisCommentRepository = axisCommentRepository;
         this.thanksRepository = thanksRepository;
@@ -54,6 +58,7 @@ public class ReviewService {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.auditService = auditService;
+        this.notificationService = notificationService;
     }
 
     /** F-REV-01 作成。同 cohort の投稿のみ・自己レビュー禁止。 */
@@ -81,6 +86,10 @@ public class ReviewService {
         adjustCount(post.getAuthorUserId(), +1, 0);        // author の「もらったレビュー」
 
         auditService.record(principal, AuditAction.REVIEW_CREATED, AuditTargetType.REVIEW, review.getId());
+
+        // F-NOTIF-01：投稿者へ「レビューが付いた」通知（自己レビューは上で弾いている）
+        notificationService.notify(post.getAuthorUserId(), principal.userId(),
+                NotificationType.REVIEW_RECEIVED, postId, review.getId());
 
         User reviewer = userRepository.findById(principal.userId()).orElseThrow();
         return ReviewResponse.from(review, reviewer.getDisplayName(), reviewer.getRole(), axisComments);
@@ -165,6 +174,10 @@ public class ReviewService {
         review.setThanksCount(review.getThanksCount() + 1);
         adjustThanksReceived(review.getReviewerUserId(), +1);
         auditService.record(principal, AuditAction.THANKS_SENT, AuditTargetType.REVIEW, reviewId);
+
+        // F-NOTIF-01：レビュアーへ「ありがとうが付いた」通知（自己通知は notify がスキップ）
+        notificationService.notify(review.getReviewerUserId(), principal.userId(),
+                NotificationType.THANKS_RECEIVED, review.getPostId(), reviewId);
     }
 
     /**
