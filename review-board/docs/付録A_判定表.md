@@ -33,7 +33,7 @@
 | 要件ID | 区分 | 判定 | 根拠・備考 |
 |---|---|---|---|
 | S-1 可用性目標 | MUST | A | 要件 §2-1「当面実運用しない／SLA を定めない」と明記（母 S-1 は学習用の明記で可） |
-| S-2 冗長化≠スケーリング設計 | MUST | 対象外（簡素化） | Phase1 はローカル単体・AWS 未デプロイ。区別は認識済だが実装なし。**Phase3 デプロイ時に A 化** |
+| S-2 冗長化≠スケーリング設計 | MUST | 対象外（簡素化） | #133 で IaC 作成済（**未 apply**）。Single-AZ は無料枠の意図的選択で、冗長化（Multi-AZ/ALB+複数EC2）≠スケーリングの区別はインフラ構成.md §10 に設計済。**実 apply で冗長化を有効化した時点で A 化** |
 | S-3 非正規化カウンタ同一TX＋再計算 | A | 同一 TX 更新（`ReviewService`）に加え、#129 で**定期再計算バッチ**（`ReconciliationService`・毎日 04:00）を実装。権威ソース（実テーブル件数）から review_count/thanks_count/received/given/thanks_received を再計算し drift を補正・WARN ログ。Testcontainers で補正を回帰検証 |
 | S-4 ソフトデリート | SHOULD | A | `Post.deletedAt`・`Review.deletedAt` で論理削除。取得は `...DeletedAtIsNull` |
 | S-5 Flyway＋後方互換 | MUST | A | Flyway `V1__init.sql` でスキーマ管理。Expand/Contract は本番移行時 |
@@ -76,7 +76,7 @@
 | M-11 抽象化で交換可能 | SHOULD | N/A | S3/MinIO は AWS SDK 直利用。抽象化層は本実装時に検討 |
 | M-12 AI レビューは補完＋型 | MUST | A | `claude-code-review.yml`＋Java の静的型 |
 | M-13 UI 変更は実ブラウザ検証 | MUST | A | フロント実装済（#110〜#116）。Chrome DevTools で「ログイン→投稿→レビュー→評価→成長記録」通し e2e をコンソールエラー 0 で実証 |
-| M-14 IaC | SHOULD | N/A | 未デプロイ。インフラは別 PJ で管理 |
+| M-14 IaC | SHOULD | A | #133 で `review-board/infra/` に Terraform 一式（VPC/EC2/RDS/S3/IAM/SSM/Budgets）。fmt/validate/tflint/tfsec クリーン（ignore は理由付き）。インフラを IaC で管理する実体が存在（apply は承認後） |
 | M-15 コンテナ化 | SHOULD | A | `docker-compose.yml`（PostgreSQL 5434・MinIO） |
 
 ### 1-4. 性能・UX
