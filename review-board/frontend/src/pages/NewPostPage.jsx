@@ -61,7 +61,7 @@ export default function NewPostPage() {
         {error && <p className="mb-3 rounded bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
         <label className="mb-1 block text-sm text-gray-600">タイトル（必須）</label>
         <input required value={form.title} onChange={set('title')} className="mb-4 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" />
-        <label className="mb-1 block text-sm text-gray-600">説明（必須）</label>
+        <label className="mb-1 block text-sm text-gray-600">説明（必須）<span className="text-xs text-gray-400">・マークダウン可</span></label>
         <textarea required value={form.description} onChange={set('description')} rows={4} className="mb-4 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" />
         <label className="mb-1 block text-sm text-gray-600">リポジトリ URL（任意）</label>
         <input type="url" value={form.repoUrl} onChange={set('repoUrl')} className="mb-4 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" />

@@ -56,7 +56,7 @@ export default function ReviewForm({ postId, onCreated }) {
 
   return (
     <form onSubmit={submit} className="rounded-lg border border-gray-200 bg-white p-4">
-      <h3 className="mb-3 font-medium text-gray-800">レビューを書く</h3>
+      <h3 className="mb-3 font-medium text-gray-800">レビューを書く <span className="text-xs font-normal text-gray-400">（マークダウン記法が使えます）</span></h3>
       {restored && <DraftNotice onDiscard={discardDraft} />}
       {error && <p className="mb-3 rounded bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
       <label className="mb-1 block text-sm text-gray-600">✅ 良かった点（必須）</label>
