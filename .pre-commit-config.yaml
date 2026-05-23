@@ -1,0 +1,45 @@
+# ============================================
+# .pre-commit-config.yaml — ローカル commit 時の機密情報ブロック
+# ============================================
+# 目的: パスワード・API キー・トークン等の誤コミットを commit 時点で自動ブロック。
+# 経緯: task-board で application.yml に DB パスワードを平文ハードコードして Public
+#       リポジトリに push した不可逆事故が発生。再発防止の第一防衛線（最後の砦は
+#       .github/workflows/review-board-gitleaks.yml の server-side スキャン）。
+#
+# 導入手順（任意・各開発者のローカル）:
+#   1. brew install pre-commit gitleaks
+#   2. pre-commit install        # リポジトリにフックを登録
+#   3. 以後、git commit 時に自動でスキャンが走る
+#
+# 緊急時の脱出口（誤検知の場合のみ・通常は使わない）:
+#   git commit --no-verify       # フックをバイパス（bypass 内容は別途レビュー必須）
+#
+# 設定: 機密検知ルールはリポジトリルートの .gitleaks.toml を参照。
+# CLAUDE.md §12-4 デプロイ前監査チェックリストと連動。
+# ============================================
+
+repos:
+  # gitleaks: 機密情報スキャン（staged 差分・.gitleaks.toml 準拠）
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks
+        name: gitleaks（機密情報スキャン）
+        description: パスワード・API キー・トークン等の誤コミットを検知
+
+  # 標準的なファイルチェック
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        name: 行末空白の削除
+      - id: end-of-file-fixer
+        name: ファイル末尾の改行確認
+      - id: check-yaml
+        name: YAML 構文チェック
+        args: ['--allow-multiple-documents']
+      - id: check-merge-conflict
+        name: マージコンフリクトマーカーの検知
+      - id: check-added-large-files
+        name: 大きすぎるファイルの検知
+        args: ['--maxkb=500']

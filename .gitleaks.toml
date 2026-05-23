@@ -1,0 +1,107 @@
+# ============================================
+# .gitleaks.toml — gitleaks カスタムルール（hideharu-AI monorepo）
+# ============================================
+# 目的: gitleaks のデフォルトルールはエントロピーベースのため、低エントロピー secret
+#       （弱パスワード・短い単語・デフォルト値）を検知できない。これは task-board で
+#       起きた平文パスワード Public 流出事故（`password: taskboard` 同型）が再発しうる
+#       ことを意味する。本ファイルは低エントロピーパターンを追加検知する。
+#
+# 動作:
+#   - gitleaks がリポジトリルートの .gitleaks.toml を自動読み込み
+#   - extend.useDefault = true でデフォルトルールも維持
+#   - common-password-pattern ルールでキーワードベース検知を追加
+#   - allowlist で env 参照・テンプレ値・ローカル開発専用の既知 dev 値を除外
+#
+# 関連:
+#   - .pre-commit-config.yaml: ローカル commit 時に発火
+#   - .github/workflows/gitleaks.yml: server-side（push / PR）発火 ← 最後の防衛線
+#   - 出所: recipe-board の実績設定を本 monorepo 向けに移植（Issue #166）
+# ============================================
+
+[extend]
+useDefault = true
+
+# ============================================
+# カスタムルール: 低エントロピーパスワード検知
+# ============================================
+[[rules]]
+id = "common-password-pattern"
+description = "Low-entropy secret assigned as a QUOTED string literal (e.g. `password: \"taskboard\"`). Targets the task-board plaintext-credential incident class without matching code identifiers (`= var;`) or env refs (`${VAR}`)."
+# 値が「引用符で囲まれたリテラル」の場合のみ検知。
+#  ✅ password: "taskboard" / api_key = 'abc123'        ← 平文 secret リテラル
+#  ❌ String token = readAccessCookie(request);          ← 引用符なし（コード識別子）
+#  ❌ this.seedPassword = seedPassword;                  ← 引用符なし
+#  ❌ password: ${DB_PASSWORD}                            ← env 参照（allowlist でも除外）
+# 値先頭の [^"'$] で env 参照 ${...} を除外、{3,} で極端に短い値を除外。
+regex = '''(?i)(password|passwd|pwd|secret|api[_-]?key)["']?\s*[:=]\s*["'][^"'$\n]{3,}["']'''
+keywords = ["password", "passwd", "secret", "api_key", "api-key"]
+
+# このルールに対する allowlist（誤検知を抑制）
+# ※ paths はこの custom ルールのみに適用。gitleaks デフォルトの高エントロピー
+#    ルール（AWS キー等）は test/docs を含め全ファイルを走査し続ける（取りこぼし防止）。
+[rules.allowlist]
+regexTarget = "line"
+paths = [
+    '''.*src/test/.*''',      # JUnit テスト（偽 secret fixture）
+    '''.*Test\.java$''',
+    '''.*_test\.[a-z]+$''',   # *_test.rb / *_test.js 等
+    '''.*_spec\.[a-z]+$''',
+    '''.*/test/.*''',
+    '''.*/spec/.*''',
+    '''.*/e2e/.*''',          # E2E の偽資格情報
+    '''.*\.md$''',            # ドキュメントの例示（高エントロピールールは .md も走査継続）
+    '''.*\.example$''',       # .env.example / tfvars.example
+    '''.*/prototype/.*''',
+]
+regexes = [
+    # テンプレートプレースホルダー
+    '''CHANGE_ME''',
+    '''YOUR_[A-Z_]+''',
+    '''<[A-Z_]+>''',
+    '''XXX+''',
+    '''placeholder''',
+    '''example''',
+    '''dummy''',
+
+    # 環境変数参照（値ではなく参照）
+    '''\$\{[A-Z_a-z]+\}''',
+    '''\$ENV\[''',
+    '''ENV\[''',
+    '''process\.env\.''',
+    '''import\.meta\.env\.''',
+    '''System\.getenv''',
+    '''getenv\(''',
+    '''\$\{?[A-Z_]+_PASSWORD''',
+    '''\$\{?[A-Z_]+_SECRET''',
+
+    # Spring の property プレースホルダー（${VAR} / ${VAR:default}）
+    '''\$\{[a-zA-Z0-9_.]+(:[^}]*)?\}''',
+
+    # Terraform 変数参照（値ではなく参照）
+    '''\bvar\.[a-z_]+''',
+    '''data\.aws_ssm_parameter''',
+    '''aws_ssm_parameter''',
+
+    # ローカル開発専用の既知 dev 値（本番未使用・docker-compose / dev 起動手順 / docs に出現）
+    '''localtest''',          # dev DATABASE_PASSWORD
+    '''devpass12345''',       # dev SEED_PASSWORD（seed 専用）
+    '''minioadmin''',         # ローカル MinIO（S3 互換）既定資格情報
+    '''devsecret''',
+    '''local-?dev''',
+
+    # GitHub Actions の permission ディレクティブ（token: write 等は permission 名で機密ではない）
+    '''\b(id-token|packages|actions|checks|contents|deployments|issues|discussions|pages|pull-requests|repository-projects|security-events|statuses|attestations|models|metadata|environments):\s*(read|write|none)\b''',
+
+    # コメント・ドキュメント行頭
+    '''^\s*#''',
+    '''^\s*//''',
+    '''^\s*\*''',
+    '''^\s*-\s''',
+
+    # テストファイル（テスト中の偽 secret は許容）
+    '''test/''',
+    '''spec/''',
+    '''_test\.''',
+    '''_spec\.''',
+    '''Test\.java''',
+]
