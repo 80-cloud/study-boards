@@ -98,7 +98,7 @@ export default function PostsPage() {
                     {RECRUIT_LABEL[p.recruitStatus] ?? p.recruitStatus}
                   </span>
                 </div>
-                <ReviewPrefBadges tone={p.reviewTone} aspects={p.reviewAspects} className="mt-2" />
+                <ReviewPrefBadges tone={p.reviewTone} aspects={p.reviewAspects} aiUsage={p.aiUsage} className="mt-2" />
                 <p className="mt-1 text-sm text-gray-500">レビュー {p.reviewCount} 件</p>
               </Link>
             </li>

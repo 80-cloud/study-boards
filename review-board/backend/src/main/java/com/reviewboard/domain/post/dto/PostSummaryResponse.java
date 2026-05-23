@@ -1,5 +1,6 @@
 package com.reviewboard.domain.post.dto;
 
+import com.reviewboard.domain.post.AiUsage;
 import com.reviewboard.domain.post.Post;
 import com.reviewboard.domain.post.RecruitStatus;
 import com.reviewboard.domain.post.ReviewAspect;
@@ -21,12 +22,13 @@ public record PostSummaryResponse(
         int reviewCount,
         ReviewTone reviewTone,
         List<ReviewAspect> reviewAspects,
+        AiUsage aiUsage,
         OffsetDateTime createdAt) {
 
     public static PostSummaryResponse from(Post p) {
         return new PostSummaryResponse(
                 p.getId(), p.getAuthorUserId(), p.getTitle(),
                 p.getRecruitStatus(), p.getReviewCount(),
-                p.getReviewTone(), new ArrayList<>(p.getReviewAspects()), p.getCreatedAt());
+                p.getReviewTone(), new ArrayList<>(p.getReviewAspects()), p.getAiUsage(), p.getCreatedAt());
     }
 }

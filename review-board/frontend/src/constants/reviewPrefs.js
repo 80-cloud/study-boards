@@ -20,3 +20,12 @@ export const ASPECT_OPTIONS = [
 ];
 
 export const ASPECT_LABEL = Object.fromEntries(ASPECT_OPTIONS.map((o) => [o.value, o.label]));
+
+// AI使用状況の開示タグ（単一選択。未設定は null）。backend の enum 名（AiUsage）と一致させること。
+export const AI_USAGE_OPTIONS = [
+  { value: 'NONE', label: 'AI不使用', hint: 'AI ツールを使わずに開発' },
+  { value: 'PARTIAL', label: 'AI一部使用', hint: '一部に AI 補助を利用' },
+  { value: 'USED', label: 'AI使用', hint: 'AI を活用して開発' },
+];
+
+export const AI_USAGE_LABEL = Object.fromEntries(AI_USAGE_OPTIONS.map((o) => [o.value, o.label]));

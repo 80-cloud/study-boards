@@ -6,7 +6,7 @@ import ReviewPrefFields from '../components/ReviewPrefFields';
 import DraftNotice from '../components/DraftNotice';
 import { useDraft } from '../hooks/useDraft';
 
-const EMPTY = { title: '', description: '', repoUrl: '', demoUrl: '', screenshotKey: null, reviewTone: null, reviewAspects: [] };
+const EMPTY = { title: '', description: '', repoUrl: '', demoUrl: '', screenshotKey: null, reviewTone: null, reviewAspects: [], aiUsage: null };
 
 // F-POST-01：成果物の投稿（タイトル/説明は必須、URL・スクショは任意）。
 // F-DRAFT-01：入力を localStorage に自動保存し、再訪時に復元する。
@@ -20,7 +20,7 @@ export default function NewPostPage() {
   const { restored, save, clear } = useDraft('post-new', (draft) => setForm((p) => ({ ...p, ...draft })));
   // 空フォームは保存しない（「空の下書き復元」誤検知を防ぐ）。
   const dirty = !!(form.title || form.description || form.repoUrl || form.demoUrl
-    || form.screenshotKey || form.reviewTone || form.reviewAspects.length);
+    || form.screenshotKey || form.reviewTone || form.reviewAspects.length || form.aiUsage);
   useEffect(() => { if (dirty) save(form); }, [form, dirty, save]);
 
   const set = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
@@ -43,6 +43,7 @@ export default function NewPostPage() {
         screenshotKey: form.screenshotKey || null,
         reviewTone: form.reviewTone,
         reviewAspects: form.reviewAspects,
+        aiUsage: form.aiUsage,
       });
       clear(); // 投稿成功で下書きは不要
       navigate(`/posts/${post.id}`, { replace: true });
@@ -71,8 +72,10 @@ export default function NewPostPage() {
         <ReviewPrefFields
           tone={form.reviewTone}
           aspects={form.reviewAspects}
+          aiUsage={form.aiUsage}
           onToneChange={(v) => setForm((p) => ({ ...p, reviewTone: v }))}
           onAspectsChange={(v) => setForm((p) => ({ ...p, reviewAspects: v }))}
+          onAiUsageChange={(v) => setForm((p) => ({ ...p, aiUsage: v }))}
         />
         <button type="submit" disabled={busy} className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
           {busy ? '投稿中…' : '投稿する'}

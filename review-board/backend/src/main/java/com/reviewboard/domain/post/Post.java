@@ -64,6 +64,11 @@ public class Post {
     @Column(name = "review_tone", length = 20)
     private ReviewTone reviewTone;
 
+    /** AI使用状況の開示タグ（単一・未設定は null・Issue #172）。 */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "ai_usage", length = 20)
+    private AiUsage aiUsage;
+
     /**
      * F-REQ-01 観点別レビュー依頼：募集したい観点（多値）。投稿削除で子行も自動削除。
      * EAGER ＋ BatchSize で詳細取得時の遅延初期化を避けつつ一覧の N+1 を1クエリに束ねる。
