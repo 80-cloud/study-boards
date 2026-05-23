@@ -8,6 +8,7 @@ import NewPostPage from './pages/NewPostPage';
 import PostEditPage from './pages/PostEditPage';
 import PostDetailPage from './pages/PostDetailPage';
 import ProfilePage from './pages/ProfilePage';
+import NotificationsPage from './pages/NotificationsPage';
 
 // 認証必須ページの共通レイアウト（ヘッダー＋本文）。
 function Shell({ children }) {
@@ -31,6 +32,7 @@ export default function App() {
         <Route path="/posts/:id/edit" element={<Shell><PostEditPage /></Shell>} />
         <Route path="/posts/:id" element={<Shell><PostDetailPage /></Shell>} />
         <Route path="/users/:id/profile" element={<Shell><ProfilePage /></Shell>} />
+        <Route path="/notifications" element={<Shell><NotificationsPage /></Shell>} />
       </Routes>
     </AuthProvider>
   );
