@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -34,6 +35,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidRequestException.class)
     public ResponseEntity<ApiError> handleInvalidRequest(InvalidRequestException ex) {
         return ResponseEntity.badRequest().body(ApiError.of("INVALID_REQUEST", ex.getMessage()));
+    }
+
+    /**
+     * 読めない/不正な JSON ボディ（400）：enum 不一致・壊れた JSON など。
+     * これを握らないと未処理例外として /error 再ディスパッチが走り、SecurityContext が
+     * 引き継がれず 401 に化けて本来の 400 を覆い隠す（#131）。ここで 400 を確定させる。
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiError> handleNotReadable(HttpMessageNotReadableException ex) {
+        return ResponseEntity.badRequest().body(ApiError.of("MALFORMED_REQUEST", "リクエスト本文の形式が不正です"));
     }
 
     /** アップロード上限超過（413・SEC-8 のサイズ防御。multipart 段で弾く） */
