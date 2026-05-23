@@ -13,3 +13,14 @@ export const ROLE_LABEL = { STUDENT: '受講生', TEACHER: '講師' };
 export const RECRUIT_LABEL = { OPEN: 'レビュー募集中', CLOSED: '募集終了' };
 
 export const EVAL_LABEL = { APPROVED: '合格', RETURNED: '差し戻し' };
+
+// F-GROW-01 成長ループ：レビューへの対応状態（投稿者本人が設定）。backend の GrowthStatus と一致させる。
+export const GROWTH_OPTIONS = [
+  { value: 'OPEN', label: '未対応', badge: 'bg-gray-100 text-gray-600 ring-gray-300' },
+  { value: 'FIXED', label: '修正済み', badge: 'bg-green-100 text-green-700 ring-green-300' },
+  { value: 'WONT_FIX', label: '対応不要', badge: 'bg-gray-100 text-gray-500 ring-gray-300' },
+  { value: 'RE_REVIEW_REQUESTED', label: '再レビュー依頼', badge: 'bg-blue-100 text-blue-700 ring-blue-300' },
+  { value: 'RESOLVED', label: '解決済み', badge: 'bg-emerald-100 text-emerald-700 ring-emerald-300' },
+];
+
+export const GROWTH_MAP = Object.fromEntries(GROWTH_OPTIONS.map((o) => [o.value, o]));

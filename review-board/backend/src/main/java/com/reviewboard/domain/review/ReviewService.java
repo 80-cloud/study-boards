@@ -167,6 +167,30 @@ public class ReviewService {
         auditService.record(principal, AuditAction.THANKS_SENT, AuditTargetType.REVIEW, reviewId);
     }
 
+    /**
+     * F-GROW-01 対応状態の更新。★投稿者本人のみ（cohort 越境は 404・投稿者以外は 403）。
+     * 状態と Before-After メモを設定し、更新後のレビューを返す。
+     */
+    @Transactional
+    public ReviewResponse updateGrowth(AuthPrincipal principal, Long reviewId,
+                                       GrowthStatus status, String beforeAfter) {
+        Review review = reviewRepository.findByIdAndDeletedAtIsNull(reviewId)
+                .orElseThrow(() -> new ResourceNotFoundException("review not found: " + reviewId));
+        Post post = visiblePost(principal, review.getPostId()); // cohort 境界（404）
+        // 対応状態を更新できるのは投稿者（レビューを受けた本人）のみ（F-GROW-01）
+        if (!post.getAuthorUserId().equals(principal.userId())) {
+            throw new AccessDeniedException("対応状態は投稿者のみ更新できます");
+        }
+        review.setGrowthStatus(status);
+        review.setBeforeAfter(beforeAfter);
+        review.setUpdatedAt(OffsetDateTime.now());
+        auditService.record(principal, AuditAction.REVIEW_GROWTH_UPDATED, AuditTargetType.REVIEW, reviewId);
+
+        User reviewer = userRepository.findById(review.getReviewerUserId()).orElseThrow();
+        List<ReviewAxisComment> axisComments = axisCommentRepository.findByReviewId(reviewId);
+        return ReviewResponse.from(review, reviewer.getDisplayName(), reviewer.getRole(), axisComments);
+    }
+
     // ---- F-REV-04 返信（スレッド） ----
 
     /** 返信作成。レビュー先の投稿が自 cohort（可視）であること。同 cohort なら誰でも返信可。 */

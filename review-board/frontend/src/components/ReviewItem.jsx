@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AXIS_LABEL } from '../constants';
-import { sendThanks, updateReview, deleteReview, fetchReplies, createReply, deleteReply } from '../api/reviews';
+import { AXIS_LABEL, GROWTH_OPTIONS, GROWTH_MAP } from '../constants';
+import { sendThanks, updateReview, deleteReview, fetchReplies, createReply, deleteReply, updateReviewGrowth } from '../api/reviews';
 import { useAuth } from '../context/AuthContext';
 
 // 1 件のレビュー表示。講師レビューは特別表示（F-REV-02）。
 // 投稿者には「ありがとう」（F-REV-03）、レビュー所有者には編集/削除を出す（権限は backend が判定）。
-export default function ReviewItem({ review, canThank, isOwner, isBest, canSelectBest, onSelectBest, onChanged }) {
+// F-GROW-01：投稿者（canManageGrowth）は各レビューの対応状態と Before-After を記録できる。
+export default function ReviewItem({ review, canThank, canManageGrowth, isOwner, isBest, canSelectBest, onSelectBest, onChanged }) {
   const { user } = useAuth();
   const [thanks, setThanks] = useState(review.thanksCount);
   const [thanked, setThanked] = useState(false);
@@ -14,6 +15,31 @@ export default function ReviewItem({ review, canThank, isOwner, isBest, canSelec
   const [editing, setEditing] = useState(false);
   const [good, setGood] = useState(review.good);
   const [improvement, setImprovement] = useState(review.improvement);
+
+  // F-GROW-01 対応状態・Before-After
+  const [growthStatus, setGrowthStatus] = useState(review.growthStatus ?? 'OPEN');
+  const [beforeAfter, setBeforeAfter] = useState(review.beforeAfter ?? '');
+  const [editingGrowth, setEditingGrowth] = useState(false);
+  const [draftStatus, setDraftStatus] = useState(growthStatus);
+  const [draftBA, setDraftBA] = useState(beforeAfter);
+
+  const openGrowthEditor = () => {
+    setDraftStatus(growthStatus);
+    setDraftBA(beforeAfter);
+    setEditingGrowth(true);
+  };
+
+  const saveGrowth = async () => {
+    setBusy(true);
+    try {
+      const updated = await updateReviewGrowth(review.id, { status: draftStatus, beforeAfter: draftBA || null });
+      setGrowthStatus(updated.growthStatus);
+      setBeforeAfter(updated.beforeAfter ?? '');
+      setEditingGrowth(false);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   // F-REV-04 返信スレッド
   const [showReplies, setShowReplies] = useState(false);
@@ -128,6 +154,41 @@ export default function ReviewItem({ review, canThank, isOwner, isBest, canSelec
             </ul>
           )}
         </>
+      )}
+
+      {/* F-GROW-01 対応状態バッジ＋Before-After（OPEN かつ投稿者でない場合は出さない） */}
+      {(growthStatus !== 'OPEN' || canManageGrowth) && (
+        <div className="mt-2 border-t border-gray-100 pt-2">
+          <div className="flex items-center gap-2">
+            <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${GROWTH_MAP[growthStatus]?.badge ?? ''}`}>
+              {GROWTH_MAP[growthStatus]?.label ?? growthStatus}
+            </span>
+            {canManageGrowth && !editingGrowth && (
+              <button onClick={openGrowthEditor} className="text-xs text-blue-600 hover:underline">対応を記録</button>
+            )}
+          </div>
+          {beforeAfter && !editingGrowth && (
+            <p className="mt-1 whitespace-pre-wrap text-xs text-gray-600"><span className="text-gray-400">Before→After：</span>{beforeAfter}</p>
+          )}
+          {editingGrowth && (
+            <div className="mt-2 space-y-2">
+              <select value={draftStatus} onChange={(e) => setDraftStatus(e.target.value)} className="rounded border border-gray-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none">
+                {GROWTH_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+              <textarea
+                value={draftBA}
+                onChange={(e) => setDraftBA(e.target.value)}
+                rows={2}
+                placeholder="Before→After メモ（任意）：どう直したか、なぜ対応不要かなど"
+                className="w-full rounded border border-gray-300 px-3 py-2 text-xs focus:border-blue-500 focus:outline-none"
+              />
+              <div className="flex gap-2">
+                <button onClick={saveGrowth} disabled={busy} className="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700 disabled:opacity-50">保存</button>
+                <button onClick={() => setEditingGrowth(false)} className="rounded border border-gray-300 px-3 py-1 text-xs text-gray-600 hover:bg-gray-50">キャンセル</button>
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       <div className="mt-2 flex items-center gap-3 text-xs text-gray-500">

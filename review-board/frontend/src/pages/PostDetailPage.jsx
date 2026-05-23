@@ -98,6 +98,7 @@ export default function PostDetailPage() {
                 key={r.id}
                 review={r}
                 canThank={isAuthor}
+                canManageGrowth={isAuthor}
                 isOwner={user?.id === r.reviewerUserId}
                 isBest={post.bestReviewId === r.id}
                 canSelectBest={isAuthor}
