@@ -1,5 +1,6 @@
 package com.reviewboard.domain.review.dto;
 
+import com.reviewboard.domain.review.GrowthStatus;
 import com.reviewboard.domain.review.Review;
 import com.reviewboard.domain.review.ReviewAxis;
 import com.reviewboard.domain.review.ReviewAxisComment;
@@ -11,6 +12,7 @@ import java.util.List;
 /**
  * レビューのレスポンス。reviewer の role/displayName を含め、講師レビューの特別表示
  * （F-REV-02）をフロントで可能にする。teacherReview フラグは利便のため導出。
+ * F-GROW-01 の対応状態（growthStatus）と Before-After も含める。
  */
 public record ReviewResponse(
         Long id,
@@ -23,6 +25,8 @@ public record ReviewResponse(
         String improvement,
         int thanksCount,
         int repliesCount,
+        GrowthStatus growthStatus,
+        String beforeAfter,
         List<AxisComment> axisComments,
         OffsetDateTime createdAt) {
 
@@ -38,6 +42,7 @@ public record ReviewResponse(
                 r.getId(), r.getPostId(), r.getReviewerUserId(),
                 reviewerDisplayName, reviewerRole, reviewerRole == UserRole.TEACHER,
                 r.getGood(), r.getImprovement(), r.getThanksCount(), r.getRepliesCount(),
+                r.getGrowthStatus(), r.getBeforeAfter(),
                 axisComments.stream().map(AxisComment::from).toList(),
                 r.getCreatedAt());
     }

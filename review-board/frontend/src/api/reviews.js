@@ -18,6 +18,10 @@ export const deleteReview = (reviewId) => client.delete(`/reviews/${reviewId}`);
 // F-REV-03 ありがとう（投稿者のみ・冪等）
 export const sendThanks = (reviewId) => client.post(`/reviews/${reviewId}/thanks`);
 
+// F-GROW-01 対応状態の更新（投稿者本人のみ・backend が非投稿者を 403）
+export const updateReviewGrowth = (reviewId, body) =>
+  client.put(`/reviews/${reviewId}/growth`, body).then((r) => r.data);
+
 // F-REV-04 返信スレッド（同 cohort）
 export const fetchReplies = (reviewId) =>
   client.get(`/reviews/${reviewId}/replies`).then((r) => r.data);

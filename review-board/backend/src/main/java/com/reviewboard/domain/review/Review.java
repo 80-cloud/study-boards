@@ -41,6 +41,15 @@ public class Review {
     @Column(name = "replies_count", nullable = false)
     private int repliesCount = 0;
 
+    /** F-GROW-01 対応状態（投稿者本人が設定・既定は未対応）。 */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "growth_status", nullable = false, length = 30)
+    private GrowthStatus growthStatus = GrowthStatus.OPEN;
+
+    /** F-GROW-01 Before-After メモ（投稿者の自由記述・任意）。 */
+    @Column(name = "before_after", columnDefinition = "text")
+    private String beforeAfter;
+
     @Column(name = "deleted_at")
     private OffsetDateTime deletedAt;
 

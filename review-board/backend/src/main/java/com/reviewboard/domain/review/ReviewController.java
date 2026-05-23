@@ -1,6 +1,7 @@
 package com.reviewboard.domain.review;
 
 import com.reviewboard.domain.auth.AuthPrincipal;
+import com.reviewboard.domain.review.dto.GrowthUpdateRequest;
 import com.reviewboard.domain.review.dto.ReplyRequest;
 import com.reviewboard.domain.review.dto.ReplyResponse;
 import com.reviewboard.domain.review.dto.ReviewCreateRequest;
@@ -64,6 +65,14 @@ public class ReviewController {
                                       @PathVariable Long id) {
         reviewService.thank(principal, id);
         return ResponseEntity.noContent().build();
+    }
+
+    /** F-GROW-01 対応状態の更新（投稿者本人のみ・他人は 403／他 cohort は 404） */
+    @PutMapping("/api/reviews/{id}/growth")
+    public ReviewResponse updateGrowth(@AuthenticationPrincipal AuthPrincipal principal,
+                                       @PathVariable Long id,
+                                       @Valid @RequestBody GrowthUpdateRequest request) {
+        return reviewService.updateGrowth(principal, id, request.status(), request.beforeAfter());
     }
 
     /** F-REV-04 返信作成（同 cohort のメンバー） */
