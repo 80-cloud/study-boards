@@ -21,7 +21,7 @@ export default function ProfilePage() {
   if (loading) return <p className="p-6 text-gray-500">読み込み中…</p>;
   if (error) return <p className="p-6 text-red-600">{error}</p>;
 
-  const { displayName, role, stats, posts, receivedReviews } = profile;
+  const { displayName, role, stats, streak, posts, receivedReviews } = profile;
 
   return (
     <main className="mx-auto max-w-3xl space-y-6 p-6">
@@ -36,6 +36,8 @@ export default function ProfilePage() {
           <Stat label="もらった🙏" value={stats.thanksReceivedCount} />
         </div>
       </header>
+
+      {streak && <StreakCard streak={streak} />}
 
       <section>
         <h3 className="mb-3 font-medium text-gray-800">投稿した成果物（{posts.length}）</h3>
@@ -84,5 +86,30 @@ function Stat({ label, value }) {
       <div className="text-2xl font-bold text-gray-800">{value}</div>
       <div className="text-xs text-gray-500">{label}</div>
     </div>
+  );
+}
+
+// F-STREAK-01 継続の可視化（§1-6 継続は力なり・非競争）。投稿/レビューの活動日から集計した値を表示。
+function StreakCard({ streak }) {
+  const { currentStreak, longestStreak, totalActiveDays, achievedBadges = [] } = streak;
+  return (
+    <section className="rounded-lg border border-orange-200 bg-orange-50 p-6">
+      <h3 className="mb-3 font-medium text-orange-800">継続の記録 <span className="text-xs font-normal text-orange-600">（投稿・レビューを続けた日数）</span></h3>
+      <div className="grid grid-cols-3 gap-4 text-center">
+        <Stat label="現在の連続" value={`🔥 ${currentStreak}日`} />
+        <Stat label="最長連続" value={`🏔️ ${longestStreak}日`} />
+        <Stat label="活動した日" value={`📅 ${totalActiveDays}日`} />
+      </div>
+      {achievedBadges.length > 0 && (
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <span className="text-xs text-orange-700">達成バッジ：</span>
+          {achievedBadges.map((d) => (
+            <span key={d} className="rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-700 ring-1 ring-orange-300">
+              🏅 {d}日連続
+            </span>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
