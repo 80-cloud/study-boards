@@ -19,6 +19,7 @@ public record ReviewResponse(
         Long postId,
         Long reviewerUserId,
         String reviewerDisplayName,
+        String reviewerAvatarUrl,
         UserRole reviewerRole,
         boolean teacherReview,
         String good,
@@ -36,11 +37,11 @@ public record ReviewResponse(
         }
     }
 
-    public static ReviewResponse from(Review r, String reviewerDisplayName, UserRole reviewerRole,
-                                      List<ReviewAxisComment> axisComments) {
+    public static ReviewResponse from(Review r, String reviewerDisplayName, String reviewerAvatarUrl,
+                                      UserRole reviewerRole, List<ReviewAxisComment> axisComments) {
         return new ReviewResponse(
                 r.getId(), r.getPostId(), r.getReviewerUserId(),
-                reviewerDisplayName, reviewerRole, reviewerRole == UserRole.TEACHER,
+                reviewerDisplayName, reviewerAvatarUrl, reviewerRole, reviewerRole == UserRole.TEACHER,
                 r.getGood(), r.getImprovement(), r.getThanksCount(), r.getRepliesCount(),
                 r.getGrowthStatus(), r.getBeforeAfter(),
                 axisComments.stream().map(AxisComment::from).toList(),

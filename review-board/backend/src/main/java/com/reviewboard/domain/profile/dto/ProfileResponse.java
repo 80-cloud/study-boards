@@ -17,6 +17,8 @@ public record ProfileResponse(
         String displayName,
         UserRole role,
         String bio,
+        String avatarKey,
+        String avatarUrl,
         Stats stats,
         Streak streak,
         List<PostEntry> posts,

@@ -4,6 +4,7 @@ import { AXIS_LABEL, GROWTH_OPTIONS, GROWTH_MAP } from '../constants';
 import { sendThanks, updateReview, deleteReview, fetchReplies, createReply, deleteReply, updateReviewGrowth } from '../api/reviews';
 import { useAuth } from '../context/AuthContext';
 import MarkdownText from './MarkdownText';
+import Avatar from './Avatar';
 
 // 1 件のレビュー表示。講師レビューは特別表示（F-REV-02）。
 // 投稿者には「ありがとう」（F-REV-03）、レビュー所有者には編集/削除を出す（権限は backend が判定）。
@@ -121,6 +122,7 @@ export default function ReviewItem({ review, canThank, canManageGrowth, isOwner,
   return (
     <li className={`rounded-lg border p-4 ${isBest ? 'border-yellow-400 bg-yellow-50' : review.teacherReview ? 'border-amber-300 bg-amber-50' : 'border-gray-200 bg-white'}`}>
       <div className="mb-2 flex items-center gap-2 text-sm">
+        <Avatar url={review.reviewerAvatarUrl} name={review.reviewerDisplayName} size="sm" />
         <Link to={`/users/${review.reviewerUserId}/profile`} className="font-medium text-gray-800 hover:underline">
           {review.reviewerDisplayName}
         </Link>

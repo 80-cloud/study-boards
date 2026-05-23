@@ -42,6 +42,10 @@ public class User {
     @Column(length = 500)
     private String bio;
 
+    /** プロフィールアバターの S3（MinIO）オブジェクトキー。表示は短命署名URLのみ（SEC-8）。未設定は null。 */
+    @Column(name = "avatar_key", length = 512)
+    private String avatarKey;
+
     // --- 非正規化カウンタ（書き込みと同一Txで増減 + 定期再計算で補正。母 S-3） ---
     @Column(name = "received_reviews_count", nullable = false)
     private int receivedReviewsCount = 0;

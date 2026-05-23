@@ -26,11 +26,14 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
+    private final com.reviewboard.storage.StorageService storageService;
 
     public NotificationService(NotificationRepository notificationRepository,
-                               UserRepository userRepository) {
+                               UserRepository userRepository,
+                               com.reviewboard.storage.StorageService storageService) {
         this.notificationRepository = notificationRepository;
         this.userRepository = userRepository;
+        this.storageService = storageService;
     }
 
     /**
@@ -83,7 +86,9 @@ public class NotificationService {
                 .collect(Collectors.toMap(User::getId, Function.identity()));
         return items.stream().map(n -> {
             User actor = actors.get(n.getActorUserId());
-            return NotificationResponse.from(n, actor != null ? actor.getDisplayName() : "(不明)");
+            return NotificationResponse.from(n,
+                    actor != null ? actor.getDisplayName() : "(不明)",
+                    actor != null ? storageService.presignedGetUrl(actor.getAvatarKey()) : null);
         }).toList();
     }
 

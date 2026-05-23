@@ -42,6 +42,7 @@ public class ReviewService {
     private final UserRepository userRepository;
     private final AuditService auditService;
     private final NotificationService notificationService;
+    private final com.reviewboard.storage.StorageService storageService;
 
     public ReviewService(ReviewRepository reviewRepository,
                          ReviewAxisCommentRepository axisCommentRepository,
@@ -50,7 +51,8 @@ public class ReviewService {
                          PostRepository postRepository,
                          UserRepository userRepository,
                          AuditService auditService,
-                         NotificationService notificationService) {
+                         NotificationService notificationService,
+                         com.reviewboard.storage.StorageService storageService) {
         this.reviewRepository = reviewRepository;
         this.axisCommentRepository = axisCommentRepository;
         this.thanksRepository = thanksRepository;
@@ -59,6 +61,7 @@ public class ReviewService {
         this.userRepository = userRepository;
         this.auditService = auditService;
         this.notificationService = notificationService;
+        this.storageService = storageService;
     }
 
     /** F-REV-01 作成。同 cohort の投稿のみ・自己レビュー禁止。 */
@@ -95,7 +98,8 @@ public class ReviewService {
                 principal.userId(), principal.cohortId(), postId, review.getId());
 
         User reviewer = userRepository.findById(principal.userId()).orElseThrow();
-        return ReviewResponse.from(review, reviewer.getDisplayName(), reviewer.getRole(), axisComments);
+        return ReviewResponse.from(review, reviewer.getDisplayName(),
+                storageService.presignedGetUrl(reviewer.getAvatarKey()), reviewer.getRole(), axisComments);
     }
 
     /** F-REV-01/02 一覧。投稿が可視（同 cohort）でなければ 404。reviewer の role を含める。 */
@@ -118,6 +122,7 @@ public class ReviewService {
             User reviewer = reviewers.get(r.getReviewerUserId());
             return ReviewResponse.from(r,
                     reviewer != null ? reviewer.getDisplayName() : "(不明)",
+                    reviewer != null ? storageService.presignedGetUrl(reviewer.getAvatarKey()) : null,
                     reviewer != null ? reviewer.getRole() : null,
                     axisByReview.getOrDefault(r.getId(), List.of()));
         }).toList();
@@ -135,7 +140,8 @@ public class ReviewService {
         List<ReviewAxisComment> axisComments = saveAxisComments(reviewId, req.axisComments());
 
         User reviewer = userRepository.findById(principal.userId()).orElseThrow();
-        return ReviewResponse.from(review, reviewer.getDisplayName(), reviewer.getRole(), axisComments);
+        return ReviewResponse.from(review, reviewer.getDisplayName(),
+                storageService.presignedGetUrl(reviewer.getAvatarKey()), reviewer.getRole(), axisComments);
     }
 
     /** F-REV 論理削除（所有者のみ）。カウンタも戻す。 */
@@ -204,7 +210,8 @@ public class ReviewService {
 
         User reviewer = userRepository.findById(review.getReviewerUserId()).orElseThrow();
         List<ReviewAxisComment> axisComments = axisCommentRepository.findByReviewId(reviewId);
-        return ReviewResponse.from(review, reviewer.getDisplayName(), reviewer.getRole(), axisComments);
+        return ReviewResponse.from(review, reviewer.getDisplayName(),
+                storageService.presignedGetUrl(reviewer.getAvatarKey()), reviewer.getRole(), axisComments);
     }
 
     // ---- F-REV-04 返信（スレッド） ----

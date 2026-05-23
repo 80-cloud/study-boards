@@ -89,6 +89,30 @@ class ProfileAuthorizationIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    /** F-PROF（S-04）プロフィール編集：本人の bio／avatar を更新でき、GET に反映される。 */
+    @Test
+    void owner_can_update_own_profile() throws Exception {
+        mockMvc.perform(put("/api/users/me/profile").cookie(login(authorEmail))
+                        .contentType("application/json")
+                        .content("{\"bio\":\"自己紹介を更新\",\"avatarKey\":null}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.bio").value("自己紹介を更新"))
+                .andExpect(jsonPath("$.userId").value((int) authorId));
+
+        // GET でも反映（principal 由来＝他人を編集する経路は無い）
+        mockMvc.perform(get("/api/users/" + authorId + "/profile").cookie(login(authorEmail)))
+                .andExpect(jsonPath("$.bio").value("自己紹介を更新"));
+    }
+
+    /** ★編集は /me（principal）に限定＝他人の userId を指定する経路が存在しない。未認証は 401。 */
+    @Test
+    void profile_update_requires_auth_returns401() throws Exception {
+        mockMvc.perform(put("/api/users/me/profile")
+                        .contentType("application/json")
+                        .content("{\"bio\":\"x\"}"))
+                .andExpect(status().isUnauthorized());
+    }
+
     // ---- helpers ----
 
     private long createPost(Cookie cookie, String title) throws Exception {
