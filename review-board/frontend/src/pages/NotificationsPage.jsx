@@ -6,7 +6,10 @@ import { fetchNotifications, markNotificationRead, markAllNotificationsRead } fr
 const MESSAGE = {
   REVIEW_RECEIVED: (n) => `${n.actorDisplayName} さんがあなたの投稿にレビューしました`,
   THANKS_RECEIVED: (n) => `${n.actorDisplayName} さんがあなたのレビューに「ありがとう」を送りました`,
+  MENTIONED: (n) => `${n.actorDisplayName} さんがあなたを @ で名指ししました`,
 };
+
+const ICON = { THANKS_RECEIVED: '🙏 ', MENTIONED: '💬 ', REVIEW_RECEIVED: '📝 ' };
 
 export default function NotificationsPage() {
   const navigate = useNavigate();
@@ -59,7 +62,7 @@ export default function NotificationsPage() {
               >
                 {!n.read && <span className="mt-1 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" aria-label="未読" />}
                 <span className="flex-1 text-sm text-gray-700">
-                  {n.type === 'THANKS_RECEIVED' ? '🙏 ' : '📝 '}
+                  {ICON[n.type] ?? '🔔 '}
                   {(MESSAGE[n.type]?.(n)) ?? '新しい通知があります'}
                 </span>
               </button>

@@ -112,6 +112,39 @@ class NotificationIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    /** F-MENTION：レビュー本文で @表示名 を名指しすると、その人に MENTIONED 通知が届く。 */
+    @Test
+    void mention_in_review_notifies_the_named_member() throws Exception {
+        // reviewer が「author@example.com」の表示名（=メール）を @ で名指し
+        String mention = "@author@example.com 直しました。もう一度見てください";
+        mockMvc.perform(post("/api/posts/" + postId + "/reviews").cookie(login(reviewerEmail))
+                        .contentType("application/json")
+                        .content("{\"good\":\"" + mention + "\",\"improvement\":\"改善\"}"))
+                .andExpect(status().isCreated());
+
+        // author は REVIEW_RECEIVED ＋ MENTIONED の2件（新着順で MENTIONED が後勝ち=先頭）
+        mockMvc.perform(get("/api/notifications").cookie(login(authorEmail)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.type=='MENTIONED')]").isNotEmpty());
+    }
+
+    /** ★越境しない：他 cohort のメンバー名を @ しても、その人には通知されない。 */
+    @Test
+    void mention_does_not_cross_cohort() throws Exception {
+        var cohortB = newCohort("B");
+        String outsider = newUser("outsider@example.com", UserRole.STUDENT, cohortB.getId()).getEmail();
+
+        // reviewer(cohortA) が cohortB の outsider を名指ししても、走査対象は自 cohort のみ
+        mockMvc.perform(post("/api/posts/" + postId + "/reviews").cookie(login(reviewerEmail))
+                        .contentType("application/json")
+                        .content("{\"good\":\"@outsider@example.com 見て\",\"improvement\":\"改善\"}"))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/notifications").cookie(login(outsider)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
     private long createPost(Cookie cookie) throws Exception {
         MvcResult res = mockMvc.perform(post("/api/posts").cookie(cookie)
                         .contentType("application/json").content("{\"title\":\"作品\",\"description\":\"説明\"}"))
