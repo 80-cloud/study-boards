@@ -53,6 +53,23 @@ public class NotificationService {
         notificationRepository.save(n);
     }
 
+    /**
+     * F-MENTION：本文に含まれる `@表示名`（同 cohort メンバー）を解決し、その人へ MENTION 通知を作る。
+     * cohort メンバーのみ走査するため越境メンションは起きない。自己メンションは notify がスキップ。
+     * 表示名の完全一致（クローズドな少人数 cohort 前提・衝突時は該当者全員に通知）。
+     */
+    @Transactional
+    public void notifyMentions(String text, Long actorUserId, Long cohortId, Long postId, Long reviewId) {
+        if (text == null || text.indexOf('@') < 0) {
+            return;
+        }
+        for (User member : userRepository.findByCohortId(cohortId)) {
+            if (text.contains("@" + member.getDisplayName())) {
+                notify(member.getId(), actorUserId, NotificationType.MENTIONED, postId, reviewId);
+            }
+        }
+    }
+
     /** 自分の通知一覧（新着順）。actor 名は N+1 回避でまとめ引き。 */
     @Transactional(readOnly = true)
     public List<NotificationResponse> list(AuthPrincipal principal) {

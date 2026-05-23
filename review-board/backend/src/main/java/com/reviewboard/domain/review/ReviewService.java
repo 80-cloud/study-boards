@@ -90,6 +90,9 @@ public class ReviewService {
         // F-NOTIF-01：投稿者へ「レビューが付いた」通知（自己レビューは上で弾いている）
         notificationService.notify(post.getAuthorUserId(), principal.userId(),
                 NotificationType.REVIEW_RECEIVED, postId, review.getId());
+        // F-MENTION：レビュー本文（良かった点＋改善点）の @表示名 を同 cohort で解決し通知
+        notificationService.notifyMentions(req.good() + "\n" + req.improvement(),
+                principal.userId(), principal.cohortId(), postId, review.getId());
 
         User reviewer = userRepository.findById(principal.userId()).orElseThrow();
         return ReviewResponse.from(review, reviewer.getDisplayName(), reviewer.getRole(), axisComments);
@@ -219,6 +222,10 @@ public class ReviewService {
         replyRepository.save(reply);
 
         review.setRepliesCount(review.getRepliesCount() + 1); // 非正規化（母 S-3）
+
+        // F-MENTION：返信本文の @表示名 を同 cohort で解決し通知
+        notificationService.notifyMentions(body, principal.userId(), principal.cohortId(),
+                review.getPostId(), reviewId);
 
         User replier = userRepository.findById(principal.userId()).orElseThrow();
         return ReplyResponse.from(reply, replier.getDisplayName());
