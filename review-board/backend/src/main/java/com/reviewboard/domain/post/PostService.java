@@ -8,6 +8,7 @@ import com.reviewboard.domain.audit.AuditTargetType;
 import com.reviewboard.domain.auth.AuthPrincipal;
 import com.reviewboard.domain.post.dto.PostCreateRequest;
 import com.reviewboard.domain.post.dto.PostUpdateRequest;
+import java.util.Set;
 import com.reviewboard.domain.review.Review;
 import com.reviewboard.domain.review.ReviewRepository;
 import org.springframework.data.domain.PageRequest;
@@ -52,6 +53,7 @@ public class PostService {
         post.setDemoUrl(req.demoUrl());
         post.setScreenshotKey(req.screenshotKey());
         post.setRecruitStatus(RecruitStatus.OPEN);
+        applyReviewPreferences(post, req.reviewTone(), req.reviewAspects());
         post.setCreatedAt(now);
         post.setUpdatedAt(now);
         postRepository.save(post);
@@ -95,6 +97,7 @@ public class PostService {
         post.setRepoUrl(req.repoUrl());
         post.setDemoUrl(req.demoUrl());
         post.setScreenshotKey(req.screenshotKey());
+        applyReviewPreferences(post, req.reviewTone(), req.reviewAspects());
         post.setUpdatedAt(OffsetDateTime.now());
         auditService.record(principal, AuditAction.POST_UPDATED, AuditTargetType.POST, postId);
         return post;
@@ -123,6 +126,19 @@ public class PostService {
         Post post = loadOwned(principal, postId);
         post.setDeletedAt(OffsetDateTime.now());
         auditService.record(principal, AuditAction.POST_DELETED, AuditTargetType.POST, postId);
+    }
+
+    /**
+     * F-SAFE-01 / F-REQ-01：投稿者のレビュー希望（トーン・募集観点）を反映する。
+     * tone は null で未設定に戻る。aspects は送られた集合で全置換（null は空集合扱い）。
+     * 設定主体は所有者に限る（呼び出し元の create/loadOwned で担保。★S軸）。
+     */
+    private void applyReviewPreferences(Post post, ReviewTone tone, Set<ReviewAspect> aspects) {
+        post.setReviewTone(tone);
+        post.getReviewAspects().clear();
+        if (aspects != null) {
+            post.getReviewAspects().addAll(aspects);
+        }
     }
 
     /**

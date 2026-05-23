@@ -1,0 +1,21 @@
+import { TONE_LABEL, ASPECT_LABEL } from '../constants/reviewPrefs';
+
+// F-SAFE-01 / F-REQ-01：投稿のトーン希望・募集観点をバッジ表示する（読み取り専用）。
+// reviewers が「どんなレビューが歓迎か」を一目で把握できるようにする。
+export default function ReviewPrefBadges({ tone, aspects = [], className = '' }) {
+  if (!tone && (!aspects || aspects.length === 0)) return null;
+  return (
+    <div className={`flex flex-wrap items-center gap-2 ${className}`}>
+      {tone && (
+        <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-amber-200">
+          🫶 {TONE_LABEL[tone] ?? tone}
+        </span>
+      )}
+      {aspects.map((a) => (
+        <span key={a} className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700 ring-1 ring-indigo-200">
+          🔍 {ASPECT_LABEL[a] ?? a}
+        </span>
+      ))}
+    </div>
+  );
+}

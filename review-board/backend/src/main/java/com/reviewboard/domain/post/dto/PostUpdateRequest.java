@@ -1,15 +1,24 @@
 package com.reviewboard.domain.post.dto;
 
+import com.reviewboard.domain.post.ReviewAspect;
+import com.reviewboard.domain.post.ReviewTone;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+import java.util.Set;
+
 /**
  * 投稿更新リクエスト（F-POST-02）。所有者のみ実行可（Service で検証、不一致は 404）。
+ *
+ * @param reviewTone    F-SAFE-01 希望トーン（任意・null は未設定に戻す）
+ * @param reviewAspects F-REQ-01 募集観点（任意・送られた集合で全置換）
  */
 public record PostUpdateRequest(
         @NotBlank @Size(max = 100) String title,
         @NotBlank String description,
         @Size(max = 512) String repoUrl,
         @Size(max = 512) String demoUrl,
-        @Size(max = 512) String screenshotKey) {
+        @Size(max = 512) String screenshotKey,
+        ReviewTone reviewTone,
+        Set<ReviewAspect> reviewAspects) {
 }

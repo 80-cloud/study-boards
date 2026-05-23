@@ -4,8 +4,11 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.OffsetDateTime;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 /**
  * 成果物（F-POST）。cohort_id を冗長保持し、一覧の cohort 境界を単純化（ER図 §3-2）。
@@ -55,6 +58,22 @@ public class Post {
     /** F-REV-05 ベストレビュー：投稿者が選んだ最も役立ったレビューの ID（未選択は null）。 */
     @Column(name = "best_review_id")
     private Long bestReviewId;
+
+    /** F-SAFE-01 心理的安全設定：投稿者が希望するレビューのトーン（単一・未設定は null）。 */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "review_tone", length = 20)
+    private ReviewTone reviewTone;
+
+    /**
+     * F-REQ-01 観点別レビュー依頼：募集したい観点（多値）。投稿削除で子行も自動削除。
+     * EAGER ＋ BatchSize で詳細取得時の遅延初期化を避けつつ一覧の N+1 を1クエリに束ねる。
+     */
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "post_review_aspects", joinColumns = @JoinColumn(name = "post_id"))
+    @Column(name = "aspect", length = 20)
+    @Enumerated(EnumType.STRING)
+    @BatchSize(size = 50)
+    private Set<ReviewAspect> reviewAspects = new LinkedHashSet<>();
 
     @Column(name = "deleted_at")
     private OffsetDateTime deletedAt;

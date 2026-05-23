@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPost } from '../api/posts';
 import ScreenshotUploader from '../components/ScreenshotUploader';
+import ReviewPrefFields from '../components/ReviewPrefFields';
 
 // F-POST-01：成果物の投稿（タイトル/説明は必須、URL・スクショは任意）。
 export default function NewPostPage() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ title: '', description: '', repoUrl: '', demoUrl: '', screenshotKey: null });
+  const [form, setForm] = useState({ title: '', description: '', repoUrl: '', demoUrl: '', screenshotKey: null, reviewTone: null, reviewAspects: [] });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -23,6 +24,8 @@ export default function NewPostPage() {
         repoUrl: form.repoUrl || null,
         demoUrl: form.demoUrl || null,
         screenshotKey: form.screenshotKey || null,
+        reviewTone: form.reviewTone,
+        reviewAspects: form.reviewAspects,
       });
       navigate(`/posts/${post.id}`, { replace: true });
     } catch {
@@ -46,6 +49,12 @@ export default function NewPostPage() {
         <label className="mb-1 block text-sm text-gray-600">デモ URL（任意）</label>
         <input type="url" value={form.demoUrl} onChange={set('demoUrl')} className="mb-4 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" />
         <ScreenshotUploader onChange={(key) => setForm((p) => ({ ...p, screenshotKey: key }))} />
+        <ReviewPrefFields
+          tone={form.reviewTone}
+          aspects={form.reviewAspects}
+          onToneChange={(v) => setForm((p) => ({ ...p, reviewTone: v }))}
+          onAspectsChange={(v) => setForm((p) => ({ ...p, reviewAspects: v }))}
+        />
         <button type="submit" disabled={busy} className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
           {busy ? '投稿中…' : '投稿する'}
         </button>
