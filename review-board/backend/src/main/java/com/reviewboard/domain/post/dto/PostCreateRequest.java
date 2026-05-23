@@ -1,5 +1,6 @@
 package com.reviewboard.domain.post.dto;
 
+import com.reviewboard.domain.post.AiUsage;
 import com.reviewboard.domain.post.ReviewAspect;
 import com.reviewboard.domain.post.ReviewTone;
 import jakarta.validation.constraints.NotBlank;
@@ -13,6 +14,7 @@ import java.util.Set;
  *
  * @param reviewTone    F-SAFE-01 希望トーン（任意・null は未設定）
  * @param reviewAspects F-REQ-01 募集観点（任意・Set で重複排除。不正な enum 値は 400）
+ * @param aiUsage       AI使用状況の開示タグ（任意・null は未申告・Issue #172）
  */
 public record PostCreateRequest(
         @NotBlank @Size(max = 100) String title,
@@ -21,5 +23,6 @@ public record PostCreateRequest(
         @Size(max = 512) String demoUrl,
         @Size(max = 512) String screenshotKey,
         ReviewTone reviewTone,
-        Set<ReviewAspect> reviewAspects) {
+        Set<ReviewAspect> reviewAspects,
+        AiUsage aiUsage) {
 }

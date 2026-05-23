@@ -1,5 +1,6 @@
 package com.reviewboard.domain.post.dto;
 
+import com.reviewboard.domain.post.AiUsage;
 import com.reviewboard.domain.post.Post;
 import com.reviewboard.domain.post.RecruitStatus;
 import com.reviewboard.domain.post.ReviewAspect;
@@ -27,6 +28,7 @@ public record PostResponse(
         Long bestReviewId,
         ReviewTone reviewTone,
         List<ReviewAspect> reviewAspects,
+        AiUsage aiUsage,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt) {
 
@@ -40,6 +42,6 @@ public record PostResponse(
                 p.getTitle(), p.getDescription(), p.getRepoUrl(), p.getDemoUrl(),
                 p.getScreenshotKey(), screenshotUrl, p.getRecruitStatus(), p.getReviewCount(),
                 p.getBestReviewId(), p.getReviewTone(), new ArrayList<>(p.getReviewAspects()),
-                p.getCreatedAt(), p.getUpdatedAt());
+                p.getAiUsage(), p.getCreatedAt(), p.getUpdatedAt());
     }
 }

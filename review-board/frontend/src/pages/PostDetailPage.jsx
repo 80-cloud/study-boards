@@ -75,7 +75,7 @@ export default function PostDetailPage() {
             </div>
           )}
         </div>
-        <ReviewPrefBadges tone={post.reviewTone} aspects={post.reviewAspects} className="mt-3" />
+        <ReviewPrefBadges tone={post.reviewTone} aspects={post.reviewAspects} aiUsage={post.aiUsage} className="mt-3" />
         <MarkdownText className="mt-3">{post.description}</MarkdownText>
         {post.screenshotUrl && (
           <img src={post.screenshotUrl} alt={`${post.title} のスクリーンショット`} className="mt-4 max-h-96 rounded border border-gray-200" />

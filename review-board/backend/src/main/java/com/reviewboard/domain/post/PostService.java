@@ -56,7 +56,7 @@ public class PostService {
         post.setDemoUrl(req.demoUrl());
         post.setScreenshotKey(req.screenshotKey());
         post.setRecruitStatus(RecruitStatus.OPEN);
-        applyReviewPreferences(post, req.reviewTone(), req.reviewAspects());
+        applyReviewPreferences(post, req.reviewTone(), req.reviewAspects(), req.aiUsage());
         post.setCreatedAt(now);
         post.setUpdatedAt(now);
         postRepository.save(post);
@@ -100,7 +100,7 @@ public class PostService {
         post.setRepoUrl(req.repoUrl());
         post.setDemoUrl(req.demoUrl());
         post.setScreenshotKey(req.screenshotKey());
-        applyReviewPreferences(post, req.reviewTone(), req.reviewAspects());
+        applyReviewPreferences(post, req.reviewTone(), req.reviewAspects(), req.aiUsage());
         post.setUpdatedAt(OffsetDateTime.now());
         auditService.record(principal, AuditAction.POST_UPDATED, AuditTargetType.POST, postId);
         return post;
@@ -140,8 +140,9 @@ public class PostService {
      * tone は null で未設定に戻る。aspects は送られた集合で全置換（null は空集合扱い）。
      * 設定主体は所有者に限る（呼び出し元の create/loadOwned で担保。★S軸）。
      */
-    private void applyReviewPreferences(Post post, ReviewTone tone, Set<ReviewAspect> aspects) {
+    private void applyReviewPreferences(Post post, ReviewTone tone, Set<ReviewAspect> aspects, AiUsage aiUsage) {
         post.setReviewTone(tone);
+        post.setAiUsage(aiUsage);
         post.getReviewAspects().clear();
         if (aspects != null) {
             post.getReviewAspects().addAll(aspects);

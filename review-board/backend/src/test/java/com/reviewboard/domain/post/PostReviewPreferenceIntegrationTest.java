@@ -96,6 +96,45 @@ class PostReviewPreferenceIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    /** AI使用状況タグ（#172）：作成で設定でき詳細で返り、更新で変更・null で未申告に戻せる。 */
+    @Test
+    void aiUsage_create_persists_update_and_clear() throws Exception {
+        MvcResult res = mockMvc.perform(post("/api/posts").cookie(login(authorEmail))
+                        .contentType("application/json")
+                        .content("{\"title\":\"作品\",\"description\":\"説明\",\"aiUsage\":\"NONE\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.aiUsage").value("NONE"))
+                .andReturn();
+        long id = readId(res);
+
+        // 詳細取得で返る
+        mockMvc.perform(get("/api/posts/" + id).cookie(login(authorEmail)))
+                .andExpect(jsonPath("$.aiUsage").value("NONE"));
+
+        // 更新で変更できる
+        mockMvc.perform(put("/api/posts/" + id).cookie(login(authorEmail))
+                        .contentType("application/json")
+                        .content("{\"title\":\"作品\",\"description\":\"説明\",\"aiUsage\":\"PARTIAL\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.aiUsage").value("PARTIAL"));
+
+        // null（未指定）で未申告に戻る
+        mockMvc.perform(put("/api/posts/" + id).cookie(login(authorEmail))
+                        .contentType("application/json")
+                        .content("{\"title\":\"作品\",\"description\":\"説明\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.aiUsage").doesNotExist());
+    }
+
+    /** 不正な aiUsage enum 値は 400。 */
+    @Test
+    void invalid_aiUsage_value_returns400() throws Exception {
+        mockMvc.perform(post("/api/posts").cookie(login(authorEmail))
+                        .contentType("application/json")
+                        .content("{\"title\":\"作品\",\"description\":\"説明\",\"aiUsage\":\"NOPE\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
     /** 不正な enum 値（観点）は 400（HttpMessageNotReadable → InvalidRequest）。 */
     @Test
     void invalid_aspect_value_returns400() throws Exception {

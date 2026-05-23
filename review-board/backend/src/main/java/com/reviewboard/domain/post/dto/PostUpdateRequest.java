@@ -1,5 +1,6 @@
 package com.reviewboard.domain.post.dto;
 
+import com.reviewboard.domain.post.AiUsage;
 import com.reviewboard.domain.post.ReviewAspect;
 import com.reviewboard.domain.post.ReviewTone;
 import jakarta.validation.constraints.NotBlank;
@@ -12,6 +13,7 @@ import java.util.Set;
  *
  * @param reviewTone    F-SAFE-01 希望トーン（任意・null は未設定に戻す）
  * @param reviewAspects F-REQ-01 募集観点（任意・送られた集合で全置換）
+ * @param aiUsage       AI使用状況の開示タグ（任意・null は未申告に戻す・Issue #172）
  */
 public record PostUpdateRequest(
         @NotBlank @Size(max = 100) String title,
@@ -20,5 +22,6 @@ public record PostUpdateRequest(
         @Size(max = 512) String demoUrl,
         @Size(max = 512) String screenshotKey,
         ReviewTone reviewTone,
-        Set<ReviewAspect> reviewAspects) {
+        Set<ReviewAspect> reviewAspects,
+        AiUsage aiUsage) {
 }

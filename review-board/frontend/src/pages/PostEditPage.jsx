@@ -25,6 +25,7 @@ export default function PostEditPage() {
           screenshotKey: p.screenshotKey ?? null,
           reviewTone: p.reviewTone ?? null,
           reviewAspects: p.reviewAspects ?? [],
+          aiUsage: p.aiUsage ?? null,
         });
         setScreenshotUrl(p.screenshotUrl ?? '');
       })
@@ -46,6 +47,7 @@ export default function PostEditPage() {
         screenshotKey: form.screenshotKey || null,
         reviewTone: form.reviewTone,
         reviewAspects: form.reviewAspects,
+        aiUsage: form.aiUsage,
       });
       navigate(`/posts/${id}`, { replace: true });
     } catch (err) {
@@ -75,8 +77,10 @@ export default function PostEditPage() {
         <ReviewPrefFields
           tone={form.reviewTone}
           aspects={form.reviewAspects}
+          aiUsage={form.aiUsage}
           onToneChange={(v) => setForm((p) => ({ ...p, reviewTone: v }))}
           onAspectsChange={(v) => setForm((p) => ({ ...p, reviewAspects: v }))}
+          onAiUsageChange={(v) => setForm((p) => ({ ...p, aiUsage: v }))}
         />
         <div className="flex gap-3">
           <button type="submit" disabled={busy} className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
