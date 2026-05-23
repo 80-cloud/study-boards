@@ -1,0 +1,73 @@
+name: review-board Secret Scan (gitleaks / S軸)
+
+# ============================================================
+# 機密情報の server-side スキャン（最後の防衛線）。
+#
+# 目的: ローカル pre-commit hook では防げないバイパス経路
+#       （GitHub Web 編集 / `git commit --no-verify`）を塞ぐ。
+# 背景: task-board で起きた application.yml への平文パスワード Public
+#       コミット事故（不可逆事故）と同型の再発を防ぐ。S軸（セキュリティ）の核。
+#
+# 方式: バージョン固定の gitleaks バイナリで review-board ツリーを走査。
+#       設定はリポジトリルートの .gitleaks.toml（デフォルトルール ＋
+#       低エントロピー password リテラル検知）。検知で fail。
+#
+# スコープ: 既存 review-board-* workflow 慣習に合わせ review-board/ に限定
+#          （他学習プロジェクトのノイズを排除）。ローカル防御は
+#          .pre-commit-config.yaml が repo 全体の staged 差分を担保。
+# ============================================================
+
+on:
+  pull_request:
+    paths:
+      - 'review-board/**'
+      - '.gitleaks.toml'
+      - '.github/workflows/review-board-gitleaks.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'review-board/**'
+      - '.gitleaks.toml'
+      - '.github/workflows/review-board-gitleaks.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: rb-gitleaks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secret-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    env:
+      GITLEAKS_VERSION: 8.30.1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: gitleaks をインストール（バージョン固定）
+        run: |
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | tar -xz -C /tmp gitleaks
+          sudo install /tmp/gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+
+      - name: review-board を機密情報スキャン
+        run: |
+          # 検知時は gitleaks が exit 1 → step が fail。設定は repo ルートの .gitleaks.toml。
+          gitleaks dir review-board \
+            --config .gitleaks.toml \
+            --report-path gitleaks-report.json \
+            --report-format json \
+            --redact \
+            --verbose
+
+      - name: 検出レポートを artifact 化（失敗時のみ）
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-report
+          path: gitleaks-report.json
+          retention-days: 7
