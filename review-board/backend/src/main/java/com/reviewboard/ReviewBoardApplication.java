@@ -3,6 +3,7 @@ package com.reviewboard;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * review-board バックエンドのエントリポイント。
@@ -10,6 +11,7 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
  */
 @SpringBootApplication
 @ConfigurationPropertiesScan
+@EnableScheduling // S-3 カウンタ再計算バッチ等の定期実行
 public class ReviewBoardApplication {
 
     public static void main(String[] args) {
