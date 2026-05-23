@@ -6,6 +6,8 @@ import com.reviewboard.domain.audit.AuditService;
 import com.reviewboard.domain.audit.AuditTargetType;
 import com.reviewboard.domain.auth.AuthPrincipal;
 import com.reviewboard.domain.evaluation.dto.EvaluationRequest;
+import com.reviewboard.domain.notification.NotificationService;
+import com.reviewboard.domain.notification.NotificationType;
 import com.reviewboard.domain.post.Post;
 import com.reviewboard.domain.post.PostRepository;
 import org.springframework.stereotype.Service;
@@ -25,12 +27,14 @@ public class EvaluationService {
     private final EvaluationRepository evaluationRepository;
     private final PostRepository postRepository;
     private final AuditService auditService;
+    private final NotificationService notificationService;
 
     public EvaluationService(EvaluationRepository evaluationRepository, PostRepository postRepository,
-                             AuditService auditService) {
+                             AuditService auditService, NotificationService notificationService) {
         this.evaluationRepository = evaluationRepository;
         this.postRepository = postRepository;
         this.auditService = auditService;
+        this.notificationService = notificationService;
     }
 
     /**
@@ -57,6 +61,10 @@ public class EvaluationService {
         AuditAction action = req.result() == EvaluationResult.APPROVED
                 ? AuditAction.EVALUATION_APPROVED : AuditAction.EVALUATION_RETURNED;
         auditService.record(principal, action, AuditTargetType.EVALUATION, eval.getId());
+
+        // 投稿者へ「評価結果が付いた」通知（自己評価は通常起きないが notify が recipient==actor をスキップ）
+        notificationService.notify(post.getAuthorUserId(), principal.userId(),
+                NotificationType.EVALUATION_RESULT, post.getId(), null);
         return eval;
     }
 

@@ -9,6 +9,7 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -143,6 +144,58 @@ class NotificationIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(get("/api/notifications").cookie(login(outsider)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    /** 講師の評価で投稿者に EVALUATION_RESULT 通知が届く。 */
+    @Test
+    void evaluation_notifies_post_author() throws Exception {
+        var cohort = cohortRepository.findAll().iterator().next();
+        String teacher = newUser("teacher@example.com", UserRole.TEACHER, cohort.getId()).getEmail();
+        mockMvc.perform(post("/api/posts/" + postId + "/evaluation").cookie(login(teacher))
+                        .contentType("application/json")
+                        .content("{\"result\":\"APPROVED\",\"comment\":\"合格です\"}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/notifications").cookie(login(authorEmail)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.type=='EVALUATION_RESULT')]").isNotEmpty());
+    }
+
+    /** レビューへの返信で、レビュー主（reviewer）に REPLY_RECEIVED 通知が届く。 */
+    @Test
+    void reply_notifies_review_owner() throws Exception {
+        mockMvc.perform(post("/api/reviews/" + reviewId + "/replies").cookie(login(authorEmail))
+                        .contentType("application/json").content("{\"body\":\"ありがとうございます\"}"))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/notifications").cookie(login(reviewerEmail)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.type=='REPLY_RECEIVED')]").isNotEmpty());
+    }
+
+    /** 対応状態を「再レビュー依頼」にすると、レビュアーに RE_REVIEW_REQUESTED 通知が届く。 */
+    @Test
+    void re_review_request_notifies_reviewer() throws Exception {
+        mockMvc.perform(put("/api/reviews/" + reviewId + "/growth").cookie(login(authorEmail))
+                        .contentType("application/json")
+                        .content("{\"status\":\"RE_REVIEW_REQUESTED\",\"beforeAfter\":\"直しました\"}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/notifications").cookie(login(reviewerEmail)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.type=='RE_REVIEW_REQUESTED')]").isNotEmpty());
+    }
+
+    /** ベストレビュー選択で、選ばれたレビュアーに BEST_REVIEW_SELECTED 通知が届く。 */
+    @Test
+    void best_review_notifies_reviewer() throws Exception {
+        mockMvc.perform(put("/api/posts/" + postId + "/best-review").cookie(login(authorEmail))
+                        .contentType("application/json").content("{\"reviewId\":" + reviewId + "}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/notifications").cookie(login(reviewerEmail)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.type=='BEST_REVIEW_SELECTED')]").isNotEmpty());
     }
 
     private long createPost(Cookie cookie) throws Exception {
