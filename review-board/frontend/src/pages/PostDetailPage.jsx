@@ -8,6 +8,7 @@ import ReviewForm from '../components/ReviewForm';
 import ReviewItem from '../components/ReviewItem';
 import EvaluationPanel from '../components/EvaluationPanel';
 import ReviewPrefBadges from '../components/ReviewPrefBadges';
+import MarkdownText from '../components/MarkdownText';
 
 // 投稿詳細：本体＋レビュー一覧＋レビュー投稿＋講師評価。
 export default function PostDetailPage() {
@@ -75,7 +76,7 @@ export default function PostDetailPage() {
           )}
         </div>
         <ReviewPrefBadges tone={post.reviewTone} aspects={post.reviewAspects} className="mt-3" />
-        <p className="mt-3 whitespace-pre-wrap text-sm text-gray-700">{post.description}</p>
+        <MarkdownText className="mt-3">{post.description}</MarkdownText>
         {post.screenshotUrl && (
           <img src={post.screenshotUrl} alt={`${post.title} のスクリーンショット`} className="mt-4 max-h-96 rounded border border-gray-200" />
         )}

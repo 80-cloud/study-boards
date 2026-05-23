@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { AXIS_LABEL, GROWTH_OPTIONS, GROWTH_MAP } from '../constants';
 import { sendThanks, updateReview, deleteReview, fetchReplies, createReply, deleteReply, updateReviewGrowth } from '../api/reviews';
 import { useAuth } from '../context/AuthContext';
+import MarkdownText from './MarkdownText';
 
 // 1 件のレビュー表示。講師レビューは特別表示（F-REV-02）。
 // 投稿者には「ありがとう」（F-REV-03）、レビュー所有者には編集/削除を出す（権限は backend が判定）。
@@ -142,13 +143,14 @@ export default function ReviewItem({ review, canThank, canManageGrowth, isOwner,
         </div>
       ) : (
         <>
-          <p className="text-sm text-gray-700"><span className="text-green-600">✅ 良かった点：</span>{review.good}</p>
-          <p className="mt-1 text-sm text-gray-700"><span className="text-blue-600">💡 改善点：</span>{review.improvement}</p>
+          <div className="text-sm text-gray-700"><span className="text-green-600">✅ 良かった点：</span><MarkdownText className="mt-1">{review.good}</MarkdownText></div>
+          <div className="mt-1 text-sm text-gray-700"><span className="text-blue-600">💡 改善点：</span><MarkdownText className="mt-1">{review.improvement}</MarkdownText></div>
           {review.axisComments?.length > 0 && (
             <ul className="mt-2 space-y-1 border-t border-gray-100 pt-2">
               {review.axisComments.map((c) => (
                 <li key={c.axis} className="text-xs text-gray-600">
-                  <span className="text-gray-400">{AXIS_LABEL[c.axis] ?? c.axis}：</span>{c.comment}
+                  <span className="text-gray-400">{AXIS_LABEL[c.axis] ?? c.axis}：</span>
+                  <MarkdownText className="mt-0.5 text-xs">{c.comment}</MarkdownText>
                 </li>
               ))}
             </ul>
@@ -168,7 +170,7 @@ export default function ReviewItem({ review, canThank, canManageGrowth, isOwner,
             )}
           </div>
           {beforeAfter && !editingGrowth && (
-            <p className="mt-1 whitespace-pre-wrap text-xs text-gray-600"><span className="text-gray-400">Before→After：</span>{beforeAfter}</p>
+            <div className="mt-1 text-xs text-gray-600"><span className="text-gray-400">Before→After：</span><MarkdownText className="mt-0.5 text-xs">{beforeAfter}</MarkdownText></div>
           )}
           {editingGrowth && (
             <div className="mt-2 space-y-2">
@@ -233,7 +235,7 @@ export default function ReviewItem({ review, canThank, canManageGrowth, isOwner,
                     <button onClick={() => removeReply(rp.id)} disabled={busy} className="text-xs text-red-500 hover:underline disabled:opacity-50">削除</button>
                   )}
                 </div>
-                <p className="mt-1 whitespace-pre-wrap text-gray-700">{rp.body}</p>
+                <MarkdownText className="mt-1">{rp.body}</MarkdownText>
               </div>
             ))
           )}
