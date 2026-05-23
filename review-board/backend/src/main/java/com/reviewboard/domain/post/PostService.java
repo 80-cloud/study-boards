@@ -32,12 +32,15 @@ public class PostService {
     private final PostRepository postRepository;
     private final ReviewRepository reviewRepository;
     private final AuditService auditService;
+    private final com.reviewboard.domain.notification.NotificationService notificationService;
 
     public PostService(PostRepository postRepository, ReviewRepository reviewRepository,
-                       AuditService auditService) {
+                       AuditService auditService,
+                       com.reviewboard.domain.notification.NotificationService notificationService) {
         this.postRepository = postRepository;
         this.reviewRepository = reviewRepository;
         this.auditService = auditService;
+        this.notificationService = notificationService;
     }
 
     /** F-POST-01 作成。cohort と author は principal（検証済み）から導出する。 */
@@ -117,6 +120,10 @@ public class PostService {
         }
         post.setBestReviewId(reviewId);
         post.setUpdatedAt(OffsetDateTime.now());
+        // ベストに選ばれたレビュアーへ通知（自分のレビューを選ぶことは自己レビュー禁止により起きない）
+        notificationService.notify(review.getReviewerUserId(), principal.userId(),
+                com.reviewboard.domain.notification.NotificationType.BEST_REVIEW_SELECTED,
+                postId, reviewId);
         return post;
     }
 

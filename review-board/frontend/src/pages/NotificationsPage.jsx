@@ -8,9 +8,21 @@ const MESSAGE = {
   REVIEW_RECEIVED: (n) => `${n.actorDisplayName} さんがあなたの投稿にレビューしました`,
   THANKS_RECEIVED: (n) => `${n.actorDisplayName} さんがあなたのレビューに「ありがとう」を送りました`,
   MENTIONED: (n) => `${n.actorDisplayName} さんがあなたを @ で名指ししました`,
+  EVALUATION_RESULT: (n) => `${n.actorDisplayName} さんがあなたの投稿を評価しました`,
+  REPLY_RECEIVED: (n) => `${n.actorDisplayName} さんがあなたのレビューに返信しました`,
+  RE_REVIEW_REQUESTED: (n) => `${n.actorDisplayName} さんが再レビューを依頼しました`,
+  BEST_REVIEW_SELECTED: (n) => `${n.actorDisplayName} さんがあなたのレビューをベストに選びました`,
 };
 
-const ICON = { THANKS_RECEIVED: '🙏 ', MENTIONED: '💬 ', REVIEW_RECEIVED: '📝 ' };
+const ICON = {
+  THANKS_RECEIVED: '🙏 ',
+  MENTIONED: '💬 ',
+  REVIEW_RECEIVED: '📝 ',
+  EVALUATION_RESULT: '🏅 ',
+  REPLY_RECEIVED: '↩️ ',
+  RE_REVIEW_REQUESTED: '🔁 ',
+  BEST_REVIEW_SELECTED: '⭐ ',
+};
 
 export default function NotificationsPage() {
   const navigate = useNavigate();

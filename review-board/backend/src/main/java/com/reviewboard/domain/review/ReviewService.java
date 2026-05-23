@@ -208,6 +208,12 @@ public class ReviewService {
         review.setUpdatedAt(OffsetDateTime.now());
         auditService.record(principal, AuditAction.REVIEW_GROWTH_UPDATED, AuditTargetType.REVIEW, reviewId);
 
+        // 「再レビュー依頼」に切り替えたら、レビュアーへ通知して成長ループを締める
+        if (status == GrowthStatus.RE_REVIEW_REQUESTED) {
+            notificationService.notify(review.getReviewerUserId(), principal.userId(),
+                    NotificationType.RE_REVIEW_REQUESTED, review.getPostId(), reviewId);
+        }
+
         User reviewer = userRepository.findById(review.getReviewerUserId()).orElseThrow();
         List<ReviewAxisComment> axisComments = axisCommentRepository.findByReviewId(reviewId);
         return ReviewResponse.from(review, reviewer.getDisplayName(),
@@ -230,6 +236,9 @@ public class ReviewService {
 
         review.setRepliesCount(review.getRepliesCount() + 1); // 非正規化（母 S-3）
 
+        // レビュアー本人へ「返信が付いた」通知（自己返信は notify がスキップ）
+        notificationService.notify(review.getReviewerUserId(), principal.userId(),
+                NotificationType.REPLY_RECEIVED, review.getPostId(), reviewId);
         // F-MENTION：返信本文の @表示名 を同 cohort で解決し通知
         notificationService.notifyMentions(body, principal.userId(), principal.cohortId(),
                 review.getPostId(), reviewId);
