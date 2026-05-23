@@ -64,6 +64,11 @@ app:
   # 顧客オリジンを設定すると CSP frame-ancestors で限定的に埋め込みを解放する。
   embedding:
     frame-ancestors: ${EMBEDDING_FRAME_ANCESTORS:'none'}
+  # 初期管理者の bootstrap（デプロイ直後の「最初の1人」を作る。未設定＝何もしない・冪等）。
+  bootstrap:
+    admin-email: ${BOOTSTRAP_ADMIN_EMAIL:}
+    admin-password: ${BOOTSTRAP_ADMIN_PASSWORD:}
+    cohort-name: ${BOOTSTRAP_ADMIN_COHORT:管理}
   cors:
     # 単一オリジン（後方互換）。複数許可は allowed-origins（カンマ区切り）を使う。
     allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:5175}
