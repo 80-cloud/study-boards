@@ -8,6 +8,7 @@ import com.reviewboard.domain.audit.AuditTargetType;
 import com.reviewboard.domain.auth.AuthPrincipal;
 import com.reviewboard.domain.post.Post;
 import com.reviewboard.domain.post.PostRepository;
+import com.reviewboard.domain.review.dto.ReplyResponse;
 import com.reviewboard.domain.review.dto.ReviewCreateRequest;
 import com.reviewboard.domain.review.dto.ReviewResponse;
 import com.reviewboard.domain.user.User;
@@ -34,6 +35,7 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final ReviewAxisCommentRepository axisCommentRepository;
     private final ThanksRepository thanksRepository;
+    private final ReviewReplyRepository replyRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final AuditService auditService;
@@ -41,12 +43,14 @@ public class ReviewService {
     public ReviewService(ReviewRepository reviewRepository,
                          ReviewAxisCommentRepository axisCommentRepository,
                          ThanksRepository thanksRepository,
+                         ReviewReplyRepository replyRepository,
                          PostRepository postRepository,
                          UserRepository userRepository,
                          AuditService auditService) {
         this.reviewRepository = reviewRepository;
         this.axisCommentRepository = axisCommentRepository;
         this.thanksRepository = thanksRepository;
+        this.replyRepository = replyRepository;
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.auditService = auditService;
@@ -163,7 +167,65 @@ public class ReviewService {
         auditService.record(principal, AuditAction.THANKS_SENT, AuditTargetType.REVIEW, reviewId);
     }
 
+    // ---- F-REV-04 返信（スレッド） ----
+
+    /** 返信作成。レビュー先の投稿が自 cohort（可視）であること。同 cohort なら誰でも返信可。 */
+    @Transactional
+    public ReplyResponse createReply(AuthPrincipal principal, Long reviewId, String body) {
+        Review review = visibleReview(principal, reviewId);
+        OffsetDateTime now = OffsetDateTime.now();
+        ReviewReply reply = new ReviewReply();
+        reply.setReviewId(reviewId);
+        reply.setReplierUserId(principal.userId());
+        reply.setBody(body);
+        reply.setCreatedAt(now);
+        replyRepository.save(reply);
+
+        review.setRepliesCount(review.getRepliesCount() + 1); // 非正規化（母 S-3）
+
+        User replier = userRepository.findById(principal.userId()).orElseThrow();
+        return ReplyResponse.from(reply, replier.getDisplayName());
+    }
+
+    /** 返信一覧（古い順）。レビューが可視でなければ 404。reviewer 名は N+1 回避でまとめ引き。 */
+    @Transactional(readOnly = true)
+    public List<ReplyResponse> listReplies(AuthPrincipal principal, Long reviewId) {
+        visibleReview(principal, reviewId);
+        List<ReviewReply> replies = replyRepository.findByReviewIdAndDeletedAtIsNullOrderByCreatedAtAsc(reviewId);
+        if (replies.isEmpty()) {
+            return List.of();
+        }
+        Set<Long> userIds = replies.stream().map(ReviewReply::getReplierUserId).collect(Collectors.toSet());
+        Map<Long, User> users = userRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(User::getId, Function.identity()));
+        return replies.stream().map(r -> {
+            User u = users.get(r.getReplierUserId());
+            return ReplyResponse.from(r, u != null ? u.getDisplayName() : "(不明)");
+        }).toList();
+    }
+
+    /** 返信の論理削除（投稿者本人のみ・他人/未存在は 404）。カウンタも戻す。 */
+    @Transactional
+    public void deleteReply(AuthPrincipal principal, Long replyId) {
+        ReviewReply reply = replyRepository.findByIdAndDeletedAtIsNull(replyId)
+                .orElseThrow(() -> new ResourceNotFoundException("reply not found: " + replyId));
+        if (!reply.getReplierUserId().equals(principal.userId())) {
+            throw new ResourceNotFoundException("not the owner: " + replyId);
+        }
+        reply.setDeletedAt(OffsetDateTime.now());
+        reviewRepository.findByIdAndDeletedAtIsNull(reply.getReviewId())
+                .ifPresent(rv -> rv.setRepliesCount(Math.max(0, rv.getRepliesCount() - 1)));
+    }
+
     // ---- helpers ----
+
+    /** レビューが可視（未削除＋投稿が自 cohort）であることを確認して返す。可視外は 404。 */
+    private Review visibleReview(AuthPrincipal principal, Long reviewId) {
+        Review review = reviewRepository.findByIdAndDeletedAtIsNull(reviewId)
+                .orElseThrow(() -> new ResourceNotFoundException("review not found: " + reviewId));
+        visiblePost(principal, review.getPostId()); // cohort 境界（404）
+        return review;
+    }
 
     /** 自 cohort・未削除の投稿を返す。可視性外は 404（IDOR 遮断）。 */
     private Post visiblePost(AuthPrincipal principal, Long postId) {

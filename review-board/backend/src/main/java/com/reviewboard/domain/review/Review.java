@@ -37,6 +37,10 @@ public class Review {
     @Column(name = "thanks_count", nullable = false)
     private int thanksCount = 0;
 
+    /** F-REV-04 返信数（非正規化・同一 TX 更新）。 */
+    @Column(name = "replies_count", nullable = false)
+    private int repliesCount = 0;
+
     @Column(name = "deleted_at")
     private OffsetDateTime deletedAt;
 

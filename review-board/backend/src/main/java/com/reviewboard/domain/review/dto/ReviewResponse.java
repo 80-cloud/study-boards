@@ -22,6 +22,7 @@ public record ReviewResponse(
         String good,
         String improvement,
         int thanksCount,
+        int repliesCount,
         List<AxisComment> axisComments,
         OffsetDateTime createdAt) {
 
@@ -36,7 +37,7 @@ public record ReviewResponse(
         return new ReviewResponse(
                 r.getId(), r.getPostId(), r.getReviewerUserId(),
                 reviewerDisplayName, reviewerRole, reviewerRole == UserRole.TEACHER,
-                r.getGood(), r.getImprovement(), r.getThanksCount(),
+                r.getGood(), r.getImprovement(), r.getThanksCount(), r.getRepliesCount(),
                 axisComments.stream().map(AxisComment::from).toList(),
                 r.getCreatedAt());
     }

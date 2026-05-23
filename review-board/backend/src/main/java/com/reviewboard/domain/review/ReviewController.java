@@ -1,6 +1,8 @@
 package com.reviewboard.domain.review;
 
 import com.reviewboard.domain.auth.AuthPrincipal;
+import com.reviewboard.domain.review.dto.ReplyRequest;
+import com.reviewboard.domain.review.dto.ReplyResponse;
 import com.reviewboard.domain.review.dto.ReviewCreateRequest;
 import com.reviewboard.domain.review.dto.ReviewResponse;
 import jakarta.validation.Valid;
@@ -61,6 +63,30 @@ public class ReviewController {
     public ResponseEntity<Void> thank(@AuthenticationPrincipal AuthPrincipal principal,
                                       @PathVariable Long id) {
         reviewService.thank(principal, id);
+        return ResponseEntity.noContent().build();
+    }
+
+    /** F-REV-04 返信作成（同 cohort のメンバー） */
+    @PostMapping("/api/reviews/{id}/replies")
+    public ResponseEntity<ReplyResponse> reply(@AuthenticationPrincipal AuthPrincipal principal,
+                                               @PathVariable Long id,
+                                               @Valid @RequestBody ReplyRequest request) {
+        ReplyResponse res = reviewService.createReply(principal, id, request.body());
+        return ResponseEntity.created(URI.create("/api/replies/" + res.id())).body(res);
+    }
+
+    /** F-REV-04 返信一覧（古い順・同 cohort） */
+    @GetMapping("/api/reviews/{id}/replies")
+    public List<ReplyResponse> replies(@AuthenticationPrincipal AuthPrincipal principal,
+                                       @PathVariable Long id) {
+        return reviewService.listReplies(principal, id);
+    }
+
+    /** F-REV-04 返信の論理削除（返信者本人のみ） */
+    @DeleteMapping("/api/replies/{id}")
+    public ResponseEntity<Void> deleteReply(@AuthenticationPrincipal AuthPrincipal principal,
+                                            @PathVariable Long id) {
+        reviewService.deleteReply(principal, id);
         return ResponseEntity.noContent().build();
     }
 }

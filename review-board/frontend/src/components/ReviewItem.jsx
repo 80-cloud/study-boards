@@ -1,17 +1,57 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AXIS_LABEL } from '../constants';
-import { sendThanks, updateReview, deleteReview } from '../api/reviews';
+import { sendThanks, updateReview, deleteReview, fetchReplies, createReply, deleteReply } from '../api/reviews';
+import { useAuth } from '../context/AuthContext';
 
 // 1 件のレビュー表示。講師レビューは特別表示（F-REV-02）。
 // 投稿者には「ありがとう」（F-REV-03）、レビュー所有者には編集/削除を出す（権限は backend が判定）。
 export default function ReviewItem({ review, canThank, isOwner, isBest, canSelectBest, onSelectBest, onChanged }) {
+  const { user } = useAuth();
   const [thanks, setThanks] = useState(review.thanksCount);
   const [thanked, setThanked] = useState(false);
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(false);
   const [good, setGood] = useState(review.good);
   const [improvement, setImprovement] = useState(review.improvement);
+
+  // F-REV-04 返信スレッド
+  const [showReplies, setShowReplies] = useState(false);
+  const [replies, setReplies] = useState(null); // null=未取得
+  const [replyBody, setReplyBody] = useState('');
+  const [replyCount, setReplyCount] = useState(review.repliesCount ?? 0);
+
+  const loadReplies = async () => {
+    const data = await fetchReplies(review.id);
+    setReplies(data);
+    setReplyCount(data.length);
+  };
+  const toggleReplies = async () => {
+    const next = !showReplies;
+    setShowReplies(next);
+    if (next && replies === null) await loadReplies();
+  };
+  const submitReply = async (e) => {
+    e.preventDefault();
+    if (!replyBody.trim()) return;
+    setBusy(true);
+    try {
+      await createReply(review.id, replyBody.trim());
+      setReplyBody('');
+      await loadReplies();
+    } finally {
+      setBusy(false);
+    }
+  };
+  const removeReply = async (replyId) => {
+    setBusy(true);
+    try {
+      await deleteReply(replyId);
+      await loadReplies();
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const thank = async () => {
     setBusy(true);
@@ -109,7 +149,46 @@ export default function ReviewItem({ review, canThank, isOwner, isBest, canSelec
             ⭐ ベストに選ぶ
           </button>
         )}
+        {/* F-REV-04：返信スレッドの開閉 */}
+        <button onClick={toggleReplies} className="text-gray-600 hover:underline">
+          💬 返信 {replyCount}
+        </button>
       </div>
+
+      {showReplies && (
+        <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
+          {replies === null ? (
+            <p className="text-xs text-gray-400">読み込み中…</p>
+          ) : replies.length === 0 ? (
+            <p className="text-xs text-gray-400">まだ返信がありません。</p>
+          ) : (
+            replies.map((rp) => (
+              <div key={rp.id} className="rounded bg-gray-50 px-3 py-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <Link to={`/users/${rp.replierUserId}/profile`} className="text-xs font-medium text-gray-700 hover:underline">
+                    {rp.replierDisplayName}
+                  </Link>
+                  {user?.id === rp.replierUserId && (
+                    <button onClick={() => removeReply(rp.id)} disabled={busy} className="text-xs text-red-500 hover:underline disabled:opacity-50">削除</button>
+                  )}
+                </div>
+                <p className="mt-1 whitespace-pre-wrap text-gray-700">{rp.body}</p>
+              </div>
+            ))
+          )}
+          <form onSubmit={submitReply} className="flex gap-2">
+            <input
+              value={replyBody}
+              onChange={(e) => setReplyBody(e.target.value)}
+              placeholder="返信を書く"
+              className="flex-1 rounded border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
+            />
+            <button type="submit" disabled={busy || !replyBody.trim()} className="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700 disabled:opacity-50">
+              返信
+            </button>
+          </form>
+        </div>
+      )}
     </li>
   );
 }
