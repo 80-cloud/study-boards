@@ -6,6 +6,8 @@ export const TONE_OPTIONS = [
   { value: 'WELCOME_BEGINNER', label: '初学者歓迎', hint: '基礎的な指摘も歓迎' },
   { value: 'HARSH_OK', label: '辛口OK', hint: '厳しめの指摘を歓迎' },
   { value: 'GENTLE', label: '優しめ希望', hint: '言葉選びに配慮してほしい' },
+  { value: 'DETAILED', label: 'じっくり詳しく', hint: '時間をかけて深く見てほしい' },
+  { value: 'QUICK_OK', label: 'ざっくりでOK', hint: '要点だけ手早く見てほしい' },
 ];
 
 export const TONE_LABEL = Object.fromEntries(TONE_OPTIONS.map((o) => [o.value, o.label]));
@@ -14,9 +16,13 @@ export const TONE_LABEL = Object.fromEntries(TONE_OPTIONS.map((o) => [o.value, o
 export const ASPECT_OPTIONS = [
   { value: 'DB', label: 'DB' },
   { value: 'UI', label: 'UI' },
+  { value: 'UX', label: 'UX' },
   { value: 'CODE', label: 'コード' },
+  { value: 'ARCHITECTURE', label: '設計' },
+  { value: 'TESTING', label: 'テスト' },
   { value: 'SECURITY', label: 'セキュリティ' },
   { value: 'PERFORMANCE', label: 'パフォーマンス' },
+  { value: 'ACCESSIBILITY', label: 'アクセシビリティ' },
 ];
 
 export const ASPECT_LABEL = Object.fromEntries(ASPECT_OPTIONS.map((o) => [o.value, o.label]));
@@ -29,3 +35,22 @@ export const AI_USAGE_OPTIONS = [
 ];
 
 export const AI_USAGE_LABEL = Object.fromEntries(AI_USAGE_OPTIONS.map((o) => [o.value, o.label]));
+
+// 検索キーワードの正規化：小文字化＋ひらがな→カタカナ（「せ」で「セキュリティ」に当てるため）。
+const normalize = (s) =>
+  (s ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[ぁ-ゖ]/g, (c) => String.fromCharCode(c.charCodeAt(0) + 0x60));
+
+// キーワードを観点/トーンに解決：ラベルまたは enum 値に部分一致したものを返す（F-SEARCH-01）。
+// 例：「セキュリティ」「せ」→ ['SECURITY']、「UI」→ ['UI']、「辛口」→ tones ['HARSH_OK']。
+const matchByLabel = (options, keyword) => {
+  const k = normalize(keyword);
+  if (!k) return [];
+  return options
+    .filter((o) => normalize(o.label).includes(k) || o.value.toLowerCase().includes(k))
+    .map((o) => o.value);
+};
+export const matchAspects = (keyword) => matchByLabel(ASPECT_OPTIONS, keyword);
+export const matchTones = (keyword) => matchByLabel(TONE_OPTIONS, keyword);

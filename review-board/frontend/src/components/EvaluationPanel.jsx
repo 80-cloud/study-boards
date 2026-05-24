@@ -26,12 +26,12 @@ export default function EvaluationPanel({ postId, evaluation, isTeacher, onEvalu
   };
 
   return (
-    <section className="rounded-lg border border-gray-200 bg-white p-4">
-      <h3 className="mb-3 font-medium text-gray-800">講師による最終評価</h3>
+    <section className="mac-card p-5">
+      <h3 className="mac-h mb-3 text-base">講師による最終評価</h3>
 
       {evaluation ? (
-        <div className={`mb-3 rounded p-3 text-sm ${evaluation.approved ? 'bg-green-50 text-green-700' : 'bg-orange-50 text-orange-700'}`}>
-          <span className="font-medium">
+        <div className={`mb-3 rounded-xl p-3 text-sm ${evaluation.approved ? 'bg-green-50 text-green-700' : 'bg-orange-50 text-orange-700'}`}>
+          <span className="font-semibold">
             {evaluation.approved ? '🏅 合格' : '↩ 差し戻し'}
           </span>
           <p className="mt-1 text-gray-600">{evaluation.comment}</p>
@@ -41,8 +41,8 @@ export default function EvaluationPanel({ postId, evaluation, isTeacher, onEvalu
       )}
 
       {isTeacher && (
-        <form onSubmit={submit} className="border-t border-gray-100 pt-3">
-          {error && <p className="mb-2 rounded bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+        <form onSubmit={submit} className="border-t border-black/5 pt-3">
+          {error && <p className="mb-2 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
           <div className="mb-2 flex gap-4 text-sm">
             {['APPROVED', 'RETURNED'].map((r) => (
               <label key={r} className="flex items-center gap-1">
@@ -56,14 +56,10 @@ export default function EvaluationPanel({ postId, evaluation, isTeacher, onEvalu
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             placeholder="評価コメント"
-            className="mb-2 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+            className="mac-input mb-2"
             rows={2}
           />
-          <button
-            type="submit"
-            disabled={busy}
-            className="rounded bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
-          >
+          <button type="submit" disabled={busy} className="mac-btn-navy">
             {busy ? '送信中…' : '評価を確定'}
           </button>
         </form>

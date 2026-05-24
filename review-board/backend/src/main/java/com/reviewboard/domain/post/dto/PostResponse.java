@@ -25,8 +25,10 @@ public record PostResponse(
         String screenshotUrl,
         RecruitStatus recruitStatus,
         int reviewCount,
+        int likeCount,
+        boolean liked,
         Long bestReviewId,
-        ReviewTone reviewTone,
+        List<ReviewTone> reviewTones,
         List<ReviewAspect> reviewAspects,
         AiUsage aiUsage,
         OffsetDateTime createdAt,
@@ -35,13 +37,15 @@ public record PostResponse(
     /**
      * @param screenshotUrl 表示用の署名付き GET URL（SEC-8：private 保存・短命 URL のみ公開）。
      *                      key が無ければ null。生成は {@code StorageService} が担い、Controller で渡す。
+     * @param liked         閲覧者がこの投稿にいいね済みか（ボタンの押下状態用）。
      */
-    public static PostResponse from(Post p, String screenshotUrl) {
+    public static PostResponse from(Post p, String screenshotUrl, boolean liked) {
         return new PostResponse(
                 p.getId(), p.getAuthorUserId(), p.getCohortId(),
                 p.getTitle(), p.getDescription(), p.getRepoUrl(), p.getDemoUrl(),
                 p.getScreenshotKey(), screenshotUrl, p.getRecruitStatus(), p.getReviewCount(),
-                p.getBestReviewId(), p.getReviewTone(), new ArrayList<>(p.getReviewAspects()),
+                p.getLikeCount(), liked,
+                p.getBestReviewId(), new ArrayList<>(p.getReviewTones()), new ArrayList<>(p.getReviewAspects()),
                 p.getAiUsage(), p.getCreatedAt(), p.getUpdatedAt());
     }
 }

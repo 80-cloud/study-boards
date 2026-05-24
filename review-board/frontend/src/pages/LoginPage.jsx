@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import ShibaIcon from '../components/ShibaIcon';
 
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -26,34 +28,69 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <form onSubmit={onSubmit} className="w-full max-w-sm rounded-lg border border-gray-200 bg-white p-8 shadow-sm">
-        <h1 className="mb-6 text-center text-xl font-bold text-gray-800">review-board ログイン</h1>
-        {error && <p className="mb-4 rounded bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
-        <label className="mb-1 block text-sm text-gray-600">メールアドレス</label>
-        <input
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="mb-4 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-        />
-        <label className="mb-1 block text-sm text-gray-600">パスワード</label>
-        <input
-          type="password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="mb-6 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-        />
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full rounded bg-blue-600 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-        >
-          {submitting ? 'ログイン中…' : 'ログイン'}
-        </button>
-      </form>
+    <div className="flex min-h-screen items-center justify-center px-4">
+      <div className="w-full max-w-sm">
+        {/* ブランド */}
+        <div className="mb-7 flex flex-col items-center text-center">
+          <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-[20px] bg-[#fff3e8] shadow-mac ring-1 ring-black/5">
+            <ShibaIcon className="h-12 w-12" />
+          </div>
+          <h1 className="text-2xl font-extrabold tracking-tight text-navy-700">review-board</h1>
+          <p className="mt-1 text-sm text-gray-500">成長を支え合うレビューコミュニティ</p>
+        </div>
+
+        {/* ログインカード */}
+        <form onSubmit={onSubmit} className="mac-card p-7">
+          {error && (
+            <p className="mb-4 rounded-xl border border-red-100 bg-red-50/80 px-3.5 py-2.5 text-sm text-red-600">
+              {error}
+            </p>
+          )}
+
+          <label className="mac-label" htmlFor="email">メールアドレス</label>
+          <input
+            id="email"
+            type="email"
+            required
+            autoComplete="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="mac-input mb-4"
+          />
+
+          <label className="mac-label" htmlFor="password">パスワード</label>
+          <div className="relative mb-6">
+            <input
+              id="password"
+              type={showPassword ? 'text' : 'password'}
+              required
+              autoComplete="current-password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="mac-input pr-12"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? 'パスワードを隠す' : 'パスワードを表示'}
+              aria-pressed={showPassword}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-2.5 py-1 text-xs font-semibold text-gray-500 transition hover:bg-black/[0.05] hover:text-navy-700"
+            >
+              {showPassword ? '非表示' : '表示'}
+            </button>
+          </div>
+
+          <button type="submit" disabled={submitting} className="mac-btn-navy w-full py-2.5">
+            {submitting ? 'ログイン中…' : 'ログイン'}
+          </button>
+        </form>
+
+        <p className="mt-6 text-center text-xs text-gray-400">
+          アカウントは管理者・講師が発行します
+        </p>
+      </div>
     </div>
   );
 }

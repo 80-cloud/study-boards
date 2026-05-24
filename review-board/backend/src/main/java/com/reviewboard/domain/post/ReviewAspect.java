@@ -6,7 +6,11 @@ package com.reviewboard.domain.post;
 public enum ReviewAspect {
     DB,
     UI,
+    UX,
     CODE,
+    ARCHITECTURE,
+    TESTING,
     SECURITY,
-    PERFORMANCE
+    PERFORMANCE,
+    ACCESSIBILITY
 }

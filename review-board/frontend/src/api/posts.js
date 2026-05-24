@@ -1,10 +1,13 @@
 import client from './client';
 
 // F-POST-03 一覧 ＋ F-SEARCH-01 検索 ＋ F-FILTER-01 絞り込み/並び替え。
-// opts: { q, status, unreviewed, sort }（すべて任意）。Spring の Slice 形（content[]）を返す。
+// opts: { q, aspects[], tones[], status, unreviewed, sort }（すべて任意）。Spring の Slice 形（content[]）を返す。
 export const fetchPosts = (opts = {}, page = 0, size = 20) => {
   const params = { page, size };
   if (opts.q) params.q = opts.q;
+  // 観点・トーンはキーワードから解決した enum 配列。Spring の List<Enum> はカンマ区切りで束ねる。
+  if (opts.aspects?.length) params.aspects = opts.aspects.join(',');
+  if (opts.tones?.length) params.tones = opts.tones.join(',');
   if (opts.status) params.status = opts.status;
   if (opts.unreviewed) params.unreviewed = true;
   if (opts.sort) params.sort = opts.sort;
@@ -26,3 +29,7 @@ export const deletePost = (id) => client.delete(`/posts/${id}`);
 // F-REV-05 ベストレビュー選択（投稿者のみ・backend が非所有者を 404）
 export const selectBestReview = (postId, reviewId) =>
   client.put(`/posts/${postId}/best-review`, { reviewId }).then((r) => r.data);
+
+// いいね（👍）。{likeCount, liked} を返す。
+export const likePost = (id) => client.post(`/posts/${id}/like`).then((r) => r.data);
+export const unlikePost = (id) => client.delete(`/posts/${id}/like`).then((r) => r.data);

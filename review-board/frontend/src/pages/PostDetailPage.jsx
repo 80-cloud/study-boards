@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { fetchPost, deletePost, selectBestReview } from '../api/posts';
+import { fetchPost, deletePost, selectBestReview, likePost, unlikePost } from '../api/posts';
 import { fetchReviews } from '../api/reviews';
 import { fetchEvaluation } from '../api/evaluations';
 import { useAuth } from '../context/AuthContext';
@@ -61,35 +61,54 @@ export default function PostDetailPage() {
     }
   };
 
-  return (
-    <main className="mx-auto max-w-3xl space-y-6 p-6">
-      <Link to="/" className="text-sm text-blue-600 hover:underline">← 一覧へ</Link>
+  // いいね（👍）のトグル。更新後の件数と押下状態を反映。
+  const toggleLike = async () => {
+    try {
+      const res = post.liked ? await unlikePost(post.id) : await likePost(post.id);
+      setPost((p) => ({ ...p, likeCount: res.likeCount, liked: res.liked }));
+    } catch {
+      setError('いいねに失敗しました');
+    }
+  };
 
-      <article className="rounded-lg border border-gray-200 bg-white p-6">
-        <div className="flex items-start justify-between">
-          <h2 className="text-xl font-bold text-gray-800">{post.title}</h2>
+  return (
+    <main className="mx-auto max-w-3xl space-y-6 px-6 py-8">
+      <Link to="/" className="text-sm font-medium text-brand-500 hover:underline">← 一覧へ</Link>
+
+      <article className="mac-card p-6 sm:p-7">
+        <div className="flex items-start justify-between gap-4">
+          <h2 className="mac-h text-2xl">{post.title}</h2>
           {isAuthor && (
-            <div className="flex gap-3 text-sm">
-              <Link to={`/posts/${post.id}/edit`} className="text-blue-600 hover:underline">編集</Link>
-              <button onClick={removePost} className="text-red-500 hover:underline">削除</button>
+            <div className="flex flex-shrink-0 gap-3 text-sm">
+              <Link to={`/posts/${post.id}/edit`} className="font-medium text-brand-500 hover:underline">編集</Link>
+              <button onClick={removePost} className="font-medium text-red-500 hover:underline">削除</button>
             </div>
           )}
         </div>
-        <ReviewPrefBadges tone={post.reviewTone} aspects={post.reviewAspects} aiUsage={post.aiUsage} className="mt-3" />
+        <ReviewPrefBadges tones={post.reviewTones} aspects={post.reviewAspects} aiUsage={post.aiUsage} className="mt-3" />
         <MarkdownText className="mt-3">{post.description}</MarkdownText>
         {post.screenshotUrl && (
-          <img src={post.screenshotUrl} alt={`${post.title} のスクリーンショット`} className="mt-4 max-h-96 rounded border border-gray-200" />
+          <img src={post.screenshotUrl} alt={`${post.title} のスクリーンショット`} className="mt-4 max-h-96 rounded-xl border border-black/5 shadow-mac-sm" />
         )}
-        <div className="mt-3 flex gap-4 text-sm">
-          {post.repoUrl && <a href={post.repoUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">リポジトリ</a>}
-          {post.demoUrl && <a href={post.demoUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">デモ</a>}
+        <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
+          <button
+            onClick={toggleLike}
+            aria-pressed={post.liked}
+            className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-bold transition active:scale-[0.98] ${
+              post.liked ? 'bg-navy-700 text-white shadow-mac-sm' : 'bg-white text-navy-700 ring-1 ring-black/10 hover:bg-black/[0.03]'
+            }`}
+          >
+            👍 いいね <span className="tabular-nums">{post.likeCount}</span>
+          </button>
+          {post.repoUrl && <a href={post.repoUrl} target="_blank" rel="noreferrer" className="mac-btn-ghost">リポジトリ</a>}
+          {post.demoUrl && <a href={post.demoUrl} target="_blank" rel="noreferrer" className="mac-btn-ghost">デモ</a>}
         </div>
       </article>
 
       <EvaluationPanel postId={post.id} evaluation={evaluation} isTeacher={isTeacher} onEvaluated={setEvaluation} />
 
       <section>
-        <h3 className="mb-3 font-medium text-gray-800">レビュー（{reviews.length}）</h3>
+        <h3 className="mac-h mb-3 text-lg">レビュー（{reviews.length}）</h3>
         {reviews.length === 0 ? (
           <p className="mb-4 text-sm text-gray-500">まだレビューがありません。</p>
         ) : (

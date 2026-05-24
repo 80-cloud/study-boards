@@ -55,11 +55,11 @@ export default function NotificationsPage() {
   if (error) return <p className="p-6 text-red-600">{error}</p>;
 
   return (
-    <main className="mx-auto max-w-2xl p-6">
+    <main className="mx-auto max-w-2xl px-6 py-8">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-bold text-gray-800">通知</h2>
+        <h2 className="mac-h text-2xl">通知</h2>
         {items.some((n) => !n.read) && (
-          <button onClick={readAll} className="text-sm text-blue-600 hover:underline">すべて既読にする</button>
+          <button onClick={readAll} className="text-sm font-semibold text-brand-500 hover:underline">すべて既読にする</button>
         )}
       </div>
 
@@ -71,9 +71,9 @@ export default function NotificationsPage() {
             <li key={n.id}>
               <button
                 onClick={() => open(n)}
-                className={`flex w-full items-start gap-3 rounded-lg border p-4 text-left hover:border-blue-300 ${n.read ? 'border-gray-200 bg-white' : 'border-blue-200 bg-blue-50'}`}
+                className={`flex w-full items-start gap-3 rounded-2xl border p-4 text-left shadow-mac-sm transition hover:-translate-y-0.5 hover:shadow-mac ${n.read ? 'border-black/5 bg-white/80' : 'border-brand-500/30 bg-brand-400/10'}`}
               >
-                {!n.read && <span className="mt-1 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" aria-label="未読" />}
+                {!n.read && <span className="mt-1 h-2 w-2 flex-shrink-0 rounded-full bg-brand-500" aria-label="未読" />}
                 <Avatar url={n.actorAvatarUrl} name={n.actorDisplayName} size="sm" />
                 <span className="flex-1 text-sm text-gray-700">
                   {ICON[n.type] ?? '🔔 '}

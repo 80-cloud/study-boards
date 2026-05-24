@@ -17,18 +17,27 @@ import java.util.List;
 public record PostSummaryResponse(
         Long id,
         Long authorUserId,
+        String authorDisplayName,
         String title,
         RecruitStatus recruitStatus,
         int reviewCount,
-        ReviewTone reviewTone,
+        int likeCount,
+        boolean liked,
+        List<ReviewTone> reviewTones,
         List<ReviewAspect> reviewAspects,
         AiUsage aiUsage,
+        String screenshotUrl,
         OffsetDateTime createdAt) {
 
-    public static PostSummaryResponse from(Post p) {
+    /**
+     * 一覧カード表示（案L の WORKS / RANKING）用に著者名・スクショ URL・いいね状態を補って組み立てる。
+     * 著者名・URL・liked は呼び出し側でバッチ解決して渡す（N+1 回避・SEC-8）。
+     */
+    public static PostSummaryResponse from(Post p, String authorDisplayName, String screenshotUrl, boolean liked) {
         return new PostSummaryResponse(
-                p.getId(), p.getAuthorUserId(), p.getTitle(),
-                p.getRecruitStatus(), p.getReviewCount(),
-                p.getReviewTone(), new ArrayList<>(p.getReviewAspects()), p.getAiUsage(), p.getCreatedAt());
+                p.getId(), p.getAuthorUserId(), authorDisplayName, p.getTitle(),
+                p.getRecruitStatus(), p.getReviewCount(), p.getLikeCount(), liked,
+                new ArrayList<>(p.getReviewTones()), new ArrayList<>(p.getReviewAspects()), p.getAiUsage(),
+                screenshotUrl, p.getCreatedAt());
     }
 }

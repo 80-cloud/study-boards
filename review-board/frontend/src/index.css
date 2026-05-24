@@ -1,1 +1,104 @@
 @import "tailwindcss";
+
+/* ============================================================
+ * デザイントークン（macOS 風）。Tailwind v4 の @theme で一元管理。
+ * ============================================================ */
+@theme {
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+    "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, system-ui, sans-serif;
+
+  /* アクセント（macOS ブルー） */
+  --color-accent-50: #eaf3ff;
+  --color-accent-100: #d6e8ff;
+  --color-accent-400: #2e90ff;
+  --color-accent-500: #007aff;
+  --color-accent-600: #0a6dde;
+  --color-accent-700: #0857b3;
+
+  /* ブランド（採用デザイン L：ネイビー＋オレンジ） */
+  --color-navy-700: #13315a;
+  --color-navy-800: #0f2747;
+  --color-brand-400: #ff944d;
+  --color-brand-500: #ff7a18;
+  --color-brand-600: #ec6a08;
+
+  /* キャンバス（Apple グレー） */
+  --color-canvas: #f5f5f7;
+
+  /* 柔らかい多層シャドウ */
+  --shadow-mac-sm: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px -4px rgba(0, 0, 0, 0.1);
+  --shadow-mac: 0 2px 6px rgba(0, 0, 0, 0.05), 0 18px 50px -16px rgba(0, 0, 0, 0.28);
+}
+
+/* ============================================================
+ * ベース：淡いグラデ背景・フォントスムージング・文字色
+ * ============================================================ */
+body {
+  margin: 0;
+  background: linear-gradient(160deg, #eef2f8 0%, #f5f5f7 42%, #ece9f4 100%);
+  background-attachment: fixed;
+  color: #1d1d1f;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* キーボード操作時のみアクセントのフォーカスリング（a11y を後退させない） */
+:focus-visible {
+  outline: 2px solid var(--color-accent-500);
+  outline-offset: 2px;
+}
+
+/* ============================================================
+ * 再利用コンポーネントクラス（全ページ共通の macOS 部品）
+ * ============================================================ */
+@layer components {
+  /* frosted glass のカード面 */
+  .mac-card {
+    @apply rounded-2xl border border-black/5 bg-white/80 shadow-mac backdrop-blur-xl;
+  }
+  /* 一段軽いカード（一覧の行など） */
+  .mac-panel {
+    @apply rounded-2xl border border-black/5 bg-white/75 shadow-mac-sm backdrop-blur-md;
+  }
+  /* 塗りつぶし入力（フォーカスで白＋アクセントのグロー） */
+  .mac-input {
+    @apply w-full rounded-xl border border-black/10 bg-black/[0.03] px-3.5 py-2.5 text-sm text-gray-900
+      transition outline-none placeholder:text-gray-400
+      focus:border-accent-400 focus:bg-white focus:ring-4 focus:ring-accent-500/15;
+  }
+  .mac-label {
+    @apply mb-1.5 block text-[13px] font-medium text-gray-500;
+  }
+  /* 主ボタン（アクセント・押下で微縮小） */
+  .mac-btn-primary {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-xl bg-accent-500 px-4 py-2.5
+      text-sm font-semibold text-white shadow-mac-sm transition
+      hover:bg-accent-600 active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100;
+  }
+  /* 副ボタン（白いガラス） */
+  .mac-btn-ghost {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-xl border border-black/10 bg-white/70 px-3.5 py-2
+      text-sm font-medium text-gray-700 transition hover:bg-white active:scale-[0.98];
+  }
+  /* 丸いピル（バッジ・タグ） */
+  .mac-pill {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+  /* ブランドボタン（採用デザイン L） */
+  .mac-btn-navy {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-xl bg-navy-700 px-4 py-2.5
+      text-sm font-bold text-white shadow-mac-sm transition hover:bg-navy-800 active:scale-[0.98] disabled:opacity-50;
+  }
+  .mac-btn-brand {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand-500 px-4 py-2.5
+      text-sm font-bold text-white shadow-mac-sm transition hover:bg-brand-600 active:scale-[0.98] disabled:opacity-50;
+  }
+  /* セクションの小見出し（REASON / WORKS 等） */
+  .mac-eyebrow {
+    @apply text-center text-sm font-bold tracking-wide text-brand-500;
+  }
+  /* 見出し（ネイビー太字） */
+  .mac-h {
+    @apply font-extrabold tracking-tight text-navy-700;
+  }
+}

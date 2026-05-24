@@ -1,110 +1,309 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { fetchPosts } from '../api/posts';
-import { RECRUIT_LABEL } from '../constants';
+import { fetchLandingStats } from '../api/stats';
+import { matchAspects, matchTones } from '../constants/reviewPrefs';
+import { ROLE_LABEL } from '../constants';
 import ReviewPrefBadges from '../components/ReviewPrefBadges';
+import Avatar from '../components/Avatar';
+import AppShot from '../components/AppShot';
 
-// F-POST-03 一覧 ＋ F-SEARCH-01 検索 ＋ F-FILTER-01 絞り込み/並び替え。
+// スクショ未登録カードのサムネ：id から決め打ちの「アプリ画面」種別（それっぽいトップpage風）。
+const KINDS = ['todo', 'portfolio', 'api', 'weather', 'chat', 'dashboard'];
+const kindOf = (id) => KINDS[id % KINDS.length];
+
+// 案L：スクール土台（ランディング）＋マーケット要素（観点カテゴリ／カード）。
+const REASONS = [
+  { icon: '🤝', title: '受講生どうしの相互レビュー', body: '読む・読まれる経験で独学では得にくい視点が身につく。' },
+  { icon: '🏅', title: '講師の評価と合格バッジ', body: '講師の最終評価。合格は最高の証跡として記録に残る。' },
+  { icon: '🌱', title: '積み重なる成長記録', body: '投稿・レビュー・連続活動を可視化。努力が「歩み」に。' },
+];
+// 観点カテゴリ（クリックで検索語を入れて WORKS を絞る）。
+const CATS = [
+  { icon: '🎨', label: 'UI / デザイン', q: 'UI' }, { icon: '⚙️', label: 'コード品質', q: 'コード' },
+  { icon: '🔒', label: 'セキュリティ', q: 'セキュリティ' }, { icon: '⚡', label: 'パフォーマンス', q: 'パフォーマンス' },
+  { icon: '🏗', label: '設計', q: '設計' }, { icon: '🧑‍🏫', label: '講師の課題', q: '講師' },
+];
+
+function Eyebrow({ children }) {
+  return <p className="mac-eyebrow">{children}</p>;
+}
+function SectionHeading({ children }) {
+  return <h2 className="mac-h mt-1 text-center text-[26px]">{children}</h2>;
+}
+
+const scrollToWorks = () => document.getElementById('works')?.scrollIntoView({ behavior: 'smooth' });
+
+// F-POST-03 一覧 ＋ F-SEARCH-01 検索 ＋ F-FILTER-01 絞り込み/並び替え（案L ランディングに内包）。
 export default function PostsPage() {
+  const [searchParams] = useSearchParams();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [stats, setStats] = useState(null);
+  const [ranking, setRanking] = useState([]);
 
-  // 検索・絞り込み・並び替えの状態。q は入力中の値、applied で確定値を持つ（Enter/ボタンで反映）。
-  const [q, setQ] = useState('');
-  const [applied, setApplied] = useState({ q: '', status: '', unreviewed: false, sort: 'newest' });
+  // 検索・絞り込み・並び替え。初期 q はヘッダー検索からの URL パラメータを尊重。
+  const [q, setQ] = useState(searchParams.get('q') ?? '');
+  const [applied, setApplied] = useState({
+    q: searchParams.get('q') ?? '', status: '', unreviewed: false, sort: 'newest',
+  });
+
+  // ヘッダー検索で ?q= が変わったら反映（同一ページ内遷移）。検索語があれば結果（WORKS）まで誘導。
+  useEffect(() => {
+    const urlQ = searchParams.get('q') ?? '';
+    setQ(urlQ);
+    setApplied((p) => ({ ...p, q: urlQ }));
+    if (urlQ) {
+      // レイアウト確定後にスクロール（ランキング・統計の読み込みでズレないよう少し待つ）。
+      const t = setTimeout(scrollToWorks, 120);
+      return () => clearTimeout(t);
+    }
+    return undefined;
+  }, [searchParams]);
 
   useEffect(() => {
     setLoading(true);
-    fetchPosts(applied)
+    // キーワードを観点/トーンにも解決して渡す（本文に無くてもタグ一致でヒット）。
+    fetchPosts({ ...applied, aspects: matchAspects(applied.q), tones: matchTones(applied.q) })
       .then((slice) => setPosts(slice.content ?? []))
       .catch(() => setError('投稿の取得に失敗しました'))
       .finally(() => setLoading(false));
   }, [applied]);
 
+  useEffect(() => {
+    fetchLandingStats().then(setStats).catch(() => {});
+    // いいね人気ランキング：いいね数順の上位3件。
+    fetchPosts({ sort: 'likes' }, 0, 3).then((s) => setRanking(s.content ?? [])).catch(() => {});
+  }, []);
+
   const submitSearch = (e) => {
     e.preventDefault();
     setApplied((p) => ({ ...p, q }));
+    scrollToWorks();
   };
-
   const setFilter = (patch) => setApplied((p) => ({ ...p, ...patch }));
+  const pickCategory = (kw) => { setQ(kw); setApplied((p) => ({ ...p, q: kw })); scrollToWorks(); };
+
+  const tiles = [
+    [stats?.postsCount ?? '—', '成果物'],
+    [stats?.reviewsCount ?? '—', 'レビュー'],
+    [stats?.approvedBadgesCount ?? '—', '合格バッジ'],
+  ];
 
   return (
-    <main className="mx-auto max-w-3xl p-6">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-bold text-gray-800">成果物（同じ期のメンバー）</h2>
-        <Link to="/posts/new" className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">
-          新規投稿
-        </Link>
-      </div>
-
-      {/* F-SEARCH-01 キーワード検索 */}
-      <form onSubmit={submitSearch} className="mb-3 flex gap-2">
-        <input
-          type="search"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="タイトル・説明で検索"
-          className="flex-1 rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
-        />
-        <button type="submit" className="rounded bg-gray-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-800">
-          検索
-        </button>
-      </form>
-
-      {/* F-FILTER-01 絞り込み・並び替え */}
-      <div className="mb-4 flex flex-wrap items-center gap-3 text-sm text-gray-600">
-        <select
-          value={applied.status}
-          onChange={(e) => setFilter({ status: e.target.value })}
-          className="rounded border border-gray-300 px-2 py-1"
-        >
-          <option value="">すべての状態</option>
-          <option value="OPEN">レビュー募集中</option>
-          <option value="CLOSED">募集終了</option>
-        </select>
-        <label className="flex items-center gap-1">
-          <input
-            type="checkbox"
-            checked={applied.unreviewed}
-            onChange={(e) => setFilter({ unreviewed: e.target.checked })}
-          />
-          未レビューのみ
-        </label>
-        <select
-          value={applied.sort}
-          onChange={(e) => setFilter({ sort: e.target.value })}
-          className="ml-auto rounded border border-gray-300 px-2 py-1"
-        >
-          <option value="newest">新着順</option>
-          <option value="reviews">レビュー数順</option>
-        </select>
-      </div>
-
-      {loading ? (
-        <p className="text-gray-500">読み込み中…</p>
-      ) : error ? (
-        <p className="text-red-600">{error}</p>
-      ) : posts.length === 0 ? (
-        <p className="text-gray-500">該当する投稿がありません。</p>
-      ) : (
-        <ul className="space-y-3">
-          {posts.map((p) => (
-            <li key={p.id} className="rounded-lg border border-gray-200 bg-white p-4 hover:border-blue-300">
-              <Link to={`/posts/${p.id}`} className="block">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-medium text-gray-800">{p.title}</h3>
-                  <span className="rounded bg-blue-50 px-2 py-0.5 text-xs text-blue-600">
-                    {RECRUIT_LABEL[p.recruitStatus] ?? p.recruitStatus}
-                  </span>
+    <main>
+      {/* ヒーロー（スクール・ランディング＝明るい土台。案L 準拠） */}
+      <section className="bg-gradient-to-b from-[#f4f8ff] to-[#eaf1fb]">
+        <div className="mx-auto grid max-w-6xl items-center gap-10 px-6 pb-16 pt-12 lg:grid-cols-2 lg:pt-14">
+          <div>
+            <span className="inline-block rounded-full bg-brand-500 px-3 py-1 text-xs font-bold text-white">
+              エンジニアスクールの成長支援コミュニティ
+            </span>
+            <h1 className="mac-h mt-4 text-[32px] leading-[1.25] sm:text-[40px]">
+              レビューこそが<span className="whitespace-nowrap">エンジニアを<span className="text-brand-500">育てる</span></span>
+            </h1>
+            <p className="mt-4 text-[15px] leading-relaxed text-gray-600">
+              受講生どうし・講師が成果物をレビュー。<br className="hidden sm:block" />その積み重ねが、あなたの「成長の証跡」になります。
+            </p>
+            <div className="mt-7 flex flex-wrap gap-3">
+              <Link to="/posts/new" className="rounded-xl bg-navy-700 px-6 py-3 text-sm font-bold text-white shadow-md transition hover:bg-navy-800">成果物を投稿する</Link>
+              <button onClick={scrollToWorks} className="rounded-xl border-2 border-navy-700 px-6 py-3 text-sm font-bold text-navy-700 transition hover:bg-navy-700/5">成果物を見る ›</button>
+            </div>
+          </div>
+          <div className="space-y-4">
+            {(stats?.featured ?? []).map((u) => (
+              <Link key={u.userId} to={`/users/${u.userId}/profile`}
+                className="flex items-center gap-4 rounded-2xl border border-black/5 bg-white p-4 shadow-mac-sm transition hover:-translate-y-0.5 hover:shadow-mac">
+                <Avatar name={u.displayName} size="md" />
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-bold text-navy-700">{u.displayName}</div>
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
+                    <span className="rounded bg-gray-100 px-1.5 py-0.5 text-gray-500">{ROLE_LABEL[u.role] ?? u.role}</span>
+                    <span className="text-brand-500">▶</span>
+                    <span className="font-semibold text-gray-700">投稿 {u.postsCount}・レビュー {u.reviewsCount}</span>
+                    {u.approved && <span className="rounded-full bg-amber-100 px-2 py-0.5 font-bold text-amber-700">🏅 合格</span>}
+                  </div>
                 </div>
-                <ReviewPrefBadges tone={p.reviewTone} aspects={p.reviewAspects} aiUsage={p.aiUsage} className="mt-2" />
-                <p className="mt-1 text-sm text-gray-500">レビュー {p.reviewCount} 件</p>
               </Link>
-            </li>
+            ))}
+            <div className="grid grid-cols-3 gap-3 pt-1 text-center">
+              {tiles.map(([n, l]) => (
+                <div key={l} className="rounded-2xl bg-white p-3 shadow-mac-sm">
+                  <div className="text-2xl font-extrabold text-navy-700">{n}</div>
+                  <div className="text-xs text-gray-500">{l}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* REASON：伸びる3つの理由 */}
+      <section id="reason" className="mx-auto max-w-6xl px-6 py-14">
+        <Eyebrow>REASON</Eyebrow>
+        <SectionHeading>review-board で伸びる3つの理由</SectionHeading>
+        <div className="mt-9 grid grid-cols-1 gap-6 md:grid-cols-3">
+          {REASONS.map((r, i) => (
+            <div key={r.title} className="relative rounded-2xl border border-black/5 bg-white p-6 shadow-mac-sm">
+              <span className="absolute -top-3 left-6 flex h-7 w-7 items-center justify-center rounded-full bg-brand-500 text-xs font-bold text-white">{i + 1}</span>
+              <div className="mb-3 text-4xl">{r.icon}</div>
+              <h3 className="mb-2 text-[16px] font-bold text-navy-700">{r.title}</h3>
+              <p className="text-sm leading-relaxed text-gray-600">{r.body}</p>
+            </div>
           ))}
-        </ul>
+        </div>
+      </section>
+
+      {/* BROWSE：検索＋観点カテゴリ */}
+      <section className="bg-[#f6f9fe] py-14">
+        <div className="mx-auto max-w-6xl px-6">
+          <Eyebrow>BROWSE</Eyebrow>
+          <SectionHeading>観点から探す</SectionHeading>
+          <form onSubmit={submitSearch} className="mx-auto mt-7 flex max-w-2xl items-center rounded-full bg-white p-1.5 shadow-mac">
+            <span className="pl-4 text-gray-400">🔍</span>
+            <input
+              type="search"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="作品・技術・観点で探す（例：React, API 設計）"
+              style={{ outline: 'none' }}
+              className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm text-gray-800 outline-none"
+            />
+            <button type="submit" className="rounded-full bg-brand-500 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-brand-600">探す</button>
+          </form>
+          <div className="mt-6 grid grid-cols-3 gap-3 sm:grid-cols-6">
+            {CATS.map((c) => (
+              <button key={c.label} onClick={() => pickCategory(c.q)}
+                className="flex flex-col items-center gap-2 rounded-2xl border border-black/5 bg-white p-4 text-center shadow-sm transition hover:-translate-y-0.5 hover:shadow-mac-sm">
+                <span className="text-2xl">{c.icon}</span>
+                <span className="text-xs font-medium leading-tight text-navy-700">{c.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* RANKING：いいね数順の人気成果物トップ3（👍 が基準） */}
+      {ranking.length > 0 && (
+        <section className="mx-auto max-w-6xl px-6 py-14">
+          <Eyebrow>RANKING</Eyebrow>
+          <SectionHeading>いいね人気ランキング</SectionHeading>
+          <div className="mt-9 grid grid-cols-1 gap-5 md:grid-cols-3">
+            {ranking.map((p, i) => {
+              const medal = ['🥇', '🥈', '🥉'][i] ?? `#${i + 1}`;
+              return (
+                <Link key={p.id} to={`/posts/${p.id}`}
+                  className="group relative flex items-center gap-4 rounded-2xl border border-black/5 bg-white p-5 shadow-mac-sm transition hover:-translate-y-1 hover:shadow-mac">
+                  <span className="text-3xl leading-none">{medal}</span>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="line-clamp-2 text-[15px] font-bold leading-snug text-navy-700">{p.title}</h3>
+                    <div className="mt-1 flex items-center gap-2 text-xs text-gray-500">
+                      <Avatar name={p.authorDisplayName ?? ''} size="sm" />
+                      <span className="truncate">{p.authorDisplayName ?? '—'}</span>
+                    </div>
+                  </div>
+                  <span className="flex flex-shrink-0 items-center gap-1 rounded-full bg-navy-700/[0.06] px-3 py-1 text-sm font-bold text-navy-700">
+                    👍 <span className="tabular-nums">{p.likeCount}</span>
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
       )}
+
+      {/* WORKS：成果物一覧（検索/絞り込み/並び替えの機能はここに集約） */}
+      <section id="works" className="mx-auto max-w-6xl px-6 py-14">
+        <Eyebrow>WORKS</Eyebrow>
+        <SectionHeading>みんなの成果物</SectionHeading>
+
+        <div className="mt-8 flex flex-wrap items-center gap-3">
+          <select value={applied.status} onChange={(e) => setFilter({ status: e.target.value })}
+            className="rounded-xl border border-black/10 bg-white px-3 py-1.5 text-sm text-gray-700 outline-none">
+            <option value="">すべての状態</option>
+            <option value="OPEN">レビュー募集中</option>
+            <option value="CLOSED">募集終了</option>
+          </select>
+          <label className="flex items-center gap-1.5 rounded-xl border border-black/10 bg-white px-3 py-1.5 text-sm text-gray-700">
+            <input type="checkbox" checked={applied.unreviewed} onChange={(e) => setFilter({ unreviewed: e.target.checked })} />
+            未レビューのみ
+          </label>
+          <select value={applied.sort} onChange={(e) => setFilter({ sort: e.target.value })}
+            className="rounded-xl border border-black/10 bg-white px-3 py-1.5 text-sm text-gray-700 outline-none">
+            <option value="newest">新着順</option>
+            <option value="reviews">レビュー数順</option>
+            <option value="likes">いいね順</option>
+          </select>
+          {applied.q && (
+            <span className="rounded-full bg-brand-400/15 px-3 py-1 text-xs font-medium text-brand-600">
+              「{applied.q}」で絞り込み中
+              <button onClick={() => pickCategory('')} className="ml-1.5 font-bold">×</button>
+            </span>
+          )}
+          <Link to="/posts/new" className="mac-btn-brand ml-auto">＋ 投稿する</Link>
+        </div>
+
+        <div className="mt-6">
+          {loading ? (
+            <p className="py-16 text-center text-gray-400">読み込み中…</p>
+          ) : error ? (
+            <p className="py-16 text-center text-red-500">{error}</p>
+          ) : posts.length === 0 ? (
+            <p className="py-16 text-center text-gray-400">該当する成果物がありません。</p>
+          ) : (
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {posts.map((p) => (
+                <Link key={p.id} to={`/posts/${p.id}`}
+                  className="group overflow-hidden rounded-2xl border border-black/5 bg-white shadow-mac-sm transition hover:-translate-y-1 hover:shadow-mac">
+                  {/* ブラウザ枠付きサムネ（アプリのトップページ風）。スクショがあれば実画像、無ければ画面モック。 */}
+                  <div className="relative h-36 overflow-hidden bg-gray-50">
+                    {p.screenshotUrl ? (
+                      <>
+                        <div className="flex h-7 items-center gap-1.5 border-b border-black/5 bg-white px-3">
+                          <span className="h-2 w-2 rounded-full bg-red-400" />
+                          <span className="h-2 w-2 rounded-full bg-amber-400" />
+                          <span className="h-2 w-2 rounded-full bg-green-400" />
+                        </div>
+                        <img src={p.screenshotUrl} alt="" className="h-[calc(9rem-1.75rem)] w-full object-cover" />
+                      </>
+                    ) : (
+                      <AppShot kind={kindOf(p.id)} />
+                    )}
+                    {p.recruitStatus === 'OPEN'
+                      ? <span className="absolute right-3 top-9 rounded-full bg-brand-500 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm">募集中</span>
+                      : <span className="absolute right-3 top-9 rounded-full bg-gray-700/80 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm">締切</span>}
+                  </div>
+                  <div className="p-4">
+                    <h3 className="mb-2 line-clamp-2 min-h-[2.6em] text-[15px] font-bold leading-snug text-navy-700">{p.title}</h3>
+                    <div className="mb-3 flex items-center gap-2">
+                      <Avatar name={p.authorDisplayName ?? ''} size="sm" />
+                      <span className="truncate text-xs text-gray-500">{p.authorDisplayName ?? '—'}</span>
+                    </div>
+                    <div className="mb-3"><ReviewPrefBadges tones={p.reviewTones} aspects={p.reviewAspects} aiUsage={p.aiUsage} /></div>
+                    <div className="flex items-center justify-between border-t border-black/5 pt-3 text-xs text-gray-400">
+                      <span className="flex items-center gap-3">
+                        <span>👍 {p.likeCount}</span>
+                        <span>💬 {p.reviewCount}</span>
+                      </span>
+                      <span className="font-semibold text-brand-500 group-hover:underline">見る ›</span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* CTA 帯（スクール） */}
+      <section className="bg-navy-700 px-6 py-16">
+        <div className="mx-auto max-w-3xl text-center">
+          <h2 className="text-[26px] font-extrabold leading-tight text-white">まずは成果物を投稿して、<br />レビューを受けてみよう。</h2>
+          <p className="mt-3 text-sm text-white/70">レビューし合うほど、あなたの成長が積み上がる。</p>
+          <Link to="/posts/new" className="mt-7 inline-block rounded-xl bg-brand-500 px-8 py-3.5 text-sm font-bold text-white shadow-lg transition hover:bg-brand-600">成果物を投稿する</Link>
+        </div>
+      </section>
     </main>
   );
 }

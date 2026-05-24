@@ -55,14 +55,24 @@ public class Post {
     @Column(name = "review_count", nullable = false)
     private int reviewCount = 0;
 
+    /** いいね数（非正規化カウンタ。いいね/解除と同一Txで増減）。ランキング基準。 */
+    @Column(name = "like_count", nullable = false)
+    private int likeCount = 0;
+
     /** F-REV-05 ベストレビュー：投稿者が選んだ最も役立ったレビューの ID（未選択は null）。 */
     @Column(name = "best_review_id")
     private Long bestReviewId;
 
-    /** F-SAFE-01 心理的安全設定：投稿者が希望するレビューのトーン（単一・未設定は null）。 */
+    /**
+     * F-SAFE-01 心理的安全設定：投稿者が歓迎するレビューのトーン（多値・未設定は空）。
+     * 観点と同じく正規化テーブルで保持。EAGER ＋ BatchSize で一覧の N+1 を束ねる。
+     */
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "post_review_tones", joinColumns = @JoinColumn(name = "post_id"))
+    @Column(name = "tone", length = 20)
     @Enumerated(EnumType.STRING)
-    @Column(name = "review_tone", length = 20)
-    private ReviewTone reviewTone;
+    @BatchSize(size = 50)
+    private Set<ReviewTone> reviewTones = new LinkedHashSet<>();
 
     /** AI使用状況の開示タグ（単一・未設定は null・Issue #172）。 */
     @Enumerated(EnumType.STRING)

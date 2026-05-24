@@ -56,7 +56,7 @@ public class PostService {
         post.setDemoUrl(req.demoUrl());
         post.setScreenshotKey(req.screenshotKey());
         post.setRecruitStatus(RecruitStatus.OPEN);
-        applyReviewPreferences(post, req.reviewTone(), req.reviewAspects(), req.aiUsage());
+        applyReviewPreferences(post, req.reviewTones(), req.reviewAspects(), req.aiUsage());
         post.setCreatedAt(now);
         post.setUpdatedAt(now);
         postRepository.save(post);
@@ -76,19 +76,29 @@ public class PostService {
      * 自 cohort・未削除のみ（IDOR 遮断は Repository クエリで常時担保）。ページネーション（母 P-2）。
      *
      * @param q             キーワード（タイトル/説明の部分一致。空/ null は無視）
+     * @param aspects       キーワードから解決した観点（タグ一致でヒット。null/空は無視）
+     * @param tones         キーワードから解決したトーン（タグ一致でヒット。null/空は無視）
      * @param status        募集状態フィルタ（null は無視）
      * @param unreviewedOnly 未レビュー（review_count=0）のみに絞る
      * @param sort          並び順："reviews"（レビュー数降順）／それ以外は新着降順
      */
     @Transactional(readOnly = true)
-    public Slice<Post> search(AuthPrincipal principal, String q, RecruitStatus status,
+    public Slice<Post> search(AuthPrincipal principal, String q,
+                              java.util.Collection<ReviewAspect> aspects,
+                              java.util.Collection<ReviewTone> tones,
+                              RecruitStatus status,
                               boolean unreviewedOnly, String sort, Pageable pageable) {
         String keyword = (q == null || q.isBlank()) ? null : q.trim();
-        Sort order = "reviews".equals(sort)
-                ? Sort.by(Sort.Direction.DESC, "reviewCount").and(Sort.by(Sort.Direction.DESC, "createdAt"))
-                : Sort.by(Sort.Direction.DESC, "createdAt");
+        // 空集合は IN 句が常に偽になり「一致なし」として扱われる（Hibernate 6）。
+        java.util.Collection<ReviewAspect> asp = aspects == null ? java.util.List.of() : aspects;
+        java.util.Collection<ReviewTone> tn = tones == null ? java.util.List.of() : tones;
+        Sort order = switch (sort == null ? "" : sort) {
+            case "reviews" -> Sort.by(Sort.Direction.DESC, "reviewCount").and(Sort.by(Sort.Direction.DESC, "createdAt"));
+            case "likes" -> Sort.by(Sort.Direction.DESC, "likeCount").and(Sort.by(Sort.Direction.DESC, "createdAt"));
+            default -> Sort.by(Sort.Direction.DESC, "createdAt");
+        };
         Pageable sorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), order);
-        return postRepository.search(principal.cohortId(), keyword, status, unreviewedOnly, sorted);
+        return postRepository.search(principal.cohortId(), keyword, asp, tn, status, unreviewedOnly, sorted);
     }
 
     /** F-POST-02 編集。所有者のみ（不一致・他 cohort・削除済みは 404）。 */
@@ -100,7 +110,7 @@ public class PostService {
         post.setRepoUrl(req.repoUrl());
         post.setDemoUrl(req.demoUrl());
         post.setScreenshotKey(req.screenshotKey());
-        applyReviewPreferences(post, req.reviewTone(), req.reviewAspects(), req.aiUsage());
+        applyReviewPreferences(post, req.reviewTones(), req.reviewAspects(), req.aiUsage());
         post.setUpdatedAt(OffsetDateTime.now());
         auditService.record(principal, AuditAction.POST_UPDATED, AuditTargetType.POST, postId);
         return post;
@@ -140,9 +150,12 @@ public class PostService {
      * tone は null で未設定に戻る。aspects は送られた集合で全置換（null は空集合扱い）。
      * 設定主体は所有者に限る（呼び出し元の create/loadOwned で担保。★S軸）。
      */
-    private void applyReviewPreferences(Post post, ReviewTone tone, Set<ReviewAspect> aspects, AiUsage aiUsage) {
-        post.setReviewTone(tone);
+    private void applyReviewPreferences(Post post, Set<ReviewTone> tones, Set<ReviewAspect> aspects, AiUsage aiUsage) {
         post.setAiUsage(aiUsage);
+        post.getReviewTones().clear();
+        if (tones != null) {
+            post.getReviewTones().addAll(tones);
+        }
         post.getReviewAspects().clear();
         if (aspects != null) {
             post.getReviewAspects().addAll(aspects);
