@@ -118,24 +118,24 @@ jobs:
       # 未設定（S-2 前）なら GitHub Artifact のみで、以降の step はスキップする。
       # 注意: `if:` 条件で secrets コンテキストは参照不可（startup_failure になる）。
       #       secret は env へ写してから guard step の出力で判定する（cd-deploy と同方式）。
-      - name: 前提チェック（AWS 認証が無ければ S3 push をスキップ）
+      - name: 前提チェック（CD 認証が無ければ S3 push をスキップ）
         id: guard
         env:
-          AWS_KEY: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_KEY: ${{ secrets.RB_CD_AWS_ACCESS_KEY_ID }}
           ARTIFACTS_BUCKET: ${{ vars.RB_ARTIFACTS_BUCKET }}
         run: |
           if [ -n "${AWS_KEY}" ] && [ -n "${ARTIFACTS_BUCKET}" ]; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "AWS 認証または RB_ARTIFACTS_BUCKET 未設定のため S3 push はスキップ（GitHub Artifact のみ）。" >> "$GITHUB_STEP_SUMMARY"
+            echo "RB_CD_AWS_ACCESS_KEY_ID または RB_ARTIFACTS_BUCKET 未設定のため S3 push はスキップ（GitHub Artifact のみ）。" >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: アーティファクトを S3 に push（認証時のみ）
         if: steps.guard.outputs.ready == 'true'
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.RB_CD_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.RB_CD_AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ap-northeast-1
           ARTIFACTS_BUCKET: ${{ vars.RB_ARTIFACTS_BUCKET }}
         run: |
