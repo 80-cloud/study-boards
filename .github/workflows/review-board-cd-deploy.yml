@@ -35,7 +35,7 @@ env:
   AWS_REGION: ap-northeast-1
   # EC2 を特定するタグ（infra の common_tags と整合：Project=review-board）。
   INSTANCE_TAG_PROJECT: review-board
-  AWS_KEY: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_KEY: ${{ secrets.RB_CD_AWS_ACCESS_KEY_ID }}
 
 jobs:
   deploy:
@@ -57,8 +57,8 @@ jobs:
             {
               echo '## review-board CD deploy（スキップ）'
               echo ''
-              echo 'AWS 認証 secret が未設定のため、デプロイはスキップしました（S-2 前の足場状態）。'
-              echo 'S-2 完了後、AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY と S3 アーティファクト配布を'
+              echo 'CD 認証 secret が未設定のため、デプロイはスキップしました（S-2 前の足場状態）。'
+              echo 'RB_CD_AWS_ACCESS_KEY_ID / RB_CD_AWS_SECRET_ACCESS_KEY（専用CDユーザー）と S3 アーティファクト配布を'
               echo '整備すると、本ワークフローが「アプリのみ更新」を実行します。'
               echo '配置規約・ロールバックは docs/デプロイ・ロールバック手順.md を参照。'
             } >> "$GITHUB_STEP_SUMMARY"
@@ -70,8 +70,8 @@ jobs:
         if: steps.guard.outputs.ready == 'true'
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.RB_CD_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.RB_CD_AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: EC2 インスタンス ID を解決（タグ）
