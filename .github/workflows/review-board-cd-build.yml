@@ -114,6 +114,20 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
+      # AWS 認証とアーティファクトバケットが設定済みなら、S3 にも push（EC2 の deploy.sh が取得）。
+      # 未設定（S-2 前）なら GitHub Artifact のみで、この step はスキップする。
+      - name: アーティファクトを S3 に push（任意・認証時のみ）
+        if: ${{ secrets.AWS_ACCESS_KEY_ID != '' && vars.RB_ARTIFACTS_BUCKET != '' }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ap-northeast-1
+          ARTIFACTS_BUCKET: ${{ vars.RB_ARTIFACTS_BUCKET }}
+        run: |
+          TAG="${{ steps.meta.outputs.tag }}"
+          aws s3 sync "artifact/$TAG/" "s3://$ARTIFACTS_BUCKET/$TAG/" --only-show-errors
+          echo "::notice title=pushed to S3::s3://$ARTIFACTS_BUCKET/$TAG/"
+
       - name: 次の手動デプロイで使う SHA を表示
         run: |
           echo "::notice title=artifact ready::SHA=${{ steps.meta.outputs.tag }} を review-board-cd-deploy の sha 入力に渡して昇格する"
