@@ -90,7 +90,7 @@ resource "aws_security_group" "ec2" {
   }
 
   ingress {
-    description = "HTTPS (nginx, Let's Encrypt)"
+    description = "HTTPS (nginx, Lets Encrypt TLS)"
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
