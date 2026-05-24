@@ -111,17 +111,9 @@ jobs:
             --command-id "$CMD_ID" --instance-id "${{ steps.ec2.outputs.id }}" \
             --query 'StandardOutputContent' --output text
 
-      - name: ヘルスチェック（公開エンドポイント）
+      - name: 昇格結果
         if: steps.guard.outputs.ready == 'true'
-        run: |
-          IP=$(aws ec2 describe-instances --region "$AWS_REGION" \
-            --instance-ids "${{ steps.ec2.outputs.id }}" \
-            --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
-          for i in {1..20}; do
-            if curl -skf "https://${IP}/api/actuator/health" >/dev/null 2>&1 \
-               || curl -sf "http://${IP}/api/actuator/health" >/dev/null 2>&1; then
-              echo "::notice title=deployed::SHA=${{ github.event.inputs.sha }} を昇格しました（${IP}）"; exit 0
-            fi
-            sleep 6
-          done
-          echo "ヘルスチェックに失敗。ロールバック手順（docs）を参照。"; exit 1
+        # deploy.sh が localhost の actuator/health を権威的にチェックし、失敗時は非ゼロ終了する
+        # （前段の SSM step で command-executed を待機済み＝ここに到達＝成功）。
+        # actuator は外部公開しない方針のため、公開エンドポイントの health curl は行わない。
+        run: echo "::notice title=deployed::SHA=${{ github.event.inputs.sha }} を昇格しました"

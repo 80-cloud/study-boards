@@ -160,3 +160,18 @@ variable "budget_notify_email" {
     error_message = "budget_notify_email は有効なメールアドレスを指定してください。"
   }
 }
+
+# 初代管理者の bootstrap（任意）。password を空にすると管理者を作成しない
+# （後から管理 API/手動で発行）。設定する場合は tfvars で機密扱い。
+variable "bootstrap_admin_email" {
+  description = "初代管理者のメールアドレス（bootstrap_admin_password 設定時のみ有効）"
+  type        = string
+  default     = "admin@example.com"
+}
+
+variable "bootstrap_admin_password" {
+  description = "初代管理者の初期パスワード（空なら管理者を作成しない）"
+  type        = string
+  default     = ""
+  sensitive   = true
+}

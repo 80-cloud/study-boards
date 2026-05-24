@@ -32,6 +32,11 @@ output "s3_screenshot_bucket" {
   value       = aws_s3_bucket.screenshots.bucket
 }
 
+output "artifacts_bucket" {
+  description = "CD アーティファクト配布バケット名（cd-build の S3 push 先）"
+  value       = aws_s3_bucket.artifacts.bucket
+}
+
 output "ssm_parameter_prefix" {
   description = "アプリが読む SSM パラメータのプレフィックス"
   value       = local.ssm_prefix
