@@ -42,8 +42,10 @@ resource "aws_db_instance" "main" {
   publicly_accessible    = false # インターネット非到達（EC2 SG からのみ）
   multi_az               = false # Single-AZ（無料枠条件・冗長化は本格運用フェーズ＝S-2）
 
-  # バックアップ：7日保持＋破棄時に最終スナップショット（誤破棄からの復旧余地）
-  backup_retention_period   = 7
+  # バックアップ：自動バックアップを保持（破棄時は最終スナップショット）。
+  # 新 AWS Free プランは保持期間に上限があり 7 日だと FreeTierRestrictionError。
+  # 無料枠準拠で 1 日に短縮（本格運用フェーズで延長）。
+  backup_retention_period   = 1
   skip_final_snapshot       = false
   final_snapshot_identifier = "${local.name_prefix}-db-final"
   copy_tags_to_snapshot     = true
