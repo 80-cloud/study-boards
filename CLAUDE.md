@@ -14,7 +14,7 @@
 | バックエンド | Java 21 + Spring Boot 3.5.0 + Gradle |
 | フロントエンド | HTML / CSS / JavaScript (v1.0) → React + Tailwind CSS (v2.0) |
 | データベース | PostgreSQL 16（Docker コンテナ） |
-| 作業ディレクトリ | /Users/macmini/Desktop/Cursor |
+| 作業ディレクトリ | /Users/macmini/dev/Cursor |
 
 ---
 
@@ -157,15 +157,15 @@ Issue・PR には必ずラベルを付けること。
 
 ```bash
 # ① PostgreSQL を Docker で起動
-cd /Users/macmini/Desktop/Cursor/task-board
+cd /Users/macmini/dev/Cursor/task-board
 docker-compose up -d
 
 # ② Spring Boot を起動（Gradle）
-cd /Users/macmini/Desktop/Cursor/task-board/backend
+cd /Users/macmini/dev/Cursor/task-board/backend
 ./gradlew bootRun
 
 # ③ React フロントエンドを起動（Vite）
-cd /Users/macmini/Desktop/Cursor/task-board/frontend
+cd /Users/macmini/dev/Cursor/task-board/frontend
 npm run dev
 ```
 
@@ -181,7 +181,7 @@ npm run dev
 ### ファイル構成
 
 ```
-/Users/macmini/Desktop/Cursor/
+/Users/macmini/dev/Cursor/
 ├── CLAUDE.md                    ← 本ファイル（必読）
 ├── README.md
 ├── .github/
