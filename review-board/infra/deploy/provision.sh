@@ -5,9 +5,13 @@
 #   - /opt/review-board ディレクトリと EnvironmentFile（SSM から機密を取得）
 #   - systemd review-board.service の設置・有効化
 #   - nginx vhost の設置（443→静的・/api→127.0.0.1:8082）
-#   - certbot による TLS（ドメイン指定時のみ・任意）
-# 実行例（Session Manager もしくは SSM Run Command で root として）：
+#   - TLS：DOMAIN 指定時は certbot(Let's Encrypt)、TLS_SELFSIGNED=1 時は自己署名証明書、
+#          どちらも未指定なら HTTP のみ（後で手動 TLS）
+# 実行例（ドメインあり / Let's Encrypt）：
 #   sudo PUBLIC_ORIGIN=https://example.com DOMAIN=example.com \
+#        /opt/review-board/infra-deploy/provision.sh
+# 実行例（ドメイン無し / 自己署名・IP 直 HTTPS）：
+#   sudo TLS_SELFSIGNED=1 PUBLIC_ORIGIN=https://18.176.19.160 \
 #        /opt/review-board/infra-deploy/provision.sh
 # アプリ本体（jar/dist）の配置は本スクリプトでは行わない。続けて deploy.sh <sha> を実行する。
 # =====================================================================
@@ -16,7 +20,8 @@ set -euo pipefail
 REGION="${AWS_REGION:-ap-northeast-1}"
 SSM_PREFIX="${SSM_PREFIX:-/review-board/prod}"
 PUBLIC_ORIGIN="${PUBLIC_ORIGIN:-}"   # 例: https://example.com（CORS 用。同一オリジンなら未指定でも可）
-DOMAIN="${DOMAIN:-}"                 # certbot 用（未指定なら TLS はスキップ＝後で手動）
+DOMAIN="${DOMAIN:-}"                 # certbot 用（指定で Let's Encrypt）
+TLS_SELFSIGNED="${TLS_SELFSIGNED:-0}" # 1 で自己署名証明書（ドメイン無し・IP 直 HTTPS）
 APP=/opt/review-board
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
@@ -54,16 +59,40 @@ install -m 644 "$HERE/review-board.service" /etc/systemd/system/review-board.ser
 systemctl daemon-reload
 systemctl enable review-board
 
-# --- nginx vhost ---
-install -m 644 "$HERE/nginx-review-board.conf" /etc/nginx/conf.d/review-board.conf
-nginx -t && systemctl reload nginx
+# --- nginx vhost ＋ TLS ---
+# 既存の review-board conf を一旦撤去（HTTP/TLS どちらか一方のみ有効化するため）。
+rm -f /etc/nginx/conf.d/review-board.conf /etc/nginx/conf.d/review-board-tls.conf
 
-# --- TLS（任意・ドメイン指定時のみ） ---
-if [ -n "$DOMAIN" ]; then
+if [ "$TLS_SELFSIGNED" = "1" ]; then
+  # 自己署名証明書モード（ドメイン無し・IP 直 HTTPS）。
+  # EIP を SAN(IP) に含めることで「https://<EIP>」でのアクセスを証明書対象にする。
+  EIP="$(curl -s --max-time 3 http://169.254.169.254/latest/meta-data/public-ipv4 || echo '')"
+  CN="${EIP:-review-board}"
+  mkdir -p /etc/nginx/ssl
+  if [ ! -f /etc/nginx/ssl/review-board.crt ]; then
+    openssl req -x509 -newkey rsa:2048 -nodes -days 825 \
+      -keyout /etc/nginx/ssl/review-board.key \
+      -out /etc/nginx/ssl/review-board.crt \
+      -subj "/CN=$CN" \
+      ${EIP:+-addext "subjectAltName=IP:$EIP"}
+    chmod 600 /etc/nginx/ssl/review-board.key
+  fi
+  install -m 644 "$HERE/nginx-review-board-tls.conf" /etc/nginx/conf.d/review-board-tls.conf
+  nginx -t && systemctl reload nginx
+  echo "自己署名 TLS を設定（CN=$CN）。ブラウザ警告は想定どおり。"
+elif [ -n "$DOMAIN" ]; then
+  # Let's Encrypt モード。まず HTTP で起動し、certbot が 443/リダイレクトを追加する。
+  install -m 644 "$HERE/nginx-review-board.conf" /etc/nginx/conf.d/review-board.conf
+  nginx -t && systemctl reload nginx
   dnf install -y certbot python3-certbot-nginx || true
   certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos \
     -m "${CERTBOT_EMAIL:-admin@$DOMAIN}" --redirect || \
     echo "certbot に失敗。DNS が EIP を指しているか確認し、手動で再実行してください。"
+else
+  # TLS なし（HTTP のみ）。JWT_COOKIE_SECURE=true 環境ではログイン不可になる点に注意。
+  install -m 644 "$HERE/nginx-review-board.conf" /etc/nginx/conf.d/review-board.conf
+  nginx -t && systemctl reload nginx
+  echo "警告: TLS 未設定（HTTP のみ）。JWT_COOKIE_SECURE=true ではログインできません。"
 fi
 
 echo "provision 完了。次に deploy.sh <sha> でアプリを投入してください。"
