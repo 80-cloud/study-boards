@@ -6,7 +6,7 @@ import ReviewPrefFields from '../components/ReviewPrefFields';
 import DraftNotice from '../components/DraftNotice';
 import { useDraft } from '../hooks/useDraft';
 
-const EMPTY = { title: '', description: '', repoUrl: '', demoUrl: '', screenshotKey: null, reviewTone: null, reviewAspects: [], aiUsage: null };
+const EMPTY = { title: '', description: '', repoUrl: '', demoUrl: '', screenshotKey: null, reviewTones: [], reviewAspects: [], aiUsage: null };
 
 // F-POST-01：成果物の投稿（タイトル/説明は必須、URL・スクショは任意）。
 // F-DRAFT-01：入力を localStorage に自動保存し、再訪時に復元する。
@@ -20,7 +20,7 @@ export default function NewPostPage() {
   const { restored, save, clear } = useDraft('post-new', (draft) => setForm((p) => ({ ...p, ...draft })));
   // 空フォームは保存しない（「空の下書き復元」誤検知を防ぐ）。
   const dirty = !!(form.title || form.description || form.repoUrl || form.demoUrl
-    || form.screenshotKey || form.reviewTone || form.reviewAspects.length || form.aiUsage);
+    || form.screenshotKey || form.reviewTones.length || form.reviewAspects.length || form.aiUsage);
   useEffect(() => { if (dirty) save(form); }, [form, dirty, save]);
 
   const set = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
@@ -41,7 +41,7 @@ export default function NewPostPage() {
         repoUrl: form.repoUrl || null,
         demoUrl: form.demoUrl || null,
         screenshotKey: form.screenshotKey || null,
-        reviewTone: form.reviewTone,
+        reviewTones: form.reviewTones,
         reviewAspects: form.reviewAspects,
         aiUsage: form.aiUsage,
       });
@@ -55,29 +55,30 @@ export default function NewPostPage() {
   };
 
   return (
-    <main className="mx-auto max-w-2xl p-6">
-      <h2 className="mb-4 text-lg font-bold text-gray-800">成果物を投稿</h2>
-      <form onSubmit={submit} className="rounded-lg border border-gray-200 bg-white p-6">
+    <main className="mx-auto max-w-2xl px-6 py-8">
+      <p className="mac-eyebrow text-left">CREATE</p>
+      <h2 className="mac-h mb-5 text-2xl">成果物を投稿</h2>
+      <form onSubmit={submit} className="mac-card p-6 sm:p-7">
         {restored && <DraftNotice onDiscard={discardDraft} />}
-        {error && <p className="mb-3 rounded bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
-        <label className="mb-1 block text-sm text-gray-600">タイトル（必須）</label>
-        <input required value={form.title} onChange={set('title')} className="mb-4 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" />
-        <label className="mb-1 block text-sm text-gray-600">説明（必須）<span className="text-xs text-gray-400">・マークダウン可</span></label>
-        <textarea required value={form.description} onChange={set('description')} rows={4} className="mb-4 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" />
-        <label className="mb-1 block text-sm text-gray-600">リポジトリ URL（任意）</label>
-        <input type="url" value={form.repoUrl} onChange={set('repoUrl')} className="mb-4 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" />
-        <label className="mb-1 block text-sm text-gray-600">デモ URL（任意）</label>
-        <input type="url" value={form.demoUrl} onChange={set('demoUrl')} className="mb-4 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" />
+        {error && <p className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+        <label className="mac-label">タイトル（必須）</label>
+        <input required value={form.title} onChange={set('title')} className="mac-input mb-4" />
+        <label className="mac-label">説明（必須）<span className="ml-1 text-xs text-gray-400">・マークダウン可</span></label>
+        <textarea required value={form.description} onChange={set('description')} rows={4} className="mac-input mb-4" />
+        <label className="mac-label">リポジトリ URL（任意）</label>
+        <input type="url" value={form.repoUrl} onChange={set('repoUrl')} className="mac-input mb-4" />
+        <label className="mac-label">デモ URL（任意）</label>
+        <input type="url" value={form.demoUrl} onChange={set('demoUrl')} className="mac-input mb-4" />
         <ScreenshotUploader onChange={(key) => setForm((p) => ({ ...p, screenshotKey: key }))} />
         <ReviewPrefFields
-          tone={form.reviewTone}
+          tones={form.reviewTones}
           aspects={form.reviewAspects}
           aiUsage={form.aiUsage}
-          onToneChange={(v) => setForm((p) => ({ ...p, reviewTone: v }))}
+          onTonesChange={(v) => setForm((p) => ({ ...p, reviewTones: v }))}
           onAspectsChange={(v) => setForm((p) => ({ ...p, reviewAspects: v }))}
           onAiUsageChange={(v) => setForm((p) => ({ ...p, aiUsage: v }))}
         />
-        <button type="submit" disabled={busy} className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
+        <button type="submit" disabled={busy} className="mac-btn-brand">
           {busy ? '投稿中…' : '投稿する'}
         </button>
       </form>

@@ -55,24 +55,24 @@ export default function ReviewForm({ postId, onCreated }) {
   };
 
   return (
-    <form onSubmit={submit} className="rounded-lg border border-gray-200 bg-white p-4">
-      <h3 className="mb-3 font-medium text-gray-800">レビューを書く <span className="text-xs font-normal text-gray-400">（マークダウン記法が使えます）</span></h3>
+    <form onSubmit={submit} className="mac-card p-5">
+      <h3 className="mac-h mb-3 text-base">レビューを書く <span className="text-xs font-normal text-gray-400">（マークダウン記法が使えます）</span></h3>
       {restored && <DraftNotice onDiscard={discardDraft} />}
-      {error && <p className="mb-3 rounded bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
-      <label className="mb-1 block text-sm text-gray-600">✅ 良かった点（必須）</label>
+      {error && <p className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+      <label className="mac-label">✅ 良かった点（必須）</label>
       <textarea
         required
         value={good}
         onChange={(e) => setGood(e.target.value)}
-        className="mb-3 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+        className="mac-input mb-3"
         rows={2}
       />
-      <label className="mb-1 block text-sm text-gray-600">💡 もっと良くなる点（必須）</label>
+      <label className="mac-label">💡 もっと良くなる点（必須）</label>
       <textarea
         required
         value={improvement}
         onChange={(e) => setImprovement(e.target.value)}
-        className="mb-3 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+        className="mac-input mb-3"
         rows={2}
       />
       <p className="mb-2 text-xs text-gray-400">観点別コメント（任意・埋めたい軸だけでOK）</p>
@@ -82,15 +82,11 @@ export default function ReviewForm({ postId, onCreated }) {
           <input
             value={axis[a.key] ?? ''}
             onChange={(e) => setAxis((prev) => ({ ...prev, [a.key]: e.target.value }))}
-            className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+            className="mac-input py-1.5"
           />
         </div>
       ))}
-      <button
-        type="submit"
-        disabled={submitting}
-        className="mt-2 rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-      >
+      <button type="submit" disabled={submitting} className="mac-btn-brand mt-2">
         {submitting ? '送信中…' : 'レビューを投稿'}
       </button>
     </form>

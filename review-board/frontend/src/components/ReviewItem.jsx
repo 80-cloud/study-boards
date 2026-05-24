@@ -119,118 +119,135 @@ export default function ReviewItem({ review, canThank, canManageGrowth, isOwner,
     }
   };
 
+  // 案B4（プレミアム）：ヘッダー帯＋グラデ色ブロック＋セグメント型フッター。
   return (
-    <li className={`rounded-lg border p-4 ${isBest ? 'border-yellow-400 bg-yellow-50' : review.teacherReview ? 'border-amber-300 bg-amber-50' : 'border-gray-200 bg-white'}`}>
-      <div className="mb-2 flex items-center gap-2 text-sm">
-        <Avatar url={review.reviewerAvatarUrl} name={review.reviewerDisplayName} size="sm" />
-        <Link to={`/users/${review.reviewerUserId}/profile`} className="font-medium text-gray-800 hover:underline">
-          {review.reviewerDisplayName}
-        </Link>
-        {review.teacherReview && (
-          <span className="rounded bg-amber-200 px-2 py-0.5 text-xs text-amber-800">講師レビュー</span>
+    <li className={`overflow-hidden rounded-2xl border shadow-mac ${isBest ? 'border-yellow-300 bg-yellow-50/40' : review.teacherReview ? 'border-amber-200 bg-amber-50/40' : 'border-black/5 bg-white'}`}>
+      {/* ヘッダー帯 */}
+      <div className="flex items-center gap-3 border-b border-black/5 px-5 py-3.5">
+        <Avatar url={review.reviewerAvatarUrl} name={review.reviewerDisplayName} size="md" />
+        <div className="min-w-0 leading-tight">
+          <div className="flex items-center gap-2">
+            <Link to={`/users/${review.reviewerUserId}/profile`} className="font-bold text-navy-700 hover:underline">
+              {review.reviewerDisplayName}
+            </Link>
+            {isBest && (
+              <span className="rounded-full bg-yellow-200 px-2 py-0.5 text-[11px] font-semibold text-yellow-900 ring-1 ring-yellow-300">⭐ ベスト</span>
+            )}
+          </div>
+          {review.teacherReview && <div className="text-xs font-medium text-amber-600">講師レビュー</div>}
+        </div>
+        <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-navy-700/[0.06] px-2.5 py-1 text-xs font-semibold text-navy-700">
+          🙏 <span className="tabular-nums">{thanks}</span>
+        </span>
+      </div>
+
+      {/* 本文 */}
+      <div className="space-y-3 p-5">
+        {editing ? (
+          <div className="space-y-2">
+            <textarea value={good} onChange={(e) => setGood(e.target.value)} rows={2} className="mac-input" />
+            <textarea value={improvement} onChange={(e) => setImprovement(e.target.value)} rows={2} className="mac-input" />
+            <div className="flex gap-2">
+              <button onClick={saveEdit} disabled={busy} className="rounded-lg bg-navy-700 px-3 py-1 text-xs font-semibold text-white hover:bg-navy-800 disabled:opacity-50">保存</button>
+              <button onClick={() => { setEditing(false); setGood(review.good); setImprovement(review.improvement); }} className="rounded-lg border border-black/10 bg-white px-3 py-1 text-xs font-medium text-gray-600 transition hover:bg-black/[0.03]">キャンセル</button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 p-4 text-sm leading-relaxed text-gray-700 ring-1 ring-green-100">
+              <div className="mb-1 font-bold text-green-700">✅ 良かった点</div>
+              <MarkdownText>{review.good}</MarkdownText>
+            </div>
+            <div className="rounded-xl bg-gradient-to-br from-sky-50 to-indigo-50 p-4 text-sm leading-relaxed text-gray-700 ring-1 ring-sky-100">
+              <div className="mb-1 font-bold text-sky-700">💡 改善点</div>
+              <MarkdownText>{review.improvement}</MarkdownText>
+            </div>
+            {review.axisComments?.length > 0 && (
+              <ul className="space-y-1 rounded-xl bg-black/[0.02] p-3">
+                {review.axisComments.map((c) => (
+                  <li key={c.axis} className="text-xs text-gray-600">
+                    <span className="font-semibold text-gray-500">{AXIS_LABEL[c.axis] ?? c.axis}：</span>
+                    <MarkdownText className="mt-0.5 text-xs">{c.comment}</MarkdownText>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
         )}
-        {isBest && (
-          <span className="rounded bg-yellow-300 px-2 py-0.5 text-xs font-medium text-yellow-900">⭐ ベストレビュー</span>
+
+        {/* F-GROW-01 対応状態バッジ＋Before-After（OPEN かつ投稿者でない場合は出さない） */}
+        {(growthStatus !== 'OPEN' || canManageGrowth) && (
+          <div className="rounded-xl bg-white/70 p-3 ring-1 ring-black/5">
+            <div className="flex items-center gap-2">
+              <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${GROWTH_MAP[growthStatus]?.badge ?? ''}`}>
+                {GROWTH_MAP[growthStatus]?.label ?? growthStatus}
+              </span>
+              {canManageGrowth && !editingGrowth && (
+                <button onClick={openGrowthEditor} className="rounded-lg px-2.5 py-1 text-xs font-medium text-brand-600 ring-1 ring-brand-400/40 transition hover:bg-brand-400/10">対応を記録</button>
+              )}
+            </div>
+            {beforeAfter && !editingGrowth && (
+              <div className="mt-1.5 text-xs text-gray-600"><span className="text-gray-400">Before→After：</span><MarkdownText className="mt-0.5 text-xs">{beforeAfter}</MarkdownText></div>
+            )}
+            {editingGrowth && (
+              <div className="mt-2 space-y-2">
+                <select value={draftStatus} onChange={(e) => setDraftStatus(e.target.value)} className="rounded-lg border border-black/10 bg-white px-2 py-1 text-xs text-gray-700 outline-none">
+                  {GROWTH_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+                <textarea
+                  value={draftBA}
+                  onChange={(e) => setDraftBA(e.target.value)}
+                  rows={2}
+                  placeholder="Before→After メモ（任意）：どう直したか、なぜ対応不要かなど"
+                  className="mac-input text-xs"
+                />
+                <div className="flex gap-2">
+                  <button onClick={saveGrowth} disabled={busy} className="rounded-lg bg-navy-700 px-3 py-1 text-xs font-semibold text-white hover:bg-navy-800 disabled:opacity-50">保存</button>
+                  <button onClick={() => setEditingGrowth(false)} className="rounded-lg border border-black/10 bg-white px-3 py-1 text-xs font-medium text-gray-600 transition hover:bg-black/[0.03]">キャンセル</button>
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
 
-      {editing ? (
-        <div className="space-y-2">
-          <textarea value={good} onChange={(e) => setGood(e.target.value)} rows={2} className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" />
-          <textarea value={improvement} onChange={(e) => setImprovement(e.target.value)} rows={2} className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" />
-          <div className="flex gap-2">
-            <button onClick={saveEdit} disabled={busy} className="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700 disabled:opacity-50">保存</button>
-            <button onClick={() => { setEditing(false); setGood(review.good); setImprovement(review.improvement); }} className="rounded border border-gray-300 px-3 py-1 text-xs text-gray-600 hover:bg-gray-50">キャンセル</button>
-          </div>
-        </div>
-      ) : (
-        <>
-          <div className="text-sm text-gray-700"><span className="text-green-600">✅ 良かった点：</span><MarkdownText className="mt-1">{review.good}</MarkdownText></div>
-          <div className="mt-1 text-sm text-gray-700"><span className="text-blue-600">💡 改善点：</span><MarkdownText className="mt-1">{review.improvement}</MarkdownText></div>
-          {review.axisComments?.length > 0 && (
-            <ul className="mt-2 space-y-1 border-t border-gray-100 pt-2">
-              {review.axisComments.map((c) => (
-                <li key={c.axis} className="text-xs text-gray-600">
-                  <span className="text-gray-400">{AXIS_LABEL[c.axis] ?? c.axis}：</span>
-                  <MarkdownText className="mt-0.5 text-xs">{c.comment}</MarkdownText>
-                </li>
-              ))}
-            </ul>
-          )}
-        </>
-      )}
-
-      {/* F-GROW-01 対応状態バッジ＋Before-After（OPEN かつ投稿者でない場合は出さない） */}
-      {(growthStatus !== 'OPEN' || canManageGrowth) && (
-        <div className="mt-2 border-t border-gray-100 pt-2">
-          <div className="flex items-center gap-2">
-            <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${GROWTH_MAP[growthStatus]?.badge ?? ''}`}>
-              {GROWTH_MAP[growthStatus]?.label ?? growthStatus}
-            </span>
-            {canManageGrowth && !editingGrowth && (
-              <button onClick={openGrowthEditor} className="text-xs text-blue-600 hover:underline">対応を記録</button>
-            )}
-          </div>
-          {beforeAfter && !editingGrowth && (
-            <div className="mt-1 text-xs text-gray-600"><span className="text-gray-400">Before→After：</span><MarkdownText className="mt-0.5 text-xs">{beforeAfter}</MarkdownText></div>
-          )}
-          {editingGrowth && (
-            <div className="mt-2 space-y-2">
-              <select value={draftStatus} onChange={(e) => setDraftStatus(e.target.value)} className="rounded border border-gray-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none">
-                {GROWTH_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-              <textarea
-                value={draftBA}
-                onChange={(e) => setDraftBA(e.target.value)}
-                rows={2}
-                placeholder="Before→After メモ（任意）：どう直したか、なぜ対応不要かなど"
-                className="w-full rounded border border-gray-300 px-3 py-2 text-xs focus:border-blue-500 focus:outline-none"
-              />
-              <div className="flex gap-2">
-                <button onClick={saveGrowth} disabled={busy} className="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700 disabled:opacity-50">保存</button>
-                <button onClick={() => setEditingGrowth(false)} className="rounded border border-gray-300 px-3 py-1 text-xs text-gray-600 hover:bg-gray-50">キャンセル</button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className="mt-2 flex items-center gap-3 text-xs text-gray-500">
-        <span>🙏 ありがとう {thanks}</span>
+      {/* セグメント型フッター */}
+      <div className="flex flex-wrap items-center gap-1 border-t border-black/5 bg-black/[0.012] px-3 py-2 text-xs">
         {canThank && (
-          <button onClick={thank} disabled={busy || thanked} className="rounded border border-gray-300 px-2 py-0.5 text-gray-600 hover:bg-gray-50 disabled:opacity-50">
-            {thanked ? '送信済み' : 'ありがとうを送る'}
+          <button onClick={thank} disabled={busy || thanked}
+            className="rounded-lg px-3 py-1.5 font-medium text-gray-600 transition hover:bg-black/[0.05] disabled:opacity-50">
+            {thanked ? '送信済み' : 'ありがとう'}
           </button>
         )}
         {isOwner && !editing && (
           <>
-            <button onClick={() => setEditing(true)} className="text-blue-600 hover:underline">編集</button>
-            <button onClick={remove} disabled={busy} className="text-red-500 hover:underline disabled:opacity-50">削除</button>
+            <button onClick={() => setEditing(true)} className="rounded-lg px-3 py-1.5 font-medium text-gray-600 transition hover:bg-black/[0.05]">編集</button>
+            <button onClick={remove} disabled={busy} className="rounded-lg px-3 py-1.5 font-medium text-red-500 transition hover:bg-red-50 disabled:opacity-50">削除</button>
           </>
         )}
         {/* F-REV-05：投稿者だけが、まだベストでないレビューを選べる */}
         {canSelectBest && !isBest && (
-          <button onClick={() => onSelectBest?.(review.id)} className="text-yellow-700 hover:underline">
-            ⭐ ベストに選ぶ
+          <button onClick={() => onSelectBest?.(review.id)} className="rounded-lg px-3 py-1.5 font-medium text-yellow-700 transition hover:bg-yellow-50">
+            ベストに選ぶ
           </button>
         )}
         {/* F-REV-04：返信スレッドの開閉 */}
-        <button onClick={toggleReplies} className="text-gray-600 hover:underline">
-          💬 返信 {replyCount}
+        <button onClick={toggleReplies} className="rounded-lg px-3 py-1.5 font-medium text-gray-600 transition hover:bg-black/[0.05]">
+          返信 {replyCount}
         </button>
       </div>
 
       {showReplies && (
-        <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
+        <div className="space-y-2 border-t border-black/5 px-5 py-3">
           {replies === null ? (
             <p className="text-xs text-gray-400">読み込み中…</p>
           ) : replies.length === 0 ? (
             <p className="text-xs text-gray-400">まだ返信がありません。</p>
           ) : (
             replies.map((rp) => (
-              <div key={rp.id} className="rounded bg-gray-50 px-3 py-2 text-sm">
+              <div key={rp.id} className="rounded-xl bg-black/[0.03] px-3 py-2 text-sm">
                 <div className="flex items-center justify-between">
-                  <Link to={`/users/${rp.replierUserId}/profile`} className="text-xs font-medium text-gray-700 hover:underline">
+                  <Link to={`/users/${rp.replierUserId}/profile`} className="text-xs font-semibold text-navy-700 hover:underline">
                     {rp.replierDisplayName}
                   </Link>
                   {user?.id === rp.replierUserId && (
@@ -246,9 +263,9 @@ export default function ReviewItem({ review, canThank, canManageGrowth, isOwner,
               value={replyBody}
               onChange={(e) => setReplyBody(e.target.value)}
               placeholder="返信を書く"
-              className="flex-1 rounded border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
+              className="mac-input py-1.5"
             />
-            <button type="submit" disabled={busy || !replyBody.trim()} className="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700 disabled:opacity-50">
+            <button type="submit" disabled={busy || !replyBody.trim()} className="shrink-0 rounded-xl bg-navy-700 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-navy-800 disabled:opacity-50">
               返信
             </button>
           </form>

@@ -1,4 +1,5 @@
-import { Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Header from './components/Header';
@@ -10,11 +11,21 @@ import PostDetailPage from './pages/PostDetailPage';
 import ProfilePage from './pages/ProfilePage';
 import NotificationsPage from './pages/NotificationsPage';
 
+// ページ（パス）が切り替わったらスクロール位置を先頭へ戻す。
+// React Router は既定でスクロールを復元しないため、長いページから遷移すると
+// 前ページのスクロール量が残り「自動スクロール」のように見えるのを防ぐ。
+// 同一パス内の遷移（トップ "/" → "/?q=..."）では発火しないので、PostsPage の WORKS スクロールには干渉しない。
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+}
+
 // 認証必須ページの共通レイアウト（ヘッダー＋本文）。
 function Shell({ children }) {
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen">
         <Header />
         {children}
       </div>
@@ -25,6 +36,7 @@ function Shell({ children }) {
 export default function App() {
   return (
     <AuthProvider>
+      <ScrollToTop />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/" element={<Shell><PostsPage /></Shell>} />

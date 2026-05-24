@@ -30,8 +30,15 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  // プロフィール更新（アバター等）後にヘッダー表示を最新化するため /me を引き直す。
+  const refreshUser = useCallback(async () => {
+    const u = await authApi.fetchMe();
+    setUser(u);
+    return u;
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

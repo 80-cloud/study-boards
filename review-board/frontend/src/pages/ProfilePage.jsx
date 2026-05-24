@@ -4,7 +4,7 @@ import { fetchProfile, updateMyProfile } from '../api/profile';
 import { ROLE_LABEL, EVAL_LABEL } from '../constants';
 import { useAuth } from '../context/AuthContext';
 import Avatar from '../components/Avatar';
-import ScreenshotUploader from '../components/ScreenshotUploader';
+import AvatarUploader from '../components/AvatarUploader';
 
 // F-PROF：成長記録ページ（本アプリの主役）。投稿履歴・もらったレビュー・実績・合格バッジ・継続。
 export default function ProfilePage() {
@@ -31,8 +31,10 @@ export default function ProfilePage() {
   const isOwn = user?.id === profile.userId;
 
   return (
-    <main className="mx-auto max-w-3xl space-y-6 p-6">
-      <header className="rounded-lg border border-gray-200 bg-white p-6">
+    <main className="mx-auto max-w-3xl space-y-6 px-6 py-8">
+      <header className={editing
+        ? 'mac-card p-6 sm:p-7'
+        : 'overflow-hidden rounded-3xl border border-black/5 bg-gradient-to-b from-[#f4f8ff] to-[#eaf1fb] p-6 shadow-mac-sm sm:p-7'}>
         {editing ? (
           <ProfileEditor profile={profile} onSaved={(p) => { setProfile(p); setEditing(false); }} onCancel={() => setEditing(false)} />
         ) : (
@@ -40,17 +42,17 @@ export default function ProfilePage() {
             <div className="flex items-start gap-4">
               <Avatar url={avatarUrl} name={displayName} size="lg" />
               <div className="flex-1">
-                <h2 className="text-xl font-bold text-gray-800">
+                <h2 className="mac-h text-2xl">
                   {displayName}
-                  <span className="ml-2 rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-500">{ROLE_LABEL[role] ?? role}</span>
+                  <span className="ml-2 rounded-full bg-navy-700/10 px-2.5 py-0.5 text-xs font-semibold text-navy-700">{ROLE_LABEL[role] ?? role}</span>
                 </h2>
                 {bio && <p className="mt-1 whitespace-pre-wrap text-sm text-gray-600">{bio}</p>}
               </div>
               {isOwn && (
-                <button onClick={() => setEditing(true)} className="text-sm text-blue-600 hover:underline">プロフィール編集</button>
+                <button onClick={() => setEditing(true)} className="text-sm font-semibold text-brand-500 hover:underline">プロフィール編集</button>
               )}
             </div>
-            <div className="mt-4 grid grid-cols-3 gap-4 text-center">
+            <div className="mt-5 grid grid-cols-3 gap-3 text-center">
               <Stat label="もらったレビュー" value={stats.receivedReviewsCount} />
               <Stat label="したレビュー" value={stats.givenReviewsCount} />
               <Stat label="もらった🙏" value={stats.thanksReceivedCount} />
@@ -62,18 +64,18 @@ export default function ProfilePage() {
       {streak && <StreakCard streak={streak} />}
 
       <section>
-        <h3 className="mb-3 font-medium text-gray-800">投稿した成果物（{posts.length}）</h3>
+        <h3 className="mac-h mb-3 text-lg">投稿した成果物（{posts.length}）</h3>
         {posts.length === 0 ? (
           <p className="text-sm text-gray-500">まだ投稿がありません。</p>
         ) : (
           <ul className="space-y-2">
             {posts.map((p) => (
-              <li key={p.postId} className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-3">
-                <Link to={`/posts/${p.postId}`} className="text-sm font-medium text-gray-800 hover:underline">{p.title}</Link>
+              <li key={p.postId} className="mac-panel flex items-center justify-between p-3">
+                <Link to={`/posts/${p.postId}`} className="text-sm font-semibold text-navy-700 hover:underline">{p.title}</Link>
                 <span className="flex items-center gap-2 text-xs text-gray-500">
                   レビュー {p.reviewCount}
-                  {p.approved && <span className="rounded bg-green-100 px-2 py-0.5 text-green-700">🏅 合格</span>}
-                  {p.evaluationResult === 'RETURNED' && <span className="rounded bg-orange-100 px-2 py-0.5 text-orange-700">{EVAL_LABEL.RETURNED}</span>}
+                  {p.approved && <span className="rounded-full bg-green-100 px-2 py-0.5 text-green-700">🏅 合格</span>}
+                  {p.evaluationResult === 'RETURNED' && <span className="rounded-full bg-orange-100 px-2 py-0.5 text-orange-700">{EVAL_LABEL.RETURNED}</span>}
                 </span>
               </li>
             ))}
@@ -82,15 +84,15 @@ export default function ProfilePage() {
       </section>
 
       <section>
-        <h3 className="mb-3 font-medium text-gray-800">もらったレビュー（{receivedReviews.length}）</h3>
+        <h3 className="mac-h mb-3 text-lg">もらったレビュー（{receivedReviews.length}）</h3>
         {receivedReviews.length === 0 ? (
           <p className="text-sm text-gray-500">まだありません。</p>
         ) : (
           <ul className="space-y-2">
             {receivedReviews.map((r) => (
-              <li key={r.reviewId} className={`rounded-lg border p-3 text-sm ${r.teacherReview ? 'border-amber-300 bg-amber-50' : 'border-gray-200 bg-white'}`}>
-                <span className="font-medium text-gray-700">{r.reviewerDisplayName}</span>
-                {r.teacherReview && <span className="ml-2 rounded bg-amber-200 px-2 py-0.5 text-xs text-amber-800">講師</span>}
+              <li key={r.reviewId} className={`rounded-2xl border p-3 text-sm shadow-mac-sm ${r.teacherReview ? 'border-amber-300 bg-amber-50' : 'border-black/5 bg-white/75'}`}>
+                <span className="font-semibold text-gray-700">{r.reviewerDisplayName}</span>
+                {r.teacherReview && <span className="ml-2 rounded-full bg-amber-200 px-2 py-0.5 text-xs text-amber-800">講師</span>}
                 <span className="ml-2 text-xs text-gray-400">🙏 {r.thanksCount}</span>
                 <p className="mt-1 text-gray-600">{r.good}</p>
               </li>
@@ -106,6 +108,7 @@ export default function ProfilePage() {
 // avatarKey は現在値を初期値に持ち、差し替え時のみ更新。bio＋avatarKey を常に送って全置換する
 // （送らないと backend が null 扱いで既存アバターを消すため）。
 function ProfileEditor({ profile, onSaved, onCancel }) {
+  const { refreshUser } = useAuth();
   const [bio, setBio] = useState(profile.bio ?? '');
   const [avatarKey, setAvatarKey] = useState(profile.avatarKey ?? null);
   const [busy, setBusy] = useState(false);
@@ -117,6 +120,8 @@ function ProfileEditor({ profile, onSaved, onCancel }) {
     try {
       const updated = await updateMyProfile({ bio: bio || null, avatarKey });
       onSaved(updated);
+      // ヘッダー（通知ベル横）のアバター等を最新化（AuthContext の user を引き直す）。
+      refreshUser().catch(() => {});
     } catch {
       setErr('保存に失敗しました');
     } finally {
@@ -126,28 +131,25 @@ function ProfileEditor({ profile, onSaved, onCancel }) {
 
   return (
     <div className="space-y-3">
-      <h2 className="font-bold text-gray-800">プロフィール編集</h2>
-      {err && <p className="rounded bg-red-50 px-3 py-2 text-sm text-red-600">{err}</p>}
-      <div className="flex items-start gap-4">
-        <Avatar url={profile.avatarUrl} name={profile.displayName} size="lg" />
-        <div className="flex-1">
-          <p className="mb-1 text-sm text-gray-600">アバター画像（PNG/JPEG/WebP・5MB まで）</p>
-          <ScreenshotUploader initialUrl={profile.avatarUrl ?? ''} onChange={(key) => setAvatarKey(key)} />
-        </div>
+      <h2 className="mac-h text-lg">プロフィール編集</h2>
+      {err && <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{err}</p>}
+      <div>
+        <p className="mac-label">アバター画像（PNG/JPEG/WebP・5MB まで・正方形に切り抜き）</p>
+        <AvatarUploader initialUrl={profile.avatarUrl ?? ''} onChange={(key) => setAvatarKey(key)} />
       </div>
-      <label className="block text-sm text-gray-600">自己紹介</label>
+      <label className="mac-label">自己紹介</label>
       <textarea
         value={bio}
         onChange={(e) => setBio(e.target.value)}
         rows={3}
         maxLength={500}
-        className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+        className="mac-input"
       />
       <div className="flex gap-2">
-        <button onClick={save} disabled={busy} className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
+        <button onClick={save} disabled={busy} className="mac-btn-brand">
           {busy ? '保存中…' : '保存'}
         </button>
-        <button onClick={onCancel} className="rounded border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">キャンセル</button>
+        <button onClick={onCancel} className="mac-btn-ghost">キャンセル</button>
       </div>
     </div>
   );
@@ -155,8 +157,8 @@ function ProfileEditor({ profile, onSaved, onCancel }) {
 
 function Stat({ label, value }) {
   return (
-    <div className="rounded-lg bg-gray-50 p-3">
-      <div className="text-2xl font-bold text-gray-800">{value}</div>
+    <div className="rounded-xl bg-white/95 p-3 shadow-mac-sm">
+      <div className="text-2xl font-extrabold text-navy-700">{value}</div>
       <div className="text-xs text-gray-500">{label}</div>
     </div>
   );
@@ -166,7 +168,7 @@ function Stat({ label, value }) {
 function StreakCard({ streak }) {
   const { currentStreak, longestStreak, totalActiveDays, achievedBadges = [] } = streak;
   return (
-    <section className="rounded-lg border border-orange-200 bg-orange-50 p-6">
+    <section className="rounded-2xl border border-orange-200 bg-orange-50 p-6 shadow-mac-sm">
       <h3 className="mb-3 font-medium text-orange-800">継続の記録 <span className="text-xs font-normal text-orange-600">（投稿・レビューを続けた日数）</span></h3>
       <div className="grid grid-cols-3 gap-4 text-center">
         <Stat label="現在の連続" value={`🔥 ${currentStreak}日`} />

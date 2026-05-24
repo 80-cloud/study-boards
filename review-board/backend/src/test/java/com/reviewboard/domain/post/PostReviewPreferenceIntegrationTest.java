@@ -33,56 +33,55 @@ class PostReviewPreferenceIntegrationTest extends AbstractIntegrationTest {
         otherEmail = newUser("other@example.com", UserRole.STUDENT, cohortId).getEmail();
     }
 
-    /** 作成時にトーン・観点を設定でき、詳細取得で返る。 */
+    /** 作成時にトーン（複数可）・観点を設定でき、詳細取得で返る。 */
     @Test
-    void create_with_tone_and_aspects_persists() throws Exception {
+    void create_with_tones_and_aspects_persists() throws Exception {
         MvcResult res = mockMvc.perform(post("/api/posts").cookie(login(authorEmail))
                         .contentType("application/json")
-                        .content("{\"title\":\"作品\",\"description\":\"説明\",\"reviewTone\":\"GENTLE\",\"reviewAspects\":[\"DB\",\"SECURITY\"]}"))
+                        .content("{\"title\":\"作品\",\"description\":\"説明\",\"reviewTones\":[\"GENTLE\",\"DETAILED\"],\"reviewAspects\":[\"DB\",\"SECURITY\"]}"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.reviewTone").value("GENTLE"))
+                .andExpect(jsonPath("$.reviewTones", org.hamcrest.Matchers.containsInAnyOrder("GENTLE", "DETAILED")))
                 .andExpect(jsonPath("$.reviewAspects", org.hamcrest.Matchers.containsInAnyOrder("DB", "SECURITY")))
                 .andReturn();
         long id = readId(res);
 
         mockMvc.perform(get("/api/posts/" + id).cookie(login(authorEmail)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.reviewTone").value("GENTLE"))
+                .andExpect(jsonPath("$.reviewTones", org.hamcrest.Matchers.containsInAnyOrder("GENTLE", "DETAILED")))
                 .andExpect(jsonPath("$.reviewAspects", org.hamcrest.Matchers.containsInAnyOrder("DB", "SECURITY")));
     }
 
-    /** 未指定なら未設定（null）・空配列で作成できる。 */
+    /** 未指定なら未設定（空配列）で作成できる。 */
     @Test
     void create_without_preferences_defaults_to_unset() throws Exception {
-        MvcResult res = mockMvc.perform(post("/api/posts").cookie(login(authorEmail))
+        mockMvc.perform(post("/api/posts").cookie(login(authorEmail))
                         .contentType("application/json")
                         .content("{\"title\":\"作品\",\"description\":\"説明\"}"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.reviewTone").doesNotExist())
-                .andExpect(jsonPath("$.reviewAspects").isEmpty())
-                .andReturn();
+                .andExpect(jsonPath("$.reviewTones").isEmpty())
+                .andExpect(jsonPath("$.reviewAspects").isEmpty());
     }
 
-    /** 所有者は更新で全置換できる（トーン変更・観点入れ替え）。 */
+    /** 所有者は更新で全置換できる（トーン複数入れ替え・観点入れ替え）。 */
     @Test
     void owner_can_update_preferences() throws Exception {
-        long id = createPost(login(authorEmail), "{\"title\":\"作品\",\"description\":\"説明\",\"reviewTone\":\"HARSH_OK\",\"reviewAspects\":[\"CODE\"]}");
+        long id = createPost(login(authorEmail), "{\"title\":\"作品\",\"description\":\"説明\",\"reviewTones\":[\"HARSH_OK\"],\"reviewAspects\":[\"CODE\"]}");
 
         mockMvc.perform(put("/api/posts/" + id).cookie(login(authorEmail))
                         .contentType("application/json")
-                        .content("{\"title\":\"作品\",\"description\":\"説明\",\"reviewTone\":\"WELCOME_BEGINNER\",\"reviewAspects\":[\"UI\",\"PERFORMANCE\"]}"))
+                        .content("{\"title\":\"作品\",\"description\":\"説明\",\"reviewTones\":[\"WELCOME_BEGINNER\",\"QUICK_OK\"],\"reviewAspects\":[\"UI\",\"PERFORMANCE\"]}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.reviewTone").value("WELCOME_BEGINNER"))
+                .andExpect(jsonPath("$.reviewTones", org.hamcrest.Matchers.containsInAnyOrder("WELCOME_BEGINNER", "QUICK_OK")))
                 .andExpect(jsonPath("$.reviewAspects", org.hamcrest.Matchers.containsInAnyOrder("UI", "PERFORMANCE")));
     }
 
     /** ★非所有者は更新できない（存在を漏らさず 404）。 */
     @Test
     void non_owner_cannot_update_returns404() throws Exception {
-        long id = createPost(login(authorEmail), "{\"title\":\"作品\",\"description\":\"説明\",\"reviewTone\":\"GENTLE\"}");
+        long id = createPost(login(authorEmail), "{\"title\":\"作品\",\"description\":\"説明\",\"reviewTones\":[\"GENTLE\"]}");
         mockMvc.perform(put("/api/posts/" + id).cookie(login(otherEmail))
                         .contentType("application/json")
-                        .content("{\"title\":\"乗っ取り\",\"description\":\"説明\",\"reviewTone\":\"HARSH_OK\"}"))
+                        .content("{\"title\":\"乗っ取り\",\"description\":\"説明\",\"reviewTones\":[\"HARSH_OK\"]}"))
                 .andExpect(status().isNotFound());
     }
 
