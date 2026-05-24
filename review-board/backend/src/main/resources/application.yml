@@ -98,3 +98,13 @@ logging:
   structured:
     format:
       console: ecs
+# 本番のオブジェクトストレージは AWS S3。endpoint/キーは既定で空にして、
+# AWS 既定エンドポイント＋EC2 の IAM ロール（インスタンスプロファイル）で認証する
+# （静的キーをサーバに置かない＝SEC-9。infra/iam.tf で S3 権限付与済み）。
+# bucket は deploy 時に S3_BUCKET（infra の screenshots バケット名）で指定する。
+app:
+  storage:
+    s3:
+      endpoint: ${S3_ENDPOINT:}
+      access-key: ${S3_ACCESS_KEY:}
+      secret-key: ${S3_SECRET_KEY:}
