@@ -69,6 +69,8 @@ jobs:
       S3_SECRET_KEY: minioadmin
       SEED_PASSWORD: devpass12345
       E2E_PASSWORD: devpass12345
+      # dev プロファイルで seed（講師/受講生）を有効化する（DevDataSeeder は @Profile("dev")）。
+      SPRING_PROFILES_ACTIVE: dev
 
     steps:
       - uses: actions/checkout@v4
