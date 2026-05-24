@@ -32,34 +32,34 @@ export default function ProfilePage() {
 
   return (
     <main className="mx-auto max-w-3xl space-y-6 px-6 py-8">
-      <header className={editing
-        ? 'mac-card p-6 sm:p-7'
-        : 'overflow-hidden rounded-3xl border border-black/5 bg-gradient-to-b from-[#f4f8ff] to-[#eaf1fb] p-6 shadow-mac-sm sm:p-7'}>
-        {editing ? (
-          <ProfileEditor profile={profile} onSaved={(p) => { setProfile(p); setEditing(false); }} onCancel={() => setEditing(false)} />
-        ) : (
-          <>
-            <div className="flex items-start gap-4">
-              <Avatar url={avatarUrl} name={displayName} size="lg" />
-              <div className="flex-1">
-                <h2 className="mac-h text-2xl">
-                  {displayName}
-                  <span className="ml-2 rounded-full bg-navy-700/10 px-2.5 py-0.5 text-xs font-semibold text-navy-700">{ROLE_LABEL[role] ?? role}</span>
-                </h2>
-                {bio && <p className="mt-1 whitespace-pre-wrap text-sm text-gray-600">{bio}</p>}
-              </div>
-              {isOwn && (
-                <button onClick={() => setEditing(true)} className="text-sm font-semibold text-brand-500 hover:underline">プロフィール編集</button>
-              )}
-            </div>
-            <div className="mt-5 grid grid-cols-3 gap-3 text-center">
-              <Stat label="もらったレビュー" value={stats.receivedReviewsCount} />
-              <Stat label="したレビュー" value={stats.givenReviewsCount} />
-              <Stat label="もらった🙏" value={stats.thanksReceivedCount} />
-            </div>
-          </>
-        )}
+      <header className="overflow-hidden rounded-3xl border border-black/5 bg-gradient-to-b from-[#f4f8ff] to-[#eaf1fb] p-6 shadow-mac-sm sm:p-7">
+        <div className="flex items-start gap-4">
+          <Avatar url={avatarUrl} name={displayName} size="lg" />
+          <div className="flex-1">
+            <h2 className="mac-h text-2xl">
+              {displayName}
+              <span className="ml-2 rounded-full bg-navy-700/10 px-2.5 py-0.5 text-xs font-semibold text-navy-700">{ROLE_LABEL[role] ?? role}</span>
+            </h2>
+            {bio && <p className="mt-1 whitespace-pre-wrap text-sm text-gray-600">{bio}</p>}
+          </div>
+          {isOwn && (
+            <button onClick={() => setEditing(true)} className="text-sm font-semibold text-brand-500 hover:underline">プロフィール編集</button>
+          )}
+        </div>
+        <div className="mt-5 grid grid-cols-3 gap-3 text-center">
+          <Stat label="もらったレビュー" value={stats.receivedReviewsCount} />
+          <Stat label="したレビュー" value={stats.givenReviewsCount} />
+          <Stat label="もらった🙏" value={stats.thanksReceivedCount} />
+        </div>
       </header>
+
+      {editing && (
+        <ProfileEditModal
+          profile={profile}
+          onSaved={(p) => { setProfile(p); setEditing(false); }}
+          onCancel={() => setEditing(false)}
+        />
+      )}
 
       {streak && <StreakCard streak={streak} />}
 
@@ -107,12 +107,21 @@ export default function ProfilePage() {
 // F-PROF（S-04）プロフィール編集：アバター差し替え＋自己紹介。本人のみ（backend が principal で限定）。
 // avatarKey は現在値を初期値に持ち、差し替え時のみ更新。bio＋avatarKey を常に送って全置換する
 // （送らないと backend が null 扱いで既存アバターを消すため）。
-function ProfileEditor({ profile, onSaved, onCancel }) {
+// 採用案：macOS の設定シート風モーダル（中央オーバーレイ＋背景ブラー）。
+function ProfileEditModal({ profile, onSaved, onCancel }) {
   const { refreshUser } = useAuth();
   const [bio, setBio] = useState(profile.bio ?? '');
   const [avatarKey, setAvatarKey] = useState(profile.avatarKey ?? null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+
+  // Esc で閉じる＋背景スクロール固定（mac シートの作法）。
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onCancel(); };
+    document.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = ''; };
+  }, [onCancel]);
 
   const save = async () => {
     setBusy(true);
@@ -124,32 +133,59 @@ function ProfileEditor({ profile, onSaved, onCancel }) {
       refreshUser().catch(() => {});
     } catch {
       setErr('保存に失敗しました');
-    } finally {
       setBusy(false);
     }
   };
 
   return (
-    <div className="space-y-3">
-      <h2 className="mac-h text-lg">プロフィール編集</h2>
-      {err && <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{err}</p>}
-      <div>
-        <p className="mac-label">アバター画像（PNG/JPEG/WebP・5MB まで・正方形に切り抜き）</p>
-        <AvatarUploader initialUrl={profile.avatarUrl ?? ''} onChange={(key) => setAvatarKey(key)} />
-      </div>
-      <label className="mac-label">自己紹介</label>
-      <textarea
-        value={bio}
-        onChange={(e) => setBio(e.target.value)}
-        rows={3}
-        maxLength={500}
-        className="mac-input"
-      />
-      <div className="flex gap-2">
-        <button onClick={save} disabled={busy} className="mac-btn-brand">
-          {busy ? '保存中…' : '保存'}
-        </button>
-        <button onClick={onCancel} className="mac-btn-ghost">キャンセル</button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* 背景：半透明＋ブラー（クリックで閉じる） */}
+      <div className="absolute inset-0 bg-black/25 backdrop-blur-sm" onClick={onCancel} aria-hidden />
+      {/* シート本体 */}
+      <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/10">
+        <div className="border-b border-black/5 px-6 py-4 text-center">
+          <h2 className="text-base font-bold text-navy-700">プロフィールを編集</h2>
+        </div>
+
+        <div className="space-y-5 px-6 py-6">
+          {err && <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{err}</p>}
+
+          {/* アバター：中央に配置 */}
+          <div className="flex flex-col items-center gap-2">
+            <AvatarUploader initialUrl={profile.avatarUrl ?? ''} onChange={(key) => setAvatarKey(key)} />
+            <p className="text-xs text-gray-400">PNG / JPEG / WebP・5MB まで・正方形に切り抜き</p>
+          </div>
+
+          {/* 表示名（読み取り専用） */}
+          <div>
+            <label className="mac-label">表示名</label>
+            <div className="rounded-xl bg-gray-50 px-3 py-2 text-sm text-gray-500 ring-1 ring-black/5">{profile.displayName}</div>
+          </div>
+
+          {/* 自己紹介 */}
+          <div>
+            <div className="mb-1 flex items-center justify-between">
+              <label className="mac-label !mb-0">自己紹介</label>
+              <span className="text-xs tabular-nums text-gray-400">{bio.length}/500</span>
+            </div>
+            <textarea
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              rows={4}
+              maxLength={500}
+              placeholder="学んでいること・興味のある分野など"
+              className="mac-input"
+            />
+          </div>
+        </div>
+
+        {/* フッター：mac シート（キャンセル左／保存右） */}
+        <div className="flex justify-end gap-2 border-t border-black/5 bg-gray-50/70 px-6 py-4">
+          <button onClick={onCancel} className="mac-btn-ghost">キャンセル</button>
+          <button onClick={save} disabled={busy} className="mac-btn-brand">
+            {busy ? '保存中…' : '保存'}
+          </button>
+        </div>
       </div>
     </div>
   );
