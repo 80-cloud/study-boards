@@ -133,7 +133,8 @@ const SCREENS = { todo: Todo, portfolio: Portfolio, api: Api, weather: Weather, 
 export default function AppShot({ kind, className = '' }) {
   const Screen = SCREENS[kind] || (() => <div className="h-full bg-gray-100" />);
   return (
-    <div className={`flex h-full flex-col overflow-hidden bg-white ${className}`}>
+    // 装飾的な「アプリ画面風」モック。内容は意味を持たないので支援技術からは隠す。
+    <div aria-hidden="true" className={`flex h-full flex-col overflow-hidden bg-white ${className}`}>
       {/* ブラウザ枠（撮影したスクショ風） */}
       <div className="flex items-center gap-1 bg-gray-200/80 px-1.5 py-1">
         <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
