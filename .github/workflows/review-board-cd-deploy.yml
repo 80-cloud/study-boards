@@ -1,0 +1,127 @@
+name: review-board CD deploy (manual promotion)
+
+# ============================================================
+# #161 CD の「デプロイ」半分（slack-board cd-deploy.yml のパターンを EC2/jar 向けに移植）。
+#
+# review-board-cd-build.yml が発行した不変アーティファクト（SHA タグ）を、人間が
+# workflow_dispatch で明示的に昇格させる。この「手動 dispatch」が人間承認ゲート
+# （CLAUDE.md §6/§12「apply は人間承認必須」を CD に落とし込んだもの）。
+#
+# 更新は「アプリのみ」：SSM Run Command で EC2 上の jar / 静的ファイルを差し替えて
+# サービス再起動するだけ。terraform apply は行わず、ネットワーク/RDS/nginx 土台などの
+# インフラ破壊的変更は一切含めない（受け入れ条件「apply はアプリ更新に限定」）。
+#
+# ⚠ 前提：本番デプロイ（S-2）完了後に有効化する。それまでは AWS 認証 secret と
+#   アーティファクト配布（S3）が未整備のため、ガードして安全にスキップする。
+#   配置規約・ロールバック手順は docs/デプロイ・ロールバック手順.md を正とする。
+# ============================================================
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: 'デプロイする不変アーティファクトの SHA（cd-build が発行した 7 桁。例: a1b2c3d）'
+        required: true
+        type: string
+      confirm:
+        description: '昇格を承認する場合は deploy と入力'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  AWS_REGION: ap-northeast-1
+  # EC2 を特定するタグ（infra の common_tags と整合：Project=review-board）。
+  INSTANCE_TAG_PROJECT: review-board
+  AWS_KEY: ${{ secrets.AWS_ACCESS_KEY_ID }}
+
+jobs:
+  deploy:
+    name: EC2 アプリ更新（SSM・apply 無し）
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: 承認語の確認
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "deploy" ]; then
+            echo "confirm に 'deploy' が入力されていません。昇格を中止します。"; exit 1
+          fi
+
+      - name: 前提チェック（AWS 認証が無ければ安全にスキップ）
+        id: guard
+        run: |
+          if [ -z "${AWS_KEY}" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            {
+              echo '## review-board CD deploy（スキップ）'
+              echo ''
+              echo 'AWS 認証 secret が未設定のため、デプロイはスキップしました（S-2 前の足場状態）。'
+              echo 'S-2 完了後、AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY と S3 アーティファクト配布を'
+              echo '整備すると、本ワークフローが「アプリのみ更新」を実行します。'
+              echo '配置規約・ロールバックは docs/デプロイ・ロールバック手順.md を参照。'
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Configure AWS credentials
+        if: steps.guard.outputs.ready == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: EC2 インスタンス ID を解決（タグ）
+        if: steps.guard.outputs.ready == 'true'
+        id: ec2
+        run: |
+          ID=$(aws ec2 describe-instances --region "$AWS_REGION" \
+            --filters "Name=tag:Project,Values=${INSTANCE_TAG_PROJECT}" \
+                      "Name=instance-state-name,Values=running" \
+            --query 'Reservations[0].Instances[0].InstanceId' --output text)
+          if [ "$ID" = "None" ] || [ -z "$ID" ]; then
+            echo "稼働中の EC2 が見つかりません（S-2 未完了の可能性）。"; exit 1
+          fi
+          echo "id=$ID" >> "$GITHUB_OUTPUT"
+
+      - name: SSM でアプリのみ更新（jar/静的差し替え→再起動）
+        if: steps.guard.outputs.ready == 'true'
+        # アプリ更新限定。terraform apply は呼ばない（インフラ破壊的変更ゼロ）。
+        # 配置規約：/opt/review-board/releases/<sha> に配置し current シンボリックリンクを切替、
+        #   systemd review-board.service を再起動、静的は /var/www/review-board を切替えて nginx reload。
+        #   （docs/デプロイ・ロールバック手順.md と一致。S3 アーティファクトバケット名は要 secret/var 化）
+        run: |
+          SHA='${{ github.event.inputs.sha }}'
+          CMD_ID=$(aws ssm send-command --region "$AWS_REGION" \
+            --instance-ids "${{ steps.ec2.outputs.id }}" \
+            --document-name "AWS-RunShellScript" \
+            --comment "review-board app deploy ${SHA}" \
+            --parameters commands="[
+              \"set -euo pipefail\",
+              \"sudo /opt/review-board/deploy.sh ${SHA}\"
+            ]" \
+            --query 'Command.CommandId' --output text)
+          echo "SSM CommandId=$CMD_ID"
+          aws ssm wait command-executed --region "$AWS_REGION" \
+            --command-id "$CMD_ID" --instance-id "${{ steps.ec2.outputs.id }}"
+          aws ssm get-command-invocation --region "$AWS_REGION" \
+            --command-id "$CMD_ID" --instance-id "${{ steps.ec2.outputs.id }}" \
+            --query 'StandardOutputContent' --output text
+
+      - name: ヘルスチェック（公開エンドポイント）
+        if: steps.guard.outputs.ready == 'true'
+        run: |
+          IP=$(aws ec2 describe-instances --region "$AWS_REGION" \
+            --instance-ids "${{ steps.ec2.outputs.id }}" \
+            --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
+          for i in {1..20}; do
+            if curl -skf "https://${IP}/api/actuator/health" >/dev/null 2>&1 \
+               || curl -sf "http://${IP}/api/actuator/health" >/dev/null 2>&1; then
+              echo "::notice title=deployed::SHA=${{ github.event.inputs.sha }} を昇格しました（${IP}）"; exit 0
+            fi
+            sleep 6
+          done
+          echo "ヘルスチェックに失敗。ロールバック手順（docs）を参照。"; exit 1

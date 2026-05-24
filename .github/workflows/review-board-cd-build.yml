@@ -1,0 +1,119 @@
+name: review-board CD build (immutable artifact)
+
+# ============================================================
+# #161 CD の「ビルド/アーティファクト」半分（slack-board cd-build.yml のパターンを EC2/jar 向けに移植）。
+#
+# 役割：テストゲート（./gradlew test）→ 不変アーティファクト（backend jar ＋ frontend dist）を
+# コミット SHA タグで発行し、GitHub Actions Artifact として保存する。
+#
+# 実デプロイ（EC2 への昇格）は別ワークフロー review-board-cd-deploy.yml の手動 dispatch で行う
+# （「apply は人間承認」思想＝デプロイ承認ゲート、CLAUDE.md §6/§12）。
+#
+# slack-board は ECS（ECR image）だが review-board は EC2＋nginx＋jar のため、
+# 不変アーティファクトは「jar ＋ 静的ビルド」を SHA で固めたものとする。
+# 本番化で remote state / OIDC / S3 アーティファクトバケットに置き換える余地を残す。
+# ============================================================
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'review-board/backend/**'
+      - 'review-board/frontend/**'
+      - '.github/workflows/review-board-cd-build.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: rb-cd-build-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  test-gate:
+    name: テストゲート（gradle test）
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: review-board/backend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+      - name: ./gradlew test（テスト緑がデプロイの前提）
+        run: ./gradlew test --no-daemon --console=plain
+
+  build-artifact:
+    name: 不変アーティファクト発行（jar + dist, SHA タグ）
+    needs: test-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      sha_tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: SHA タグを解決
+        id: meta
+        run: echo "tag=$(git rev-parse --short=7 HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: backend jar をビルド（bootJar）
+        working-directory: review-board/backend
+        run: ./gradlew bootJar --no-daemon --console=plain
+
+      - name: frontend をビルド（vite build）
+        working-directory: review-board/frontend
+        run: |
+          npm install
+          npm run build
+
+      - name: アーティファクトを SHA で固める
+        run: |
+          set -eu
+          TAG="${{ steps.meta.outputs.tag }}"
+          mkdir -p "artifact/$TAG"
+          # backend jar（bootJar の実行可能 jar。plain jar が併存する場合は除外）。
+          JAR=$(ls review-board/backend/build/libs/*.jar | grep -v -- '-plain.jar' | head -1)
+          echo "selected jar: $JAR"
+          cp "$JAR" "artifact/$TAG/app.jar"
+          # frontend 静的ビルド
+          cp -r review-board/frontend/dist "artifact/$TAG/dist"
+          # 由来の追跡（どのコミットの成果物か）
+          {
+            echo "sha=$(git rev-parse HEAD)"
+            echo "short=$TAG"
+            echo "built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "ref=${GITHUB_REF:-}"
+          } > "artifact/$TAG/MANIFEST.txt"
+          ls -lR "artifact/$TAG" | head -40
+
+      - name: アーティファクトをアップロード（不変・SHA 名）
+        uses: actions/upload-artifact@v4
+        with:
+          name: review-board-${{ steps.meta.outputs.tag }}
+          path: artifact/${{ steps.meta.outputs.tag }}/
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: 次の手動デプロイで使う SHA を表示
+        run: |
+          echo "::notice title=artifact ready::SHA=${{ steps.meta.outputs.tag }} を review-board-cd-deploy の sha 入力に渡して昇格する"
