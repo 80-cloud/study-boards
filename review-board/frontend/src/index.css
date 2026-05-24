@@ -15,12 +15,15 @@
   --color-accent-600: #0a6dde;
   --color-accent-700: #0857b3;
 
-  /* ブランド（採用デザイン L：ネイビー＋オレンジ） */
+  /* ブランド（採用デザイン L：ネイビー＋オレンジ）
+     白文字ボタン・白地のオレンジ文字が WCAG AA（4.5:1）を満たすよう、
+     主要色 500 を濃いめのオレンジに調整（hover 用 600 はさらに濃く）。
+     400 は淡い装飾フィル用にやや明るめを維持。 */
   --color-navy-700: #13315a;
   --color-navy-800: #0f2747;
-  --color-brand-400: #ff944d;
-  --color-brand-500: #ff7a18;
-  --color-brand-600: #ec6a08;
+  --color-brand-400: #f97316;
+  --color-brand-500: #c2410c;
+  --color-brand-600: #9a3412;
 
   /* キャンバス（Apple グレー） */
   --color-canvas: #f5f5f7;

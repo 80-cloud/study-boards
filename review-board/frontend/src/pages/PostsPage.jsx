@@ -119,7 +119,7 @@ export default function PostsPage() {
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-bold text-navy-700">{u.displayName}</div>
                   <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
-                    <span className="rounded bg-gray-100 px-1.5 py-0.5 text-gray-500">{ROLE_LABEL[u.role] ?? u.role}</span>
+                    <span className="rounded bg-gray-100 px-1.5 py-0.5 text-gray-600">{ROLE_LABEL[u.role] ?? u.role}</span>
                     <span className="text-brand-500">▶</span>
                     <span className="font-semibold text-gray-700">投稿 {u.postsCount}・レビュー {u.reviewsCount}</span>
                     {u.approved && <span className="rounded-full bg-amber-100 px-2 py-0.5 font-bold text-amber-700">🏅 合格</span>}
@@ -220,6 +220,7 @@ export default function PostsPage() {
 
         <div className="mt-8 flex flex-wrap items-center gap-3">
           <select value={applied.status} onChange={(e) => setFilter({ status: e.target.value })}
+            aria-label="募集状態で絞り込み"
             className="rounded-xl border border-black/10 bg-white px-3 py-1.5 text-sm text-gray-700 outline-none">
             <option value="">すべての状態</option>
             <option value="OPEN">レビュー募集中</option>
@@ -230,6 +231,7 @@ export default function PostsPage() {
             未レビューのみ
           </label>
           <select value={applied.sort} onChange={(e) => setFilter({ sort: e.target.value })}
+            aria-label="並び替え"
             className="rounded-xl border border-black/10 bg-white px-3 py-1.5 text-sm text-gray-700 outline-none">
             <option value="newest">新着順</option>
             <option value="reviews">レビュー数順</option>
@@ -281,7 +283,7 @@ export default function PostsPage() {
                       <span className="truncate text-xs text-gray-500">{p.authorDisplayName ?? '—'}</span>
                     </div>
                     <div className="mb-3"><ReviewPrefBadges tones={p.reviewTones} aspects={p.reviewAspects} aiUsage={p.aiUsage} /></div>
-                    <div className="flex items-center justify-between border-t border-black/5 pt-3 text-xs text-gray-400">
+                    <div className="flex items-center justify-between border-t border-black/5 pt-3 text-xs text-gray-500">
                       <span className="flex items-center gap-3">
                         <span>👍 {p.likeCount}</span>
                         <span>💬 {p.reviewCount}</span>
