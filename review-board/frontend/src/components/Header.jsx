@@ -65,7 +65,7 @@ export default function Header() {
                 </span>
               )}
             </Link>
-            <Link to={`/users/${user.id}/profile`} className="flex shrink-0 items-center gap-2 text-sm text-gray-700 hover:text-navy-700">
+            <Link to={`/users/${user.id}/profile`} aria-label={`${user.displayName} のプロフィール`} className="flex shrink-0 items-center gap-2 text-sm text-gray-700 hover:text-navy-700">
               <Avatar url={user.avatarUrl} name={user.displayName} size="md" />
               <span className="hidden font-medium xl:inline">{user.displayName}</span>
             </Link>

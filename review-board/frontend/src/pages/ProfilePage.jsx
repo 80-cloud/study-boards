@@ -156,19 +156,20 @@ function ProfileEditModal({ profile, onSaved, onCancel }) {
             <p className="text-xs text-gray-400">PNG / JPEG / WebP・5MB まで・正方形に切り抜き</p>
           </div>
 
-          {/* 表示名（読み取り専用） */}
+          {/* 表示名（読み取り専用＝コントロールが無いので label ではなく見出し用 div） */}
           <div>
-            <label className="mac-label">表示名</label>
+            <div className="mac-label">表示名</div>
             <div className="rounded-xl bg-gray-50 px-3 py-2 text-sm text-gray-500 ring-1 ring-black/5">{profile.displayName}</div>
           </div>
 
           {/* 自己紹介 */}
           <div>
             <div className="mb-1 flex items-center justify-between">
-              <label className="mac-label !mb-0">自己紹介</label>
+              <label htmlFor="profile-bio" className="mac-label !mb-0">自己紹介</label>
               <span className="text-xs tabular-nums text-gray-400">{bio.length}/500</span>
             </div>
             <textarea
+              id="profile-bio"
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               rows={4}

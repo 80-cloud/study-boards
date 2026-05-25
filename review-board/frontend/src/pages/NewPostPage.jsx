@@ -61,14 +61,14 @@ export default function NewPostPage() {
       <form onSubmit={submit} className="mac-card p-6 sm:p-7">
         {restored && <DraftNotice onDiscard={discardDraft} />}
         {error && <p className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
-        <label className="mac-label">タイトル（必須）</label>
-        <input required value={form.title} onChange={set('title')} className="mac-input mb-4" />
-        <label className="mac-label">説明（必須）<span className="ml-1 text-xs text-gray-400">・マークダウン可</span></label>
-        <textarea required value={form.description} onChange={set('description')} rows={4} className="mac-input mb-4" />
-        <label className="mac-label">リポジトリ URL（任意）</label>
-        <input type="url" value={form.repoUrl} onChange={set('repoUrl')} className="mac-input mb-4" />
-        <label className="mac-label">デモ URL（任意）</label>
-        <input type="url" value={form.demoUrl} onChange={set('demoUrl')} className="mac-input mb-4" />
+        <label htmlFor="post-title" className="mac-label">タイトル（必須）</label>
+        <input id="post-title" required value={form.title} onChange={set('title')} className="mac-input mb-4" />
+        <label htmlFor="post-description" className="mac-label">説明（必須）<span className="ml-1 text-xs text-gray-400">・マークダウン可</span></label>
+        <textarea id="post-description" required value={form.description} onChange={set('description')} rows={4} className="mac-input mb-4" />
+        <label htmlFor="post-repo-url" className="mac-label">リポジトリ URL（任意）</label>
+        <input id="post-repo-url" type="url" value={form.repoUrl} onChange={set('repoUrl')} className="mac-input mb-4" />
+        <label htmlFor="post-demo-url" className="mac-label">デモ URL（任意）</label>
+        <input id="post-demo-url" type="url" value={form.demoUrl} onChange={set('demoUrl')} className="mac-input mb-4" />
         <ScreenshotUploader onChange={(key) => setForm((p) => ({ ...p, screenshotKey: key }))} />
         <ReviewPrefFields
           tones={form.reviewTones}

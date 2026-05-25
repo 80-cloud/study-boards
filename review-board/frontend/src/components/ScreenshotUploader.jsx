@@ -27,8 +27,9 @@ export default function ScreenshotUploader({ initialUrl = '', onChange }) {
 
   return (
     <div className="mb-4">
-      <label className="mb-1 block text-sm text-gray-600">スクリーンショット（任意・PNG/JPEG/WebP・5MB まで）</label>
+      <label htmlFor="screenshot-file" className="mb-1 block text-sm text-gray-600">スクリーンショット（任意・PNG/JPEG/WebP・5MB まで）</label>
       <input
+        id="screenshot-file"
         type="file"
         accept="image/png,image/jpeg,image/webp"
         onChange={onSelect}

@@ -59,16 +59,18 @@ export default function ReviewForm({ postId, onCreated }) {
       <h3 className="mac-h mb-3 text-base">レビューを書く <span className="text-xs font-normal text-gray-400">（マークダウン記法が使えます）</span></h3>
       {restored && <DraftNotice onDiscard={discardDraft} />}
       {error && <p className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
-      <label className="mac-label">✅ 良かった点（必須）</label>
+      <label htmlFor="review-good" className="mac-label">✅ 良かった点（必須）</label>
       <textarea
+        id="review-good"
         required
         value={good}
         onChange={(e) => setGood(e.target.value)}
         className="mac-input mb-3"
         rows={2}
       />
-      <label className="mac-label">💡 もっと良くなる点（必須）</label>
+      <label htmlFor="review-improvement" className="mac-label">💡 もっと良くなる点（必須）</label>
       <textarea
+        id="review-improvement"
         required
         value={improvement}
         onChange={(e) => setImprovement(e.target.value)}
@@ -78,8 +80,9 @@ export default function ReviewForm({ postId, onCreated }) {
       <p className="mb-2 text-xs text-gray-400">観点別コメント（任意・埋めたい軸だけでOK）</p>
       {AXES.map((a) => (
         <div key={a.key} className="mb-2">
-          <label className="mb-1 block text-xs text-gray-500">{a.label}</label>
+          <label htmlFor={`axis-${a.key}`} className="mb-1 block text-xs text-gray-500">{a.label}</label>
           <input
+            id={`axis-${a.key}`}
             value={axis[a.key] ?? ''}
             onChange={(e) => setAxis((prev) => ({ ...prev, [a.key]: e.target.value }))}
             className="mac-input py-1.5"

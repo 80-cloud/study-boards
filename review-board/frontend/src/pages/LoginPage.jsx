@@ -28,7 +28,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
+    <main className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm">
         {/* ブランド */}
         <div className="mb-7 flex flex-col items-center text-center">
@@ -91,6 +91,6 @@ export default function LoginPage() {
           アカウントは管理者・講師が発行します
         </p>
       </div>
-    </div>
+    </main>
   );
 }
