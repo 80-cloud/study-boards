@@ -105,7 +105,7 @@ export default function PostsPage() {
               受講生どうし・講師が成果物をレビュー。<br className="hidden sm:block" />その積み重ねが、あなたの「成長の証跡」になります。
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
-              <Link to="/posts/new" className="rounded-xl bg-navy-700 px-6 py-3 text-sm font-bold text-white shadow-md transition hover:bg-navy-800">成果物を投稿する</Link>
+              <Link to="/posts/new" className="rounded-xl bg-wrblue-500 px-6 py-3 text-sm font-bold text-white shadow-md transition hover:bg-wrblue-600">成果物を投稿する</Link>
               <button onClick={scrollToWorks} className="rounded-xl border-2 border-navy-700 px-6 py-3 text-sm font-bold text-navy-700 transition hover:bg-navy-700/5">成果物を見る ›</button>
             </div>
           </div>
@@ -225,7 +225,8 @@ export default function PostsPage() {
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="text-[26px] font-extrabold leading-tight text-white">まずは成果物を投稿して、<br />レビューを受けてみよう。</h2>
           <p className="mt-3 text-sm text-white/70">レビューし合うほど、あなたの成長が積み上がる。</p>
-          <Link to="/posts/new" className="mt-7 inline-block rounded-xl bg-brand-500 px-8 py-3.5 text-sm font-bold text-white shadow-lg transition hover:bg-brand-600">成果物を投稿する</Link>
+          {/* 濃紺帯の上なので WR ブルーが埋もれないよう白の細リングで分離する。 */}
+          <Link to="/posts/new" className="mt-7 inline-block rounded-xl bg-wrblue-500 px-8 py-3.5 text-sm font-bold text-white shadow-lg ring-1 ring-inset ring-white/30 transition hover:bg-wrblue-600">成果物を投稿する</Link>
         </div>
       </section>
     </main>

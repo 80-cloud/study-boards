@@ -52,7 +52,11 @@ export default function WorksList({ posts, loading, error, applied, setFilter, o
             <button onClick={() => setFilter({ approved: false })} className="ml-1.5 font-bold" aria-label="合格作品の絞り込みを解除">×</button>
           </span>
         )}
-        <Link to="/posts/new" className="mac-btn-brand ml-auto">＋ 投稿する</Link>
+        {/* 「＋ 投稿する」は WR Blue Pearl（mac-btn-brand は他ボタンと共有のため使わず個別指定）。 */}
+        <Link to="/posts/new"
+          className="ml-auto inline-flex items-center justify-center gap-1.5 rounded-xl bg-wrblue-500 px-4 py-2.5 text-sm font-bold text-white shadow-mac-sm transition hover:bg-wrblue-600 active:scale-[0.98]">
+          ＋ 投稿する
+        </Link>
       </div>
 
       <div className="mt-6">

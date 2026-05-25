@@ -57,7 +57,7 @@ export default function Header() {
               />
               <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
             </form>
-            <Link to="/posts/new" className="hidden shrink-0 whitespace-nowrap rounded-lg bg-brand-500 px-3.5 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-brand-600 sm:inline-flex">＋ 投稿する</Link>
+            <Link to="/posts/new" className="hidden shrink-0 whitespace-nowrap rounded-lg bg-wrblue-500 px-3.5 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-wrblue-600 sm:inline-flex">＋ 投稿する</Link>
             {(user.role === 'TEACHER' || user.role === 'ADMIN') && (
               <Link to="/invites" className="hidden shrink-0 whitespace-nowrap text-sm font-medium text-gray-600 transition hover:text-navy-700 lg:inline">招待</Link>
             )}
