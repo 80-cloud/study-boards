@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { fetchProfile, updateMyProfile } from '../api/profile';
+import { fetchNotificationPrefs, updateNotificationPrefs } from '../api/notificationPrefs';
 import { ROLE_LABEL, EVAL_LABEL } from '../constants';
 import { useAuth } from '../context/AuthContext';
 import Avatar from '../components/Avatar';
@@ -62,6 +63,8 @@ export default function ProfilePage() {
       )}
 
       {streak && <StreakCard streak={streak} />}
+
+      {isOwn && <NotificationPrefsCard />}
 
       <section>
         <h3 className="mac-h mb-3 text-lg">投稿した成果物（{posts.length}）</h3>
@@ -197,6 +200,90 @@ function Stat({ label, value }) {
     <div className="rounded-xl bg-white/95 p-3 shadow-mac-sm">
       <div className="text-2xl font-extrabold text-navy-700">{value}</div>
       <div className="text-xs text-gray-500">{label}</div>
+    </div>
+  );
+}
+
+// C-5（#233）通知設定：本人のみ表示。メール通知のオフ（opt-out）と週次ダイジェストを切り替える。
+// 変更はトグル操作ごとに即保存し、失敗時は元に戻す（楽観的更新）。
+function NotificationPrefsCard() {
+  const [prefs, setPrefs] = useState(null);
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    fetchNotificationPrefs()
+      .then(setPrefs)
+      .catch(() => setError('通知設定を取得できませんでした'))
+      .finally(() => setLoaded(true));
+  }, []);
+
+  const toggle = async (key) => {
+    const next = { ...prefs, [key]: !prefs[key] };
+    setPrefs(next); // 楽観的更新
+    setError('');
+    try {
+      const saved = await updateNotificationPrefs(next);
+      setPrefs(saved);
+    } catch {
+      setPrefs(prefs); // 失敗したら戻す
+      setError('保存に失敗しました');
+    }
+  };
+
+  if (!loaded) return null;
+
+  return (
+    <section className="mac-panel p-5">
+      <h3 className="mac-h mb-1 text-lg">通知設定</h3>
+      <p className="mb-4 text-xs text-gray-500">メールの受け取りを管理できます。</p>
+      {error && <p className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+      {prefs && (
+        <div className="space-y-1">
+          <Toggle
+            label="メール通知"
+            desc="あなたの成果物にレビューが届いたときにメールでお知らせします。"
+            checked={prefs.emailEnabled}
+            onChange={() => toggle('emailEnabled')}
+          />
+          <Toggle
+            label="週次ダイジェスト"
+            desc="レビュー待ちの成果物などを週に1回まとめてお届けします。"
+            checked={prefs.weeklyDigest}
+            disabled={!prefs.emailEnabled}
+            onChange={() => toggle('weeklyDigest')}
+          />
+        </div>
+      )}
+    </section>
+  );
+}
+
+// アクセシブルなトグルスイッチ（role=switch・aria-checked）。
+function Toggle({ label, desc, checked, onChange, disabled = false }) {
+  return (
+    <div className={`flex items-start justify-between gap-4 rounded-xl px-1 py-2.5 ${disabled ? 'opacity-50' : ''}`}>
+      <div className="flex-1">
+        <div className="text-sm font-semibold text-navy-700">{label}</div>
+        <p className="mt-0.5 text-xs text-gray-500">{desc}</p>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-label={label}
+        disabled={disabled}
+        onClick={onChange}
+        className={`relative mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full transition disabled:cursor-not-allowed ${
+          checked ? 'bg-brand-500' : 'bg-gray-300'
+        }`}
+      >
+        <span
+          className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
+            checked ? 'translate-x-5' : 'translate-x-0.5'
+          }`}
+        />
+      </button>
     </div>
   );
 }

@@ -20,4 +20,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     /** メンション解決用：同 cohort の全メンバー（越境メンションを防ぐ） */
     List<User> findByCohortId(Long cohortId);
+
+    /** 週次ダイジェスト（C-5・#233）：同 cohort の有効ユーザーのみ（無効化済みには送らない）。 */
+    List<User> findByCohortIdAndStatus(Long cohortId, UserStatus status);
 }
