@@ -91,10 +91,12 @@ public abstract class AbstractIntegrationTest {
     @Autowired protected RefreshTokenRepository refreshTokenRepository;
     @Autowired protected com.reviewboard.domain.invite.CohortInviteRepository inviteRepository;
     @Autowired protected org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+    @Autowired protected com.reviewboard.domain.auth.RateLimitFilter rateLimitFilter;
 
     /** FK 依存順（子 → 親）に全テーブルを掃除する。サブクラスで追加掃除が要れば override 可。 */
     @BeforeEach
     void cleanDatabase() {
+        rateLimitFilter.clear(); // SEC-12 レートリミットの窓をテスト間で持ち越さない
         auditLogRepository.deleteAll();
         notificationRepository.deleteAll();
         replyRepository.deleteAll();

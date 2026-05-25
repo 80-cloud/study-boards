@@ -116,6 +116,13 @@ app:
     viewport-width: 1200
     viewport-height: 750
     timeout-ms: 20000                 # Chrome コールドスタート＋ネットワーク取得の余裕（撮影は非同期）
+  # SEC-12 認証エンドポイントのレートリミット（IP 単位・固定窓・単一インスタンス前提）。
+  ratelimit:
+    enabled: ${RATE_LIMIT_ENABLED:true}
+    window-seconds: 60
+    login-max: 20                     # 20 回/分/IP（誤入力の余地は残しつつ総当たりは抑止）
+    register-max: 10
+    refresh-max: 60
 
 ---
 # dev プロファイル：自動サムネを ON にし、mac の Chrome を既定パスで使う（env で上書き可）。
