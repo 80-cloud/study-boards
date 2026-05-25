@@ -64,7 +64,7 @@ export default function Header() {
             <Link to="/notifications" className="relative text-gray-500 transition hover:text-navy-700" aria-label={`通知${unread > 0 ? `（未読 ${unread} 件）` : ''}`}>
               <span className="inline-block text-xl leading-none">🔔</span>
               {unread > 0 && (
-                <span className="absolute -right-2 -top-1 rounded-full bg-brand-500 px-1.5 text-xs font-bold text-white shadow-sm">
+                <span className="absolute -right-2 -top-1 rounded-full bg-cherry-500 px-1.5 text-xs font-bold text-white shadow-sm">
                   {unread > 99 ? '99+' : unread}
                 </span>
               )}
