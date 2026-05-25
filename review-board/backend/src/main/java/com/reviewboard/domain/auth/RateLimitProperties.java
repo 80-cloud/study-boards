@@ -10,6 +10,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @param loginMax      窓あたりの /api/auth/login 上限（IP 単位）
  * @param registerMax   窓あたりの /api/auth/register 上限（IP 単位）
  * @param refreshMax    窓あたりの /api/auth/refresh 上限（IP 単位）
+ * @param passwordResetMax 窓あたりの /api/auth/password-reset/request 上限（IP 単位・列挙/送信乱用対策）
  */
 @ConfigurationProperties(prefix = "app.ratelimit")
 public record RateLimitProperties(
@@ -17,5 +18,6 @@ public record RateLimitProperties(
         int windowSeconds,
         int loginMax,
         int registerMax,
-        int refreshMax) {
+        int refreshMax,
+        int passwordResetMax) {
 }

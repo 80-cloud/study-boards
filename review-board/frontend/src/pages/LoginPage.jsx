@@ -86,6 +86,12 @@ export default function LoginPage() {
           <button type="submit" disabled={submitting} className="mac-btn-navy w-full py-2.5">
             {submitting ? 'ログイン中…' : 'ログイン'}
           </button>
+
+          <p className="mt-4 text-center text-xs text-gray-400">
+            <Link to="/password-reset" className="font-semibold text-navy-700 hover:underline">
+              パスワードをお忘れですか？
+            </Link>
+          </p>
         </form>
 
         <p className="mt-6 text-center text-xs text-gray-400">

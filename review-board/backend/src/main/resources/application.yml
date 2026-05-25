@@ -123,6 +123,10 @@ app:
     login-max: 20                     # 20 回/分/IP（誤入力の余地は残しつつ総当たりは抑止）
     register-max: 10
     refresh-max: 60
+    password-reset-max: 5             # 5 回/分/IP（メール送信乱用・email 列挙の抑止。B-4 #231）
+  # B-4 パスワードリセット（#231）。発行トークンは短命にして漏洩窓を狭める。
+  password-reset:
+    ttl-seconds: ${PASSWORD_RESET_TTL_SECONDS:3600}   # 既定 1 時間
 
 ---
 # dev プロファイル：自動サムネを ON にし、mac の Chrome を既定パスで使う（env で上書き可）。
