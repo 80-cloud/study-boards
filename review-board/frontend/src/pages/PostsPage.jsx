@@ -6,11 +6,18 @@ import { matchAspects, matchTones } from '../constants/reviewPrefs';
 import { ROLE_LABEL } from '../constants';
 import ReviewPrefBadges from '../components/ReviewPrefBadges';
 import Avatar from '../components/Avatar';
-import AppShot from '../components/AppShot';
 
-// スクショ未登録カードのサムネ：id から決め打ちの「アプリ画面」種別（それっぽいトップpage風）。
-const KINDS = ['todo', 'portfolio', 'api', 'weather', 'chat', 'dashboard'];
-const kindOf = (id) => KINDS[id % KINDS.length];
+// スクショ未登録カードのサムネ：id から決め打ちのグラデーション（装飾プレースホルダ）。
+// 実スクショ（post.screenshotUrl）がある投稿はそちらを優先表示する。
+const GRADIENTS = [
+  'from-sky-400 to-blue-600',
+  'from-violet-400 to-purple-600',
+  'from-emerald-400 to-teal-600',
+  'from-amber-400 to-orange-600',
+  'from-rose-400 to-pink-600',
+  'from-indigo-400 to-blue-700',
+];
+const gradientOf = (id) => GRADIENTS[id % GRADIENTS.length];
 
 // 案L：スクール土台（ランディング）＋マーケット要素（観点カテゴリ／カード）。
 const REASONS = [
@@ -258,7 +265,7 @@ export default function PostsPage() {
               {posts.map((p) => (
                 <Link key={p.id} to={`/posts/${p.id}`}
                   className="group overflow-hidden rounded-2xl border border-black/5 bg-white shadow-mac-sm transition hover:-translate-y-1 hover:shadow-mac">
-                  {/* ブラウザ枠付きサムネ（アプリのトップページ風）。スクショがあれば実画像、無ければ画面モック。 */}
+                  {/* サムネ：スクショがあれば実画像（ブラウザ枠風）、無ければグラデのプレースホルダ。 */}
                   <div className="relative h-36 overflow-hidden bg-gray-50">
                     {p.screenshotUrl ? (
                       <>
@@ -270,7 +277,11 @@ export default function PostsPage() {
                         <img src={p.screenshotUrl} alt="" className="h-[calc(9rem-1.75rem)] w-full object-cover" />
                       </>
                     ) : (
-                      <AppShot kind={kindOf(p.id)} />
+                      <div className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${gradientOf(p.id)}`}>
+                        <span aria-hidden="true" className="text-4xl font-black text-white/95 drop-shadow-sm">
+                          {p.title?.trim()?.charAt(0) || '?'}
+                        </span>
+                      </div>
                     )}
                     {p.recruitStatus === 'OPEN'
                       ? <span className="absolute right-3 top-9 rounded-full bg-brand-500 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm">募集中</span>
