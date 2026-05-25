@@ -51,11 +51,26 @@ class MfaIntegrationTest extends AbstractIntegrationTest {
         // コード生成用のシークレットは QR に内包される。テストは DB から取得して算出する。
         String secret = userRepository.findByEmail(EMAIL).orElseThrow().getTotpSecret();
 
+        // #241 有効化はリカバリコード 10 個を1度だけ返す（200）。
         mockMvc.perform(post("/api/auth/mfa/enable").cookie(access)
                         .contentType("application/json")
                         .content("{\"code\":\"" + currentCode(secret) + "\"}"))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.recoveryCodes", org.hamcrest.Matchers.hasSize(10)));
         return secret;
+    }
+
+    /** setup→enable し、発行されたリカバリコード（生）を返す。 */
+    @SuppressWarnings("unchecked")
+    private java.util.List<String> setupAndEnableCapturingCodes(Cookie access) throws Exception {
+        mockMvc.perform(post("/api/auth/mfa/setup").cookie(access)).andExpect(status().isOk());
+        String secret = userRepository.findByEmail(EMAIL).orElseThrow().getTotpSecret();
+        MvcResult res = mockMvc.perform(post("/api/auth/mfa/enable").cookie(access)
+                        .contentType("application/json")
+                        .content("{\"code\":\"" + currentCode(secret) + "\"}"))
+                .andExpect(status().isOk())
+                .andReturn();
+        return JsonPath.read(res.getResponse().getContentAsString(), "$.recoveryCodes");
     }
 
     private MvcResult passwordLogin(String email) throws Exception {
@@ -170,5 +185,163 @@ class MfaIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(get("/api/auth/me").cookie(access))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.mfaEnabled").value(false));
+    }
+
+    // ---- #241 リカバリコード ----
+
+    /** リカバリコードでログイン2段目を突破できる（端末紛失時の自己復旧）。 */
+    @Test
+    void recovery_code_passes_second_step() throws Exception {
+        Cookie access = login(EMAIL);
+        java.util.List<String> codes = setupAndEnableCapturingCodes(access);
+
+        Cookie mfa = passwordLogin(EMAIL).getResponse().getCookie("mfa_token");
+        MvcResult res = mockMvc.perform(post("/api/auth/login/mfa").cookie(mfa)
+                        .contentType("application/json")
+                        .content("{\"code\":\"" + codes.get(0) + "\"}"))
+                .andExpect(status().isOk())
+                .andReturn();
+        assertThat(res.getResponse().getCookie("access_token")).isNotNull();
+    }
+
+    /** 使用済みリカバリコードは再利用できない（401）。 */
+    @Test
+    void used_recovery_code_is_rejected() throws Exception {
+        Cookie access = login(EMAIL);
+        java.util.List<String> codes = setupAndEnableCapturingCodes(access);
+        String code = codes.get(0);
+
+        // 1回目：成功して消費される。
+        Cookie mfa1 = passwordLogin(EMAIL).getResponse().getCookie("mfa_token");
+        mockMvc.perform(post("/api/auth/login/mfa").cookie(mfa1)
+                        .contentType("application/json")
+                        .content("{\"code\":\"" + code + "\"}"))
+                .andExpect(status().isOk());
+
+        // 2回目：同じコードは 401。
+        Cookie mfa2 = passwordLogin(EMAIL).getResponse().getCookie("mfa_token");
+        mockMvc.perform(post("/api/auth/login/mfa").cookie(mfa2)
+                        .contentType("application/json")
+                        .content("{\"code\":\"" + code + "\"}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    /** リカバリコードを使っても TOTP は引き続き有効。 */
+    @Test
+    void totp_still_works_after_recovery_exists() throws Exception {
+        Cookie access = login(EMAIL);
+        java.util.List<String> codes = setupAndEnableCapturingCodes(access);
+        String secret = userRepository.findByEmail(EMAIL).orElseThrow().getTotpSecret();
+
+        // リカバリコードで1回ログイン。
+        Cookie mfa1 = passwordLogin(EMAIL).getResponse().getCookie("mfa_token");
+        mockMvc.perform(post("/api/auth/login/mfa").cookie(mfa1)
+                        .contentType("application/json")
+                        .content("{\"code\":\"" + codes.get(0) + "\"}"))
+                .andExpect(status().isOk());
+
+        // TOTP も引き続き通る。
+        Cookie mfa2 = passwordLogin(EMAIL).getResponse().getCookie("mfa_token");
+        mockMvc.perform(post("/api/auth/login/mfa").cookie(mfa2)
+                        .contentType("application/json")
+                        .content("{\"code\":\"" + currentCode(secret) + "\"}"))
+                .andExpect(status().isOk());
+    }
+
+    /** 未知のリカバリコードは 401（総当たり対策の検証）。 */
+    @Test
+    void unknown_recovery_code_is_rejected() throws Exception {
+        Cookie access = login(EMAIL);
+        setupAndEnableCapturingCodes(access);
+        Cookie mfa = passwordLogin(EMAIL).getResponse().getCookie("mfa_token");
+
+        mockMvc.perform(post("/api/auth/login/mfa").cookie(mfa)
+                        .contentType("application/json")
+                        .content("{\"code\":\"ZZZZ-ZZZZ\"}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    /** 残数エンドポイントが消費に応じて減る。 */
+    @Test
+    void recovery_status_decreases_after_use() throws Exception {
+        Cookie access = login(EMAIL);
+        java.util.List<String> codes = setupAndEnableCapturingCodes(access);
+
+        mockMvc.perform(get("/api/auth/mfa/recovery-codes").cookie(access))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.remaining").value(10))
+                .andExpect(jsonPath("$.lowThreshold").value(3));
+
+        Cookie mfa = passwordLogin(EMAIL).getResponse().getCookie("mfa_token");
+        mockMvc.perform(post("/api/auth/login/mfa").cookie(mfa)
+                        .contentType("application/json")
+                        .content("{\"code\":\"" + codes.get(0) + "\"}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/auth/mfa/recovery-codes").cookie(access))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.remaining").value(9));
+    }
+
+    /** regenerate で新規10個を発行し、旧コードは無効化される。 */
+    @Test
+    void regenerate_invalidates_old_codes() throws Exception {
+        Cookie access = login(EMAIL);
+        java.util.List<String> oldCodes = setupAndEnableCapturingCodes(access);
+        String secret = userRepository.findByEmail(EMAIL).orElseThrow().getTotpSecret();
+
+        MvcResult res = mockMvc.perform(post("/api/auth/mfa/recovery-codes/regenerate").cookie(access)
+                        .contentType("application/json")
+                        .content("{\"code\":\"" + currentCode(secret) + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.recoveryCodes", org.hamcrest.Matchers.hasSize(10)))
+                .andReturn();
+        java.util.List<String> newCodes = JsonPath.read(res.getResponse().getContentAsString(), "$.recoveryCodes");
+
+        // 旧コードは 401。
+        Cookie mfaOld = passwordLogin(EMAIL).getResponse().getCookie("mfa_token");
+        mockMvc.perform(post("/api/auth/login/mfa").cookie(mfaOld)
+                        .contentType("application/json")
+                        .content("{\"code\":\"" + oldCodes.get(0) + "\"}"))
+                .andExpect(status().isUnauthorized());
+
+        // 新コードは通る。
+        Cookie mfaNew = passwordLogin(EMAIL).getResponse().getCookie("mfa_token");
+        mockMvc.perform(post("/api/auth/login/mfa").cookie(mfaNew)
+                        .contentType("application/json")
+                        .content("{\"code\":\"" + newCodes.get(0) + "\"}"))
+                .andExpect(status().isOk());
+    }
+
+    /** regenerate は誤った TOTP では 400（再生成されない）。 */
+    @Test
+    void regenerate_with_wrong_code_is_400() throws Exception {
+        Cookie access = login(EMAIL);
+        setupAndEnableCapturingCodes(access);
+        mockMvc.perform(post("/api/auth/mfa/recovery-codes/regenerate").cookie(access)
+                        .contentType("application/json")
+                        .content("{\"code\":\"000000\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    /** disable でリカバリコードも全削除される（残数0）。 */
+    @Test
+    void disable_clears_recovery_codes() throws Exception {
+        Cookie access = login(EMAIL);
+        setupAndEnableCapturingCodes(access);
+        String secret = userRepository.findByEmail(EMAIL).orElseThrow().getTotpSecret();
+
+        mockMvc.perform(post("/api/auth/mfa/disable").cookie(access)
+                        .contentType("application/json")
+                        .content("{\"code\":\"" + currentCode(secret) + "\"}"))
+                .andExpect(status().isNoContent());
+
+        assertThat(mfaRecoveryCodeRepository.count()).isZero();
+    }
+
+    /** recovery-codes 残数取得は認証必須（未認証は 401）。 */
+    @Test
+    void recovery_status_requires_auth() throws Exception {
+        mockMvc.perform(get("/api/auth/mfa/recovery-codes")).andExpect(status().isUnauthorized());
     }
 }

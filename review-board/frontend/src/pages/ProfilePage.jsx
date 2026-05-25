@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { fetchProfile, updateMyProfile } from '../api/profile';
 import { fetchNotificationPrefs, updateNotificationPrefs } from '../api/notificationPrefs';
-import { setupMfa, enableMfa, disableMfa } from '../api/mfa';
+import { setupMfa, enableMfa, disableMfa, getRecoveryStatus, regenerateRecoveryCodes } from '../api/mfa';
 import { ROLE_LABEL, EVAL_LABEL } from '../constants';
 import { useAuth } from '../context/AuthContext';
 import Avatar from '../components/Avatar';
@@ -292,6 +292,7 @@ function Toggle({ label, desc, checked, onChange, disabled = false }) {
 }
 
 // C-6（#235）二要素認証（TOTP）設定：本人のみ。setup→QR表示→コードで有効化／コードで無効化。
+// #241 有効化時にリカバリコードを表示・残数表示・再生成も担う（端末紛失時の自己復旧手段）。
 function MfaCard() {
   const { user, refreshUser } = useAuth();
   const enabled = !!user?.mfaEnabled;
@@ -299,6 +300,16 @@ function MfaCard() {
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [recoveryCodes, setRecoveryCodes] = useState(null); // 発行直後だけ生コードを保持（1度きり表示）
+  const [recovery, setRecovery] = useState(null); // { remaining, lowThreshold }
+  const [regenerating, setRegenerating] = useState(false);
+  const [regenCode, setRegenCode] = useState('');
+
+  // 有効時のみ残数を取得（コード一覧表示中は再取得しない＝消えないように）。
+  useEffect(() => {
+    if (!enabled) { setRecovery(null); return; }
+    getRecoveryStatus().then(setRecovery).catch(() => setRecovery(null));
+  }, [enabled, recoveryCodes]);
 
   const startSetup = async () => {
     setError('');
@@ -317,10 +328,11 @@ function MfaCard() {
     setError('');
     setBusy(true);
     try {
-      await enableMfa(code);
+      const res = await enableMfa(code);
       await refreshUser();
       setSetup(null);
       setCode('');
+      setRecoveryCodes(res.recoveryCodes); // 1度きりの表示
     } catch (err) {
       setError(err.response?.status === 400 ? 'コードが正しくありません' : '有効化に失敗しました');
     } finally {
@@ -336,8 +348,25 @@ function MfaCard() {
       await disableMfa(code);
       await refreshUser();
       setCode('');
+      setRecoveryCodes(null);
     } catch (err) {
       setError(err.response?.status === 400 ? 'コードが正しくありません' : '無効化に失敗しました');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const confirmRegenerate = async (e) => {
+    e.preventDefault();
+    setError('');
+    setBusy(true);
+    try {
+      const res = await regenerateRecoveryCodes(regenCode);
+      setRecoveryCodes(res.recoveryCodes);
+      setRegenerating(false);
+      setRegenCode('');
+    } catch (err) {
+      setError(err.response?.status === 400 ? 'コードが正しくありません' : '再生成に失敗しました');
     } finally {
       setBusy(false);
     }
@@ -356,15 +385,20 @@ function MfaCard() {
       </p>
       {error && <p className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
 
+      {/* 発行直後のリカバリコード一覧（1度きり表示・最優先） */}
+      {recoveryCodes && (
+        <RecoveryCodesPanel codes={recoveryCodes} onDone={() => setRecoveryCodes(null)} />
+      )}
+
       {/* 無効 & setup 未開始：開始ボタン */}
-      {!enabled && !setup && (
+      {!recoveryCodes && !enabled && !setup && (
         <button onClick={startSetup} disabled={busy} className="mac-btn-brand">
           {busy ? '準備中…' : '二要素認証を設定する'}
         </button>
       )}
 
       {/* setup 中：QR ＋ コード入力で有効化 */}
-      {!enabled && setup && (
+      {!recoveryCodes && !enabled && setup && (
         <form onSubmit={confirmEnable} className="space-y-3">
           <p className="text-sm text-gray-600">認証アプリ（Google Authenticator 等）で以下の QR コードを読み取ってください。</p>
           <img src={setup.qrDataUri} alt="TOTP QR コード" className="h-44 w-44 rounded-lg ring-1 ring-black/5" />
@@ -386,24 +420,103 @@ function MfaCard() {
         </form>
       )}
 
-      {/* 有効：コード入力で無効化 */}
-      {enabled && (
-        <form onSubmit={confirmDisable} className="space-y-3">
-          <label className="mac-label" htmlFor="mfa-disable-code">無効化するには現在の6桁コードを入力</label>
-          <input
-            id="mfa-disable-code"
-            type="text"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            placeholder="123456"
-            value={code}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-            className="mac-input"
-          />
-          <button type="submit" disabled={busy} className="mac-btn-ghost text-red-600">{busy ? '確認中…' : '二要素認証を無効にする'}</button>
-        </form>
+      {/* 有効：残数表示＋再生成＋無効化 */}
+      {!recoveryCodes && enabled && (
+        <div className="space-y-4">
+          {recovery && (
+            <div className={`rounded-xl px-3 py-2 text-sm ${recovery.remaining <= recovery.lowThreshold ? 'bg-amber-50 text-amber-700' : 'bg-gray-50 text-gray-600'}`}>
+              リカバリコードの残り：<span className="font-semibold">{recovery.remaining}</span> 個
+              {recovery.remaining <= recovery.lowThreshold && (
+                <span className="ml-1">— 残りが少なくなっています。再生成をおすすめします。</span>
+              )}
+              <button type="button" onClick={() => { setRegenerating((v) => !v); setError(''); }} className="ml-2 underline">
+                {regenerating ? 'キャンセル' : '再生成する'}
+              </button>
+            </div>
+          )}
+
+          {/* 再生成：現在の6桁コードで本人確認 */}
+          {regenerating && (
+            <form onSubmit={confirmRegenerate} className="space-y-2">
+              <label className="mac-label" htmlFor="mfa-regen-code">再生成するには現在の6桁コードを入力</label>
+              <input
+                id="mfa-regen-code"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                placeholder="123456"
+                value={regenCode}
+                onChange={(e) => setRegenCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                className="mac-input"
+              />
+              <p className="text-xs text-gray-500">再生成すると、これまでのリカバリコードはすべて使えなくなります。</p>
+              <button type="submit" disabled={busy} className="mac-btn-brand">{busy ? '再生成中…' : 'リカバリコードを再生成'}</button>
+            </form>
+          )}
+
+          <form onSubmit={confirmDisable} className="space-y-3 border-t border-black/5 pt-4">
+            <label className="mac-label" htmlFor="mfa-disable-code">無効化するには現在の6桁コードを入力</label>
+            <input
+              id="mfa-disable-code"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              placeholder="123456"
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              className="mac-input"
+            />
+            <button type="submit" disabled={busy} className="mac-btn-ghost text-red-600">{busy ? '確認中…' : '二要素認証を無効にする'}</button>
+          </form>
+        </div>
       )}
     </section>
+  );
+}
+
+// #241 発行直後のリカバリコードを1度だけ表示する。コピー／ダウンロードを提供し、保存後に閉じる。
+function RecoveryCodesPanel({ codes, onDone }) {
+  const [copied, setCopied] = useState(false);
+  const text = codes.join('\n');
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* クリップボード不可の環境は無視（ダウンロードで代替） */
+    }
+  };
+
+  const download = () => {
+    const blob = new Blob([`${text}\n`], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'review-board-recovery-codes.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="space-y-3 rounded-xl bg-amber-50 p-4">
+      <p className="text-sm font-semibold text-amber-800">リカバリコード（今だけ表示されます）</p>
+      <p className="text-xs text-amber-700">
+        認証アプリを使えなくなったとき、これらのコードで1回ずつログインできます。安全な場所に保管してください。
+        この画面を閉じると二度と表示できません。
+      </p>
+      <ul className="grid grid-cols-2 gap-1.5 rounded-lg bg-white p-3 font-mono text-sm text-gray-800">
+        {codes.map((c) => (
+          <li key={c} className="tracking-wider">{c}</li>
+        ))}
+      </ul>
+      <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={copy} className="mac-btn-ghost">{copied ? 'コピーしました' : 'コピー'}</button>
+        <button type="button" onClick={download} className="mac-btn-ghost">ダウンロード</button>
+        <button type="button" onClick={onDone} className="mac-btn-brand">保存しました（閉じる）</button>
+      </div>
+    </div>
   );
 }
 

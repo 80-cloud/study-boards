@@ -22,16 +22,19 @@ public class AuthService {
     private final RefreshTokenService refreshTokenService;
     private final InviteService inviteService;
     private final com.reviewboard.domain.mfa.TotpService totpService;
+    private final com.reviewboard.domain.mfa.RecoveryCodeService recoveryCodeService;
 
     public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder,
                        JwtService jwtService, RefreshTokenService refreshTokenService,
-                       InviteService inviteService, com.reviewboard.domain.mfa.TotpService totpService) {
+                       InviteService inviteService, com.reviewboard.domain.mfa.TotpService totpService,
+                       com.reviewboard.domain.mfa.RecoveryCodeService recoveryCodeService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.refreshTokenService = refreshTokenService;
         this.inviteService = inviteService;
         this.totpService = totpService;
+        this.recoveryCodeService = recoveryCodeService;
     }
 
     /**
@@ -82,14 +85,20 @@ public class AuthService {
     }
 
     /**
-     * F-AUTH-01(2段目) MFA コード検証＋ログイン確定（#235）。
-     * チャレンジから解決した userId と TOTP コードを検証し、成功時に access/refresh を発行する。
-     * 失敗（MFA 無効化済み・コード不一致）は存在を漏らさない汎用エラー（BadCredentials）。
+     * F-AUTH-01(2段目) MFA コード検証＋ログイン確定（#235・#241）。
+     * チャレンジから解決した userId に対し、まず TOTP を検証し、ダメなら未使用リカバリコードと照合する
+     * （端末紛失時の自己復旧。一致したコードは消費される）。成功時に access/refresh を発行する。
+     * 失敗（MFA 無効化済み・どちらの検証も不一致）は存在を漏らさない汎用エラー（BadCredentials）。
      */
     @Transactional
     public LoginResult verifyMfaAndLogin(Long userId, String code) {
         User user = userRepository.findById(userId).orElseThrow(BadCredentialsException::new);
-        if (!user.isMfaEnabled() || !totpService.verify(user.getTotpSecret(), code)) {
+        if (!user.isMfaEnabled()) {
+            throw new BadCredentialsException();
+        }
+        boolean ok = totpService.verify(user.getTotpSecret(), code)
+                || recoveryCodeService.consume(userId, code);
+        if (!ok) {
             throw new BadCredentialsException();
         }
         if (user.getStatus() == com.reviewboard.domain.user.UserStatus.DISABLED) {
