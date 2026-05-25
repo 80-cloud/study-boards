@@ -10,6 +10,7 @@ import PostsPage from './pages/PostsPage';
 import NewPostPage from './pages/NewPostPage';
 import PostEditPage from './pages/PostEditPage';
 import PostDetailPage from './pages/PostDetailPage';
+import WorksPage from './pages/WorksPage';
 import ReviewsPage from './pages/ReviewsPage';
 import ProfilePage from './pages/ProfilePage';
 import NotificationsPage from './pages/NotificationsPage';
@@ -48,6 +49,7 @@ export default function App() {
         <Route path="/posts/new" element={<Shell><NewPostPage /></Shell>} />
         <Route path="/posts/:id/edit" element={<Shell><PostEditPage /></Shell>} />
         <Route path="/posts/:id" element={<Shell><PostDetailPage /></Shell>} />
+        <Route path="/works" element={<Shell><WorksPage /></Shell>} />
         <Route path="/reviews" element={<Shell><ReviewsPage /></Shell>} />
         <Route path="/users/:id/profile" element={<Shell><ProfilePage /></Shell>} />
         <Route path="/notifications" element={<Shell><NotificationsPage /></Shell>} />
