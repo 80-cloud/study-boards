@@ -5,6 +5,7 @@ import com.reviewboard.domain.auth.AuthPrincipal;
 import com.reviewboard.domain.notification.dto.NotificationResponse;
 import com.reviewboard.domain.user.User;
 import com.reviewboard.domain.user.UserRepository;
+import com.reviewboard.mail.MailService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,13 +28,16 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
     private final com.reviewboard.storage.StorageService storageService;
+    private final MailService mailService;
 
     public NotificationService(NotificationRepository notificationRepository,
                                UserRepository userRepository,
-                               com.reviewboard.storage.StorageService storageService) {
+                               com.reviewboard.storage.StorageService storageService,
+                               MailService mailService) {
         this.notificationRepository = notificationRepository;
         this.userRepository = userRepository;
         this.storageService = storageService;
+        this.mailService = mailService;
     }
 
     /**
@@ -54,6 +58,28 @@ public class NotificationService {
         n.setReviewId(reviewId);
         n.setCreatedAt(OffsetDateTime.now());
         notificationRepository.save(n);
+
+        // #175 過疎化対策：核となるイベント（レビューを受け取った）だけ外向きにメールも送る。
+        // 無効時（既定）は何もしない。送信は @Async＝この TX をブロックしない・失敗は握りつぶす。
+        if (mailService.enabled() && type == NotificationType.REVIEW_RECEIVED) {
+            sendReviewReceivedEmail(recipientUserId, actorUserId, postId);
+        }
+    }
+
+    /** レビュー受領メールを組み立てて送る（宛先・本文は文字列で MailService に渡す）。 */
+    private void sendReviewReceivedEmail(Long recipientUserId, Long actorUserId, Long postId) {
+        User recipient = userRepository.findById(recipientUserId).orElse(null);
+        if (recipient == null || recipient.getEmail() == null) {
+            return;
+        }
+        String actorName = userRepository.findById(actorUserId)
+                .map(User::getDisplayName).orElse("どなたか");
+        String link = mailService.baseUrl().isBlank() ? "" : mailService.baseUrl() + "/posts/" + postId;
+        String body = recipient.getDisplayName() + " さん\n\n"
+                + actorName + " さんがあなたの成果物にレビューを投稿しました。\n"
+                + (link.isBlank() ? "アプリで確認してみましょう。" : link)
+                + "\n\n— review-board";
+        mailService.send(recipient.getEmail(), "あなたの成果物にレビューが届きました", body);
     }
 
     /**
