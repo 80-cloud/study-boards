@@ -1,6 +1,7 @@
 package com.reviewboard.domain.auth;
 
 import com.reviewboard.domain.auth.dto.LoginRequest;
+import com.reviewboard.domain.auth.dto.RegisterRequest;
 import com.reviewboard.domain.auth.dto.UserResponse;
 import com.reviewboard.domain.user.User;
 import com.reviewboard.domain.user.UserRepository;
@@ -37,6 +38,17 @@ public class AuthController {
     public ResponseEntity<UserResponse> login(@Valid @RequestBody LoginRequest request) {
         AuthService.LoginResult result = authService.login(request.email(), request.password());
         return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookies.access(result.accessToken()).toString())
+                .header(HttpHeaders.SET_COOKIE, cookies.refresh(result.refreshToken()).toString())
+                .body(UserResponse.from(result.user(), storageService.presignedGetUrl(result.user().getAvatarKey())));
+    }
+
+    /** F-AUTH-02 招待コードによる受講生の自己登録（公開）。成功時はそのままログイン状態にする。 */
+    @PostMapping("/register")
+    public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest request) {
+        AuthService.LoginResult result = authService.register(
+                request.code(), request.email(), request.displayName(), request.password());
+        return ResponseEntity.status(201)
                 .header(HttpHeaders.SET_COOKIE, cookies.access(result.accessToken()).toString())
                 .header(HttpHeaders.SET_COOKIE, cookies.refresh(result.refreshToken()).toString())
                 .body(UserResponse.from(result.user(), storageService.presignedGetUrl(result.user().getAvatarKey())));

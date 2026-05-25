@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ShibaIcon from '../components/ShibaIcon';
 
@@ -88,7 +88,7 @@ export default function LoginPage() {
         </form>
 
         <p className="mt-6 text-center text-xs text-gray-400">
-          アカウントは管理者・講師が発行します
+          招待コードをお持ちの方は <Link to="/register" className="font-semibold text-navy-700 hover:underline">こちらから登録</Link>
         </p>
       </div>
     </main>
