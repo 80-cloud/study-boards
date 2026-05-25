@@ -71,9 +71,9 @@ export default function NotificationsPage() {
             <li key={n.id}>
               <button
                 onClick={() => open(n)}
-                className={`flex w-full items-start gap-3 rounded-2xl border p-4 text-left shadow-mac-sm transition hover:-translate-y-0.5 hover:shadow-mac ${n.read ? 'border-black/5 bg-white/80' : 'border-brand-500/30 bg-brand-400/10'}`}
+                className={`flex w-full items-start gap-3 rounded-2xl border p-4 text-left shadow-mac-sm transition hover:-translate-y-0.5 hover:shadow-mac ${n.read ? 'border-black/5 bg-white/80' : 'border-cherry-500/30 bg-cherry-400/10'}`}
               >
-                {!n.read && <span className="mt-1 h-2 w-2 flex-shrink-0 rounded-full bg-brand-500" aria-label="未読" />}
+                {!n.read && <span className="mt-1 h-2 w-2 flex-shrink-0 rounded-full bg-cherry-500" aria-label="未読" />}
                 <Avatar url={n.actorAvatarUrl} name={n.actorDisplayName} size="sm" />
                 <span className="flex-1 text-sm text-gray-700">
                   {ICON[n.type] ?? '🔔 '}
