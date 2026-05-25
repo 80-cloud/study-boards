@@ -111,6 +111,27 @@ jobs:
             --command-id "$CMD_ID" --instance-id "${{ steps.ec2.outputs.id }}" \
             --query 'StandardOutputContent' --output text
 
+      # #212 ドリフト検知の真実ソース：昇格に成功した SHA を S3 に記録する。
+      # cd-build がこのマーカーと最新 SHA を比較し、未デプロイの滞留を警告する。
+      # 失敗してもデプロイ自体は完了しているので、記録失敗で job を落とさない（警告のみ）。
+      - name: 本番デプロイ済み SHA を記録（ドリフト検知用）
+        if: steps.guard.outputs.ready == 'true'
+        env:
+          ARTIFACTS_BUCKET: ${{ vars.RB_ARTIFACTS_BUCKET }}
+        run: |
+          SHA='${{ github.event.inputs.sha }}'
+          if [ -z "${ARTIFACTS_BUCKET}" ]; then
+            echo "::warning title=marker skipped::RB_ARTIFACTS_BUCKET 未設定のためデプロイ済み SHA を記録できませんでした"
+          else
+            printf '%s\n' "$SHA" > deployed-current.txt
+            if aws s3 cp deployed-current.txt "s3://$ARTIFACTS_BUCKET/deployed/current.txt" \
+                 --content-type text/plain --only-show-errors; then
+              echo "::notice title=marker updated::本番デプロイ済み SHA=$SHA を記録しました（s3://$ARTIFACTS_BUCKET/deployed/current.txt）"
+            else
+              echo "::warning title=marker failed::デプロイ済み SHA の S3 記録に失敗しました（デプロイ自体は成功）"
+            fi
+          fi
+
       - name: 昇格結果
         if: steps.guard.outputs.ready == 'true'
         # deploy.sh が localhost の actuator/health を権威的にチェックし、失敗時は非ゼロ終了する

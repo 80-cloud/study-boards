@@ -143,6 +143,41 @@ jobs:
           aws s3 sync "artifact/$TAG/" "s3://$ARTIFACTS_BUCKET/$TAG/" --only-show-errors
           echo "::notice title=pushed to S3::s3://$ARTIFACTS_BUCKET/$TAG/"
 
+      # #212 ドリフト検知：本番にデプロイ済みの SHA（cd-deploy が記録したマーカー）と、いま発行した
+      # アーティファクトの SHA を比較する。乖離していれば「未デプロイの滞留」を警告し、見逃しを防ぐ。
+      # ★手動承認ゲートは維持（ここでは自動デプロイしない）。警告のみでビルドは失敗させない。
+      - name: 本番デプロイとのドリフト検知（未デプロイの滞留を警告）
+        if: steps.guard.outputs.ready == 'true'
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.RB_CD_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.RB_CD_AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ap-northeast-1
+          ARTIFACTS_BUCKET: ${{ vars.RB_ARTIFACTS_BUCKET }}
+        run: |
+          TAG="${{ steps.meta.outputs.tag }}"
+          # マーカーが無ければ「未デプロイ（初回）」として扱う。
+          DEPLOYED="(none)"
+          if aws s3 cp "s3://$ARTIFACTS_BUCKET/deployed/current.txt" deployed-current.txt --only-show-errors 2>/dev/null; then
+            DEPLOYED="$(tr -d '[:space:]' < deployed-current.txt)"
+          fi
+          if [ "$DEPLOYED" = "$TAG" ]; then
+            echo "## ✅ 本番は最新（ドリフトなし）" >> "$GITHUB_STEP_SUMMARY"
+            echo "本番デプロイ済み SHA = 最新アーティファクト SHA = \`$TAG\`" >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "## ⚠️ 未デプロイのアーティファクトがあります"
+              echo ""
+              echo "| | SHA |"
+              echo "|---|---|"
+              echo "| 本番デプロイ済み | \`$DEPLOYED\` |"
+              echo "| 最新アーティファクト（このビルド） | \`$TAG\` |"
+              echo ""
+              echo "**本番反映するには cd-deploy を手動 dispatch してください**（sha=\`$TAG\` / confirm=\`deploy\`）。"
+              echo "手動承認ゲートは維持しているため、マージだけでは本番に反映されません。"
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning title=deploy pending::本番=$DEPLOYED / 最新=$TAG。cd-deploy で sha=$TAG を昇格してください（マージ＝本番反映ではありません）。"
+          fi
+
       - name: 次の手動デプロイで使う SHA を表示
         run: |
           echo "::notice title=artifact ready::SHA=${{ steps.meta.outputs.tag }} を review-board-cd-deploy の sha 入力に渡して昇格する"
