@@ -1,5 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { createInvite, fetchInvites, revokeInvite } from '../api/invites';
+import { fetchMembers, disableMember, enableMember } from '../api/members';
+import { ROLE_LABEL } from '../constants';
+import Avatar from '../components/Avatar';
 
 // 招待コード管理（講師/管理者・Issue #165）。発行→受講生に共有→失効まで。
 // 生コードは発行直後の 1 度しか表示できないため、発行時に共有リンクを目立たせる。
@@ -23,13 +26,16 @@ export default function InvitesPage() {
   const [expiresInDays, setExpiresInDays] = useState(7);
   const [issued, setIssued] = useState(null); // 発行直後の生コード（1 度だけ）
   const [copied, setCopied] = useState(false);
+  const [members, setMembers] = useState([]);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setInvites(await fetchInvites());
+      const [inv, mem] = await Promise.all([fetchInvites(), fetchMembers()]);
+      setInvites(inv);
+      setMembers(mem);
     } catch {
-      setError('招待一覧の取得に失敗しました。');
+      setError('一覧の取得に失敗しました。');
     } finally {
       setLoading(false);
     }
@@ -71,6 +77,21 @@ export default function InvitesPage() {
       await load();
     } catch {
       setError('失効に失敗しました。');
+    }
+  };
+
+  // #229 メンバーの無効化/有効化（kick）。失敗時はメッセージのみ。
+  const onToggleMember = async (m) => {
+    const disabling = m.status === 'ACTIVE';
+    if (disabling && !window.confirm(`${m.displayName} さんを無効化しますか？（ログインできなくなります）`)) {
+      return;
+    }
+    setError('');
+    try {
+      const updated = disabling ? await disableMember(m.id) : await enableMember(m.id);
+      setMembers((list) => list.map((x) => (x.id === updated.id ? updated : x)));
+    } catch {
+      setError(disabling ? '無効化に失敗しました（権限・対象をご確認ください）。' : '有効化に失敗しました。');
     }
   };
 
@@ -136,6 +157,44 @@ export default function InvitesPage() {
                   <button onClick={() => onRevoke(inv.id)}
                     className="rounded-lg border border-black/10 bg-white px-3 py-1.5 text-sm font-medium text-rose-600 transition hover:bg-rose-50">
                     失効させる
+                  </button>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {/* #229 メンバー管理（無効化/有効化） */}
+      <h3 className="mac-h mb-3 mt-8 text-lg">メンバー管理</h3>
+      <p className="mb-3 text-sm text-gray-500">無効化すると、その受講生はログインできなくなります（再有効化で復帰）。</p>
+      {loading ? (
+        <p className="py-8 text-center text-gray-400">読み込み中…</p>
+      ) : members.length === 0 ? (
+        <p className="py-8 text-center text-gray-400">メンバーがいません。</p>
+      ) : (
+        <ul className="space-y-2">
+          {members.map((m) => {
+            const disabled = m.status === 'DISABLED';
+            return (
+              <li key={m.id} className="mac-card flex flex-wrap items-center justify-between gap-3 p-4">
+                <div className="flex items-center gap-3">
+                  <Avatar name={m.displayName} size="sm" />
+                  <div className="text-sm">
+                    <span className="font-semibold text-navy-700">{m.displayName}</span>
+                    <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">{ROLE_LABEL[m.role] ?? m.role}</span>
+                    {disabled && <span className="ml-2 rounded-full bg-rose-100 px-2 py-0.5 text-xs font-bold text-rose-700">無効</span>}
+                    <div className="text-xs text-gray-400">{m.email}</div>
+                  </div>
+                </div>
+                {/* 受講生のみ操作可（講師/管理者の行はボタンを出さない＝backend も 403/400 で防御） */}
+                {m.role === 'STUDENT' && (
+                  <button onClick={() => onToggleMember(m)}
+                    className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition ${
+                      disabled
+                        ? 'border-black/10 bg-white text-navy-700 hover:bg-black/[0.03]'
+                        : 'border-black/10 bg-white text-rose-600 hover:bg-rose-50'}`}>
+                    {disabled ? '有効化する' : '無効化する'}
                   </button>
                 )}
               </li>

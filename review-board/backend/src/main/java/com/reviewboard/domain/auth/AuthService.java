@@ -67,6 +67,10 @@ public class AuthService {
         if (!passwordEncoder.matches(rawPassword, user.getPasswordHash())) {
             throw new BadCredentialsException();
         }
+        // #229 無効化（kick）されたアカウントはログイン不可（403）。
+        if (user.getStatus() == com.reviewboard.domain.user.UserStatus.DISABLED) {
+            throw new org.springframework.security.access.AccessDeniedException("このアカウントは無効化されています");
+        }
         String access = jwtService.issueAccessToken(user.getId(), user.getRole(), user.getCohortId());
         String refresh = refreshTokenService.issue(user.getId());
         return new LoginResult(user, access, refresh);

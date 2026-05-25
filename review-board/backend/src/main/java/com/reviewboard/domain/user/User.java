@@ -35,6 +35,11 @@ public class User {
     @Column(nullable = false, length = 10)
     private UserRole role;
 
+    /** 有効状態（#229）。DISABLED はログイン不可（kick）。 */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private UserStatus status = UserStatus.ACTIVE;
+
     /** 全認可の起点（cohort 境界） */
     @Column(name = "cohort_id", nullable = false)
     private Long cohortId;
