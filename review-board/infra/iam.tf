@@ -134,15 +134,21 @@ data "aws_iam_policy_document" "cd_permissions" {
     resources = ["*"] #tfsec:ignore:aws-iam-no-policy-wildcards DescribeInstances は resource-level 非対応
   }
 
-  # cd-deploy: RunShellScript を Project タグ付きインスタンスにのみ送信。
+  # cd-deploy: SendCommand は document と instance の両方に許可が必要。
+  # AWS 管理ドキュメント AWS-RunShellScript には Project タグが無いため、タグ条件は
+  # instance 側だけに適用する（document に条件を付けると条件が偽になり拒否される）。
   statement {
-    sid     = "SendCommandToTaggedInstance"
-    effect  = "Allow"
-    actions = ["ssm:SendCommand"]
-    resources = [
-      "arn:aws:ssm:${var.aws_region}::document/AWS-RunShellScript",
-      "arn:aws:ec2:${var.aws_region}:${data.aws_caller_identity.current.account_id}:instance/*",
-    ]
+    sid       = "SendCommandDocument"
+    effect    = "Allow"
+    actions   = ["ssm:SendCommand"]
+    resources = ["arn:aws:ssm:${var.aws_region}::document/AWS-RunShellScript"]
+  }
+
+  statement {
+    sid       = "SendCommandToTaggedInstance"
+    effect    = "Allow"
+    actions   = ["ssm:SendCommand"]
+    resources = ["arn:aws:ec2:${var.aws_region}:${data.aws_caller_identity.current.account_id}:instance/*"]
     condition {
       test     = "StringEquals"
       variable = "ssm:resourceTag/Project"
