@@ -39,7 +39,7 @@ function login(email) {
   });
   check(res, { 'login 200': (r) => r.status === 200 });
   let userId = null;
-  try { userId = res.json('id'); } catch { /* noop */ }
+  try { userId = res.json('id'); } catch (e) { /* noop */ }
   return userId;
 }
 
@@ -71,7 +71,7 @@ export default function () {
   try {
     const content = list.json('content');
     if (content && content.length > 0) firstId = content[0].id;
-  } catch { /* noop */ }
+  } catch (e) { /* noop */ }
   if (firstId) {
     const detail = http.get(`${BASE}/api/posts/${firstId}`, { tags: { endpoint: 'post_detail' } });
     check(detail, { 'detail 200': (r) => r.status === 200 });
