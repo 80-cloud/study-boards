@@ -50,7 +50,8 @@ public class PostController {
     /** screenshotKey から署名付き URL を補い、閲覧者のいいね状態を添えて詳細レスポンスを組み立てる（SEC-8）。 */
     private PostResponse toResponse(Post post, AuthPrincipal principal) {
         boolean liked = postLikeRepository.existsByPostIdAndUserId(post.getId(), principal.userId());
-        return PostResponse.from(post, storageService.presignedGetUrl(post.getScreenshotKey()), liked);
+        // 表示は実効キー（手動アップロード優先・無ければ自動サムネ。#218）
+        return PostResponse.from(post, storageService.presignedGetUrl(post.getEffectiveScreenshotKey()), liked);
     }
 
     /** F-POST-01 作成 */
@@ -87,7 +88,7 @@ public class PostController {
                     .stream().map(PostLike::getPostId).collect(Collectors.toSet());
         return slice.map(p -> PostSummaryResponse.from(
                 p, authorNames.get(p.getAuthorUserId()),
-                storageService.presignedGetUrl(p.getScreenshotKey()),
+                storageService.presignedGetUrl(p.getEffectiveScreenshotKey()),
                 likedPostIds.contains(p.getId())));
     }
 

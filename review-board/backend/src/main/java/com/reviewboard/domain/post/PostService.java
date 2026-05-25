@@ -33,14 +33,30 @@ public class PostService {
     private final ReviewRepository reviewRepository;
     private final AuditService auditService;
     private final com.reviewboard.domain.notification.NotificationService notificationService;
+    private final org.springframework.context.ApplicationEventPublisher events;
 
     public PostService(PostRepository postRepository, ReviewRepository reviewRepository,
                        AuditService auditService,
-                       com.reviewboard.domain.notification.NotificationService notificationService) {
+                       com.reviewboard.domain.notification.NotificationService notificationService,
+                       org.springframework.context.ApplicationEventPublisher events) {
         this.postRepository = postRepository;
         this.reviewRepository = reviewRepository;
         this.auditService = auditService;
         this.notificationService = notificationService;
+        this.events = events;
+    }
+
+    /**
+     * #218 自動サムネ：demo_url があり手動スクショが無い投稿は、保存コミット後に撮影を要求する
+     * （AFTER_COMMIT・@Async で実行）。フラグ OFF（本番既定）なら listener 側で no-op。
+     */
+    private void requestAutoThumbnail(Post post) {
+        boolean hasManual = post.getScreenshotKey() != null && !post.getScreenshotKey().isBlank();
+        boolean hasDemo = post.getDemoUrl() != null && !post.getDemoUrl().isBlank();
+        if (hasDemo && !hasManual) {
+            events.publishEvent(new com.reviewboard.thumbnail.PostThumbnailRequested(
+                    post.getId(), post.getCohortId(), post.getDemoUrl()));
+        }
     }
 
     /** F-POST-01 作成。cohort と author は principal（検証済み）から導出する。 */
@@ -61,6 +77,7 @@ public class PostService {
         post.setUpdatedAt(now);
         postRepository.save(post);
         auditService.record(principal, AuditAction.POST_CREATED, AuditTargetType.POST, post.getId());
+        requestAutoThumbnail(post);
         return post;
     }
 
@@ -116,6 +133,7 @@ public class PostService {
         applyReviewPreferences(post, req.reviewTones(), req.reviewAspects(), req.aiUsage());
         post.setUpdatedAt(OffsetDateTime.now());
         auditService.record(principal, AuditAction.POST_UPDATED, AuditTargetType.POST, postId);
+        requestAutoThumbnail(post);
         return post;
     }
 
