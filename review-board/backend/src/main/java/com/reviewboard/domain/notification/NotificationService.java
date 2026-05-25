@@ -29,6 +29,7 @@ public class NotificationService {
     private final UserRepository userRepository;
     private final com.reviewboard.storage.StorageService storageService;
     private final MailService mailService;
+    private final com.reviewboard.domain.notificationpref.NotificationPrefService prefService;
     /** アプリの表示名（メール署名など外向き文面の単一ソース。完全リネームの仕込み）。 */
     private final String appName;
 
@@ -36,11 +37,13 @@ public class NotificationService {
                                UserRepository userRepository,
                                com.reviewboard.storage.StorageService storageService,
                                MailService mailService,
+                               com.reviewboard.domain.notificationpref.NotificationPrefService prefService,
                                @org.springframework.beans.factory.annotation.Value("${app.name:レビューラボ}") String appName) {
         this.notificationRepository = notificationRepository;
         this.userRepository = userRepository;
         this.storageService = storageService;
         this.mailService = mailService;
+        this.prefService = prefService;
         this.appName = appName;
     }
 
@@ -65,7 +68,9 @@ public class NotificationService {
 
         // #175 過疎化対策：核となるイベント（レビューを受け取った）だけ外向きにメールも送る。
         // 無効時（既定）は何もしない。送信は @Async＝この TX をブロックしない・失敗は握りつぶす。
-        if (mailService.enabled() && type == NotificationType.REVIEW_RECEIVED) {
+        // C-5（#233）：受信者が email をオフ（opt-out）にしていたら送らない。
+        if (mailService.enabled() && type == NotificationType.REVIEW_RECEIVED
+                && prefService.isEmailEnabled(recipientUserId)) {
             sendReviewReceivedEmail(recipientUserId, actorUserId, postId);
         }
     }

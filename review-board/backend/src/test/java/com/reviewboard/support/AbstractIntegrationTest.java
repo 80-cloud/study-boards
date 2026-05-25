@@ -90,6 +90,7 @@ public abstract class AbstractIntegrationTest {
     @Autowired protected AuditLogRepository auditLogRepository;
     @Autowired protected RefreshTokenRepository refreshTokenRepository;
     @Autowired protected com.reviewboard.domain.passwordreset.PasswordResetTokenRepository passwordResetTokenRepository;
+    @Autowired protected com.reviewboard.domain.notificationpref.UserNotificationPrefRepository notificationPrefRepository;
     @Autowired protected com.reviewboard.domain.invite.CohortInviteRepository inviteRepository;
     @Autowired protected org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
     @Autowired protected com.reviewboard.domain.auth.RateLimitFilter rateLimitFilter;
@@ -108,6 +109,7 @@ public abstract class AbstractIntegrationTest {
         postRepository.deleteAll();
         refreshTokenRepository.deleteAll();
         passwordResetTokenRepository.deleteAll();
+        notificationPrefRepository.deleteAll();
         inviteRepository.deleteAll();
         userRepository.deleteAll();
         cohortRepository.deleteAll();

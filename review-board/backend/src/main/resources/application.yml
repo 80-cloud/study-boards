@@ -127,6 +127,10 @@ app:
   # B-4 パスワードリセット（#231）。発行トークンは短命にして漏洩窓を狭める。
   password-reset:
     ttl-seconds: ${PASSWORD_RESET_TTL_SECONDS:3600}   # 既定 1 時間
+  # C-5 週次ダイジェスト（#233）。既定 月曜 08:00。メール無効時は no-op。
+  digest:
+    enabled: ${DIGEST_ENABLED:true}
+    cron: ${DIGEST_CRON:0 0 8 * * MON}
 
 ---
 # dev プロファイル：自動サムネを ON にし、mac の Chrome を既定パスで使う（env で上書き可）。

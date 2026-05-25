@@ -21,6 +21,9 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     /** ランディング統計：cohort 内の未削除投稿（集計の母集合）。 */
     List<Post> findByCohortIdAndDeletedAtIsNull(Long cohortId);
 
+    /** 週次ダイジェスト（C-5・#233）：cohort 内の未レビュー（review_count=0）成果物の件数。 */
+    int countByCohortIdAndDeletedAtIsNullAndReviewCount(Long cohortId, int reviewCount);
+
     /**
      * 一覧・検索・絞り込み（F-POST-03 / F-SEARCH-01 / F-FILTER-01）。
      * ★cohort 境界（IDOR 遮断）は常に効かせたまま、任意条件を AND で重ねる。
