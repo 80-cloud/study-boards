@@ -81,8 +81,12 @@ if [ "$TLS_SELFSIGNED" = "1" ]; then
   nginx -t && systemctl reload nginx
   echo "自己署名 TLS を設定（CN=$CN）。ブラウザ警告は想定どおり。"
 elif [ -n "$DOMAIN" ]; then
-  # Let's Encrypt モード。まず HTTP で起動し、certbot が 443/リダイレクトを追加する。
+  # Let's Encrypt モード（DuckDNS 等の DDNS サブドメインも可）。まず HTTP で起動し、
+  # certbot が 443/リダイレクトを追加する。
   install -m 644 "$HERE/nginx-review-board.conf" /etc/nginx/conf.d/review-board.conf
+  # certbot --nginx は -d のドメインを server_name にマッチさせて vhost を特定する。
+  # 既定の `server_name _;`（catch-all）はマッチが曖昧になるため、当該ドメインに差し替える。
+  sed -i "s/server_name _;/server_name $DOMAIN;/" /etc/nginx/conf.d/review-board.conf
   nginx -t && systemctl reload nginx
   dnf install -y certbot python3-certbot-nginx || true
   certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos \
