@@ -48,6 +48,15 @@ public class Post {
     @Column(name = "screenshot_key", length = 512)
     private String screenshotKey;
 
+    /** #218 自動サムネ：demo_url をヘッドレス撮影した画像の S3 キー（手動 screenshot_key とは別）。 */
+    @Column(name = "auto_screenshot_key", length = 512)
+    private String autoScreenshotKey;
+
+    /** カード表示に使う実効キー：手動アップロードを優先し、無ければ自動サムネを使う。 */
+    public String getEffectiveScreenshotKey() {
+        return (screenshotKey != null && !screenshotKey.isBlank()) ? screenshotKey : autoScreenshotKey;
+    }
+
     @Enumerated(EnumType.STRING)
     @Column(name = "recruit_status", nullable = false, length = 10)
     private RecruitStatus recruitStatus = RecruitStatus.OPEN;

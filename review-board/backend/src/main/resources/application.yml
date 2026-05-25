@@ -107,6 +107,26 @@ app:
       secret-key: ${S3_SECRET_KEY:minioadmin}
       presign-ttl-seconds: 600          # 表示用 署名 URL の寿命（10 分・短命）
       max-upload-bytes: 5242880         # 5MB（サービス側の二重チェック。下の multipart 上限と対）
+  # #218 自動サムネ（demo_url をヘッドレス撮影）。既定 OFF＝test/CI/本番で勝手に Chrome を起動しない。
+  # 本番 t3.micro は OOM/SSRF 面を出さないため当面 OFF（有効化は隔離撮影ホスト整備後・ADR 参照）。
+  # dev だけ下の dev プロファイルで ON にして検証する。
+  thumbnail:
+    auto-capture-enabled: ${THUMBNAIL_AUTO_CAPTURE:false}
+    chrome-path: ${CHROME_PATH:}
+    viewport-width: 1200
+    viewport-height: 750
+    timeout-ms: 20000                 # Chrome コールドスタート＋ネットワーク取得の余裕（撮影は非同期）
+
+---
+# dev プロファイル：自動サムネを ON にし、mac の Chrome を既定パスで使う（env で上書き可）。
+spring:
+  config:
+    activate:
+      on-profile: dev
+app:
+  thumbnail:
+    auto-capture-enabled: ${THUMBNAIL_AUTO_CAPTURE:true}
+    chrome-path: ${CHROME_PATH:/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}
 
 ---
 # prod プロファイル（M-5：dev/prod 分離）。

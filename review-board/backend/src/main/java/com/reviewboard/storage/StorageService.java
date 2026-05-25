@@ -81,6 +81,29 @@ public class StorageService {
         return key;
     }
 
+    /**
+     * #218 自動サムネ（ヘッドレス撮影した PNG）を private バケットに保存しキーを返す。
+     * 手動アップロードと同じく magic byte でPNG実体を確認し、cohort ごとにパスを分ける。
+     */
+    public String uploadAutoThumbnail(byte[] pngBytes, Long cohortId) {
+        if (pngBytes == null || pngBytes.length == 0) {
+            throw new InvalidRequestException("撮影画像が空です");
+        }
+        if (pngBytes.length > props.maxUploadBytes()) {
+            throw new InvalidRequestException("撮影画像が上限サイズを超えています");
+        }
+        ImageType type = sniff(pngBytes); // 実体確認（撮影結果は PNG 想定）
+        String key = "auto-thumbnails/" + cohortId + "/" + UUID.randomUUID() + type.extension();
+        s3.putObject(
+                PutObjectRequest.builder()
+                        .bucket(props.bucket())
+                        .key(key)
+                        .contentType(type.contentType())
+                        .build(),
+                RequestBody.fromBytes(pngBytes));
+        return key;
+    }
+
     /** 表示用の短命な署名付き GET URL。key が無ければ null。 */
     public String presignedGetUrl(String key) {
         if (key == null || key.isBlank()) {
