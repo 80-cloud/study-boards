@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
 /**
  * 二要素認証（TOTP）の登録・有効化・無効化（Issue #235・C-6）。
@@ -23,10 +24,13 @@ public class MfaService {
 
     private final UserRepository userRepository;
     private final TotpService totpService;
+    private final RecoveryCodeService recoveryCodeService;
 
-    public MfaService(UserRepository userRepository, TotpService totpService) {
+    public MfaService(UserRepository userRepository, TotpService totpService,
+                      RecoveryCodeService recoveryCodeService) {
         this.userRepository = userRepository;
         this.totpService = totpService;
+        this.recoveryCodeService = recoveryCodeService;
     }
 
     /** TOTP セットアップ開始。新しいシークレットを保存（pending）し、認証アプリ取り込み用の情報を返す。 */
@@ -46,9 +50,12 @@ public class MfaService {
         return new SetupResult(totpService.qrDataUri(secret, user.getEmail()));
     }
 
-    /** pending シークレットをコードで検証し、有効化する。コード不一致は 400。 */
+    /**
+     * pending シークレットをコードで検証し、有効化する。コード不一致は 400。
+     * 有効化と同時にリカバリコードを発行し、生コードを1度だけ返す（端末紛失時の自己復旧手段・#241）。
+     */
     @Transactional
-    public void enable(Long userId, String code) {
+    public List<String> enable(Long userId, String code) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalStateException("authenticated user not found"));
         if (user.isMfaEnabled()) {
@@ -62,9 +69,13 @@ public class MfaService {
         }
         user.setMfaEnabled(true);
         user.setUpdatedAt(OffsetDateTime.now());
+        return recoveryCodeService.regenerate(userId);
     }
 
-    /** 無効化。現在のコードで本人確認してから secret を破棄する。コード不一致は 400。 */
+    /**
+     * 無効化。現在のコードで本人確認してから secret を破棄する。コード不一致は 400。
+     * リカバリコードも全削除する（孤児を残さない・#241）。
+     */
     @Transactional
     public void disable(Long userId, String code) {
         User user = userRepository.findById(userId)
@@ -78,6 +89,31 @@ public class MfaService {
         user.setMfaEnabled(false);
         user.setTotpSecret(null);
         user.setUpdatedAt(OffsetDateTime.now());
+        recoveryCodeService.deleteAll(userId);
+    }
+
+    /**
+     * リカバリコードの再生成（#241）。現在の TOTP コードで本人確認してから旧コードを全破棄し、新規発行する。
+     * MFA 無効時・コード不一致は 400。
+     *
+     * @return 新しい生コード（1度だけ返す）
+     */
+    @Transactional
+    public List<String> regenerateRecoveryCodes(Long userId, String code) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalStateException("authenticated user not found"));
+        if (!user.isMfaEnabled()) {
+            throw new InvalidRequestException("二要素認証は有効になっていません");
+        }
+        if (!totpService.verify(user.getTotpSecret(), code)) {
+            throw new InvalidRequestException("コードが正しくありません");
+        }
+        return recoveryCodeService.regenerate(userId);
+    }
+
+    /** 未使用リカバリコードの残数（MFA 有効時のみ意味を持つ）。 */
+    public long remainingRecoveryCodes(Long userId) {
+        return recoveryCodeService.remaining(userId);
     }
 
     /** setup の戻り（QR data URI のみ。生シークレットは外に出さない）。 */
