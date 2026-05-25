@@ -57,6 +57,10 @@ jobs:
       - name: Test
         run: ./gradlew test --no-daemon
 
+      # カバレッジ回帰床ゲート（母 M-9・#251）。閾値割れで fail。
+      - name: Coverage gate (JaCoCo)
+        run: ./gradlew jacocoTestCoverageVerification --no-daemon
+
       # 失敗時にテストレポートを保全（M-10：ログを残す）。
       - name: Upload test report
         if: always()
