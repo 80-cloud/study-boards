@@ -66,14 +66,14 @@ export default function PostEditPage() {
       <h2 className="mac-h mb-5 text-2xl">投稿を編集</h2>
       <form onSubmit={submit} className="mac-card p-6 sm:p-7">
         {error && <p className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
-        <label className="mac-label">タイトル（必須）</label>
-        <input required value={form.title} onChange={set('title')} className="mac-input mb-4" />
-        <label className="mac-label">説明（必須）</label>
-        <textarea required value={form.description} onChange={set('description')} rows={4} className="mac-input mb-4" />
-        <label className="mac-label">リポジトリ URL（任意）</label>
-        <input type="url" value={form.repoUrl} onChange={set('repoUrl')} className="mac-input mb-4" />
-        <label className="mac-label">デモ URL（任意）</label>
-        <input type="url" value={form.demoUrl} onChange={set('demoUrl')} className="mac-input mb-4" />
+        <label htmlFor="edit-title" className="mac-label">タイトル（必須）</label>
+        <input id="edit-title" required value={form.title} onChange={set('title')} className="mac-input mb-4" />
+        <label htmlFor="edit-description" className="mac-label">説明（必須）</label>
+        <textarea id="edit-description" required value={form.description} onChange={set('description')} rows={4} className="mac-input mb-4" />
+        <label htmlFor="edit-repo-url" className="mac-label">リポジトリ URL（任意）</label>
+        <input id="edit-repo-url" type="url" value={form.repoUrl} onChange={set('repoUrl')} className="mac-input mb-4" />
+        <label htmlFor="edit-demo-url" className="mac-label">デモ URL（任意）</label>
+        <input id="edit-demo-url" type="url" value={form.demoUrl} onChange={set('demoUrl')} className="mac-input mb-4" />
         <ScreenshotUploader initialUrl={screenshotUrl} onChange={(key) => setForm((p) => ({ ...p, screenshotKey: key }))} />
         <ReviewPrefFields
           tones={form.reviewTones}
