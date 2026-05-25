@@ -1,5 +1,6 @@
 package com.reviewboard.domain.audit;
 
+import com.reviewboard.domain.audit.dto.AuditChainVerifyResponse;
 import com.reviewboard.domain.audit.dto.AuditLogResponse;
 import com.reviewboard.domain.auth.AuthPrincipal;
 import org.springframework.data.domain.Page;
@@ -30,5 +31,12 @@ public class AuditController {
     public Page<AuditLogResponse> list(@AuthenticationPrincipal AuthPrincipal principal,
                                        @PageableDefault(size = 50) Pageable pageable) {
         return auditService.listForCohort(principal, pageable).map(AuditLogResponse::from);
+    }
+
+    /** 連鎖の改ざん検証（#247・講師限定・自 cohort）。整合が破れた最初の行 ID を返す。 */
+    @PreAuthorize("hasRole('TEACHER')")
+    @GetMapping("/verify")
+    public AuditChainVerifyResponse verify(@AuthenticationPrincipal AuthPrincipal principal) {
+        return AuditChainVerifyResponse.from(auditService.verifyChain(principal));
     }
 }
