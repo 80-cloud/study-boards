@@ -49,7 +49,7 @@ class MfaIntegrationTest extends AbstractIntegrationTest {
         assertThat(JsonPath.<String>read(setup.getResponse().getContentAsString(), "$.qrDataUri"))
                 .startsWith("data:image");
         // コード生成用のシークレットは QR に内包される。テストは DB から取得して算出する。
-        String secret = userRepository.findByEmail(EMAIL).orElseThrow().getTotpSecret();
+        String secret = secretCipher.decrypt(userRepository.findByEmail(EMAIL).orElseThrow().getTotpSecret());
 
         // #241 有効化はリカバリコード 10 個を1度だけ返す（200）。
         mockMvc.perform(post("/api/auth/mfa/enable").cookie(access)
@@ -64,7 +64,7 @@ class MfaIntegrationTest extends AbstractIntegrationTest {
     @SuppressWarnings("unchecked")
     private java.util.List<String> setupAndEnableCapturingCodes(Cookie access) throws Exception {
         mockMvc.perform(post("/api/auth/mfa/setup").cookie(access)).andExpect(status().isOk());
-        String secret = userRepository.findByEmail(EMAIL).orElseThrow().getTotpSecret();
+        String secret = secretCipher.decrypt(userRepository.findByEmail(EMAIL).orElseThrow().getTotpSecret());
         MvcResult res = mockMvc.perform(post("/api/auth/mfa/enable").cookie(access)
                         .contentType("application/json")
                         .content("{\"code\":\"" + currentCode(secret) + "\"}"))
@@ -231,7 +231,7 @@ class MfaIntegrationTest extends AbstractIntegrationTest {
     void totp_still_works_after_recovery_exists() throws Exception {
         Cookie access = login(EMAIL);
         java.util.List<String> codes = setupAndEnableCapturingCodes(access);
-        String secret = userRepository.findByEmail(EMAIL).orElseThrow().getTotpSecret();
+        String secret = secretCipher.decrypt(userRepository.findByEmail(EMAIL).orElseThrow().getTotpSecret());
 
         // リカバリコードで1回ログイン。
         Cookie mfa1 = passwordLogin(EMAIL).getResponse().getCookie("mfa_token");
@@ -288,7 +288,7 @@ class MfaIntegrationTest extends AbstractIntegrationTest {
     void regenerate_invalidates_old_codes() throws Exception {
         Cookie access = login(EMAIL);
         java.util.List<String> oldCodes = setupAndEnableCapturingCodes(access);
-        String secret = userRepository.findByEmail(EMAIL).orElseThrow().getTotpSecret();
+        String secret = secretCipher.decrypt(userRepository.findByEmail(EMAIL).orElseThrow().getTotpSecret());
 
         MvcResult res = mockMvc.perform(post("/api/auth/mfa/recovery-codes/regenerate").cookie(access)
                         .contentType("application/json")
@@ -329,7 +329,7 @@ class MfaIntegrationTest extends AbstractIntegrationTest {
     void disable_clears_recovery_codes() throws Exception {
         Cookie access = login(EMAIL);
         setupAndEnableCapturingCodes(access);
-        String secret = userRepository.findByEmail(EMAIL).orElseThrow().getTotpSecret();
+        String secret = secretCipher.decrypt(userRepository.findByEmail(EMAIL).orElseThrow().getTotpSecret());
 
         mockMvc.perform(post("/api/auth/mfa/disable").cookie(access)
                         .contentType("application/json")

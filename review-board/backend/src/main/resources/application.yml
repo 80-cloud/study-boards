@@ -131,6 +131,10 @@ app:
   digest:
     enabled: ${DIGEST_ENABLED:true}
     cron: ${DIGEST_CRON:0 0 8 * * MON}
+  # C-6 MFA（#249）。TOTP シークレットの at-rest 暗号化鍵（base64 エンコードした 32 バイト＝AES-256）。
+  # 未設定なら MFA の暗号化/復号が必要になった時だけ失敗（MFA 未使用の運用は無影響）。本番は SSM SecureString。
+  mfa:
+    enc-key: ${MFA_ENC_KEY:}
 
 ---
 # dev プロファイル：自動サムネを ON にし、mac の Chrome を既定パスで使う（env で上書き可）。
