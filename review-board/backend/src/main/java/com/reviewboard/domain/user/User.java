@@ -51,8 +51,11 @@ public class User {
     @Column(name = "avatar_key", length = 512)
     private String avatarKey;
 
-    /** TOTP シークレット（Base32・#235）。setup 中は値を持つが mfaEnabled=false（pending）。未設定は null。 */
-    @Column(name = "totp_secret", length = 64)
+    /**
+     * TOTP シークレット（#235）。setup 中は値を持つが mfaEnabled=false（pending）。未設定は null。
+     * #249 以降は at-rest 暗号化（"v1:..." 形式）で保存（V20 で 255 文字へ拡張）。
+     */
+    @Column(name = "totp_secret", length = 255)
     private String totpSecret;
 
     /** 二要素認証（TOTP）が有効か（#235）。true のときだけログインで TOTP を要求する。 */

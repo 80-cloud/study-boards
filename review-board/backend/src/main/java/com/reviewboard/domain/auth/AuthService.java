@@ -23,11 +23,13 @@ public class AuthService {
     private final InviteService inviteService;
     private final com.reviewboard.domain.mfa.TotpService totpService;
     private final com.reviewboard.domain.mfa.RecoveryCodeService recoveryCodeService;
+    private final com.reviewboard.domain.mfa.SecretCipher secretCipher;
 
     public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder,
                        JwtService jwtService, RefreshTokenService refreshTokenService,
                        InviteService inviteService, com.reviewboard.domain.mfa.TotpService totpService,
-                       com.reviewboard.domain.mfa.RecoveryCodeService recoveryCodeService) {
+                       com.reviewboard.domain.mfa.RecoveryCodeService recoveryCodeService,
+                       com.reviewboard.domain.mfa.SecretCipher secretCipher) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
@@ -35,6 +37,7 @@ public class AuthService {
         this.inviteService = inviteService;
         this.totpService = totpService;
         this.recoveryCodeService = recoveryCodeService;
+        this.secretCipher = secretCipher;
     }
 
     /**
@@ -96,7 +99,7 @@ public class AuthService {
         if (!user.isMfaEnabled()) {
             throw new BadCredentialsException();
         }
-        boolean ok = totpService.verify(user.getTotpSecret(), code)
+        boolean ok = totpService.verify(secretCipher.decrypt(user.getTotpSecret()), code)
                 || recoveryCodeService.consume(userId, code);
         if (!ok) {
             throw new BadCredentialsException();

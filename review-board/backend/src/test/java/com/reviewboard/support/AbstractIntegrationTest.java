@@ -70,6 +70,9 @@ public abstract class AbstractIntegrationTest {
         registry.add("spring.datasource.username", POSTGRES::getUsername);
         registry.add("spring.datasource.password", POSTGRES::getPassword);
         registry.add("app.jwt.secret", () -> "test-secret-please-change-32chars-minimum");
+        // #249 TOTP at-rest 暗号鍵（base64 32バイト＝AES-256）。テスト用固定鍵。
+        registry.add("app.mfa.enc-key", () -> java.util.Base64.getEncoder()
+                .encodeToString("test-mfa-enc-key-32-bytes-long!!".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
         registry.add("app.storage.s3.endpoint", MINIO::getS3URL);
         registry.add("app.storage.s3.access-key", MINIO::getUserName);
         registry.add("app.storage.s3.secret-key", MINIO::getPassword);
@@ -93,6 +96,7 @@ public abstract class AbstractIntegrationTest {
     @Autowired protected com.reviewboard.domain.notificationpref.UserNotificationPrefRepository notificationPrefRepository;
     @Autowired protected com.reviewboard.domain.invite.CohortInviteRepository inviteRepository;
     @Autowired protected com.reviewboard.domain.mfa.MfaRecoveryCodeRepository mfaRecoveryCodeRepository;
+    @Autowired protected com.reviewboard.domain.mfa.SecretCipher secretCipher;
     @Autowired protected org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
     @Autowired protected com.reviewboard.domain.auth.RateLimitFilter rateLimitFilter;
 
