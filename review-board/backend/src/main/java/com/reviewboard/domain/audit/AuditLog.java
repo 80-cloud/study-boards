@@ -41,4 +41,12 @@ public class AuditLog {
 
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
+
+    /** 改ざん防止の連鎖（#247）：同 cohort の直前行の entry_hash。genesis は null。 */
+    @Column(name = "prev_hash", length = 64)
+    private String prevHash;
+
+    /** この行のハッシュ = SHA256(prev_hash + 正規化レコード)。V19 以降の新規行のみ持つ。 */
+    @Column(name = "entry_hash", length = 64)
+    private String entryHash;
 }
