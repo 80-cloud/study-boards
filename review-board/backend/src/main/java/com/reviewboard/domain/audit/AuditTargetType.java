@@ -7,5 +7,6 @@ package com.reviewboard.domain.audit;
 public enum AuditTargetType {
     POST,
     REVIEW,
-    EVALUATION
+    EVALUATION,
+    USER
 }
