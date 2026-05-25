@@ -28,7 +28,7 @@ public class MfaController {
     @PostMapping("/setup")
     public MfaSetupResponse setup(@AuthenticationPrincipal AuthPrincipal principal) {
         MfaService.SetupResult result = mfaService.setup(principal.userId());
-        return new MfaSetupResponse(result.secret(), result.qrDataUri());
+        return new MfaSetupResponse(result.secret(), result.qrDataUri(), result.otpauthUri());
     }
 
     /** 有効化：認証アプリのコードで pending シークレットを検証する。 */

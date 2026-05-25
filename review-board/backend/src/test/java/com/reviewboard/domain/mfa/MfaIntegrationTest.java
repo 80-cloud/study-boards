@@ -43,9 +43,13 @@ class MfaIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.qrDataUri").exists())
                 .andReturn();
-        String secret = JsonPath.read(setup.getResponse().getContentAsString(), "$.secret");
-        assertThat(JsonPath.<String>read(setup.getResponse().getContentAsString(), "$.qrDataUri"))
-                .startsWith("data:image");
+        String body = setup.getResponse().getContentAsString();
+        String secret = JsonPath.read(body, "$.secret");
+        assertThat(JsonPath.<String>read(body, "$.qrDataUri")).startsWith("data:image");
+        // #237 カメラ無しユーザー向け：otpauth URI を返し、貼り付けで取り込めるようにする。
+        assertThat(JsonPath.<String>read(body, "$.otpauthUri"))
+                .startsWith("otpauth://totp/")
+                .contains(secret);
 
         mockMvc.perform(post("/api/auth/mfa/enable").cookie(access)
                         .contentType("application/json")
