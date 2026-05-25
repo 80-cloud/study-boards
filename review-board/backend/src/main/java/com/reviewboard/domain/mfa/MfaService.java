@@ -43,7 +43,8 @@ public class MfaService {
         user.setMfaEnabled(false);
         user.setUpdatedAt(OffsetDateTime.now());
         String qr = totpService.qrDataUri(secret, user.getEmail());
-        return new SetupResult(secret, qr);
+        String otpauthUri = totpService.otpauthUri(secret, user.getEmail());
+        return new SetupResult(secret, qr, otpauthUri);
     }
 
     /** pending シークレットをコードで検証し、有効化する。コード不一致は 400。 */
@@ -80,7 +81,7 @@ public class MfaService {
         user.setUpdatedAt(OffsetDateTime.now());
     }
 
-    /** setup の戻り（生シークレットと QR data URI は setup 応答時にしか返さない）。 */
-    public record SetupResult(String secret, String qrDataUri) {
+    /** setup の戻り（生シークレット・QR data URI・otpauth URI は setup 応答時にしか返さない）。 */
+    public record SetupResult(String secret, String qrDataUri, String otpauthUri) {
     }
 }
