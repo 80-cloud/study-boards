@@ -106,7 +106,7 @@ export default function PostsPage() {
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link to="/posts/new" className="rounded-xl bg-wrblue-500 px-6 py-3 text-sm font-bold text-white shadow-md transition hover:bg-wrblue-600">成果物を投稿する</Link>
-              <button onClick={scrollToWorks} className="rounded-xl border-2 border-navy-700 px-6 py-3 text-sm font-bold text-navy-700 transition hover:bg-navy-700/5">成果物を見る ›</button>
+              <button onClick={scrollToWorks} className="rounded-xl border-2 border-wrblue-500 px-6 py-3 text-sm font-bold text-wrblue-500 transition hover:bg-wrblue-500/5">成果物を見る ›</button>
             </div>
           </div>
           <div className="space-y-4">
