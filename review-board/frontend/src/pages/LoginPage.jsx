@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import ShibaIcon from '../components/ShibaIcon';
+import DolphinIcon from '../components/DolphinIcon';
+import { APP_NAME, APP_TAGLINE } from '../constants';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -32,11 +33,11 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {/* ブランド */}
         <div className="mb-7 flex flex-col items-center text-center">
-          <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-[20px] bg-[#fff3e8] shadow-mac ring-1 ring-black/5">
-            <ShibaIcon className="h-12 w-12" />
+          <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-[20px] bg-[#e8f3ff] shadow-mac ring-1 ring-black/5">
+            <DolphinIcon className="h-12 w-12" />
           </div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-navy-700">review-board</h1>
-          <p className="mt-1 text-sm text-gray-500">成長を支え合うレビューコミュニティ</p>
+          <h1 className="text-2xl font-extrabold tracking-tight text-navy-700">{APP_NAME}</h1>
+          <p className="mt-1 text-sm text-gray-500">{APP_TAGLINE}</p>
         </div>
 
         {/* ログインカード */}

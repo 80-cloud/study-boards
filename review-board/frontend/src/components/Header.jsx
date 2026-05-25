@@ -3,7 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { fetchUnreadCount } from '../api/notifications';
 import Avatar from './Avatar';
-import ShibaIcon from './ShibaIcon';
+import DolphinIcon from './DolphinIcon';
+import { APP_NAME } from '../constants';
 
 // F-NOTIF-01：未読通知数のポーリング間隔（WebSocket は使わない）。
 const POLL_MS = 30000;
@@ -39,10 +40,10 @@ export default function Header() {
     <header className="sticky top-0 z-20 border-b border-black/5 bg-white/85 backdrop-blur-xl">
       <div className="mx-auto flex max-w-6xl items-center gap-3 px-6 py-3">
         <Link to="/" className="flex shrink-0 items-center gap-2 whitespace-nowrap text-[17px] font-extrabold tracking-tight text-navy-700">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#fff3e8] ring-1 ring-black/5">
-            <ShibaIcon className="h-6 w-6" />
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#e8f3ff] ring-1 ring-black/5">
+            <DolphinIcon className="h-6 w-6" />
           </span>
-          review-board
+          {APP_NAME}
         </Link>
         {user && (
           <div className="ml-auto flex items-center gap-3 sm:gap-5">

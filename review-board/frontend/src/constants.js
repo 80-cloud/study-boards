@@ -1,3 +1,10 @@
+// アプリの表示名（ユーザーに見える名前）の単一ソース。
+// ★将来の完全リネームの仕込み：表示名はここ1箇所を変えれば全フロントに反映される
+//   （Header / LoginPage / RegisterPage / PostsPage / document.title が参照）。
+//   パッケージ名・リポジトリ・AWS 資源などの内部識別子は別管理（docs/ADR の完全リネーム手順を参照）。
+export const APP_NAME = 'レビューラボ';
+export const APP_TAGLINE = '成長を支え合うレビューコミュニティ';
+
 // 母の品質4軸に対応する観点別コメントの軸（F-REV-01）。
 export const AXES = [
   { key: 'CORRECTNESS', label: '①動作・正しさ' },

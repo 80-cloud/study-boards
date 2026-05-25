@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import ShibaIcon from '../components/ShibaIcon';
+import DolphinIcon from '../components/DolphinIcon';
 
 // F-AUTH-02 招待コードによる受講生の自己登録（公開・Issue #165）。
 // 講師が配布した URL（/register?code=...）から開くとコードが自動入力される。
@@ -36,8 +36,8 @@ export default function RegisterPage() {
     <main className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="mb-7 flex flex-col items-center text-center">
-          <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-[20px] bg-[#fff3e8] shadow-mac ring-1 ring-black/5">
-            <ShibaIcon className="h-12 w-12" />
+          <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-[20px] bg-[#e8f3ff] shadow-mac ring-1 ring-black/5">
+            <DolphinIcon className="h-12 w-12" />
           </div>
           <h1 className="text-2xl font-extrabold tracking-tight text-navy-700">アカウント登録</h1>
           <p className="mt-1 text-sm text-gray-500">招待コードで受講生として参加します</p>

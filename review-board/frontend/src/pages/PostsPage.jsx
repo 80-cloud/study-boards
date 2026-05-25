@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { fetchPosts } from '../api/posts';
 import { fetchLandingStats } from '../api/stats';
 import { matchAspects, matchTones } from '../constants/reviewPrefs';
-import { ROLE_LABEL } from '../constants';
+import { ROLE_LABEL, APP_NAME } from '../constants';
 import Avatar from '../components/Avatar';
 import WorksList from '../components/WorksList';
 
@@ -141,7 +141,7 @@ export default function PostsPage() {
       {/* REASON：伸びる3つの理由 */}
       <section id="reason" className="mx-auto max-w-6xl px-6 py-14">
         <Eyebrow>REASON</Eyebrow>
-        <SectionHeading>review-board で伸びる3つの理由</SectionHeading>
+        <SectionHeading>{APP_NAME} で伸びる3つの理由</SectionHeading>
         <div className="mt-9 grid grid-cols-1 gap-6 md:grid-cols-3">
           {REASONS.map((r, i) => (
             <div key={r.title} className="relative rounded-2xl border border-black/5 bg-white p-6 shadow-mac-sm">

@@ -3,6 +3,7 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Header from './components/Header';
+import { APP_NAME } from './constants';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import InvitesPage from './pages/InvitesPage';
@@ -38,6 +39,8 @@ function Shell({ children }) {
 }
 
 export default function App() {
+  // 表示名の単一ソース（constants.APP_NAME）をタブのタイトルにも反映する（仕込み）。
+  useEffect(() => { document.title = APP_NAME; }, []);
   return (
     <AuthProvider>
       <ScrollToTop />
