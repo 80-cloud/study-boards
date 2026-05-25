@@ -80,6 +80,7 @@ public class PostService {
      * @param tones         キーワードから解決したトーン（タグ一致でヒット。null/空は無視）
      * @param status        募集状態フィルタ（null は無視）
      * @param unreviewedOnly 未レビュー（review_count=0）のみに絞る
+     * @param approvedOnly  最新評価が「合格」の投稿のみに絞る（合格バッジ一覧・#210）
      * @param sort          並び順："reviews"（レビュー数降順）／それ以外は新着降順
      */
     @Transactional(readOnly = true)
@@ -87,7 +88,8 @@ public class PostService {
                               java.util.Collection<ReviewAspect> aspects,
                               java.util.Collection<ReviewTone> tones,
                               RecruitStatus status,
-                              boolean unreviewedOnly, String sort, Pageable pageable) {
+                              boolean unreviewedOnly, boolean approvedOnly,
+                              String sort, Pageable pageable) {
         String keyword = (q == null || q.isBlank()) ? null : q.trim();
         // 空集合は IN 句が常に偽になり「一致なし」として扱われる（Hibernate 6）。
         java.util.Collection<ReviewAspect> asp = aspects == null ? java.util.List.of() : aspects;
@@ -98,7 +100,8 @@ public class PostService {
             default -> Sort.by(Sort.Direction.DESC, "createdAt");
         };
         Pageable sorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), order);
-        return postRepository.search(principal.cohortId(), keyword, asp, tn, status, unreviewedOnly, sorted);
+        return postRepository.search(principal.cohortId(), keyword, asp, tn, status,
+                unreviewedOnly, approvedOnly, sorted);
     }
 
     /** F-POST-02 編集。所有者のみ（不一致・他 cohort・削除済みは 404）。 */

@@ -1,5 +1,8 @@
 package com.reviewboard.domain.post;
 
+import com.reviewboard.domain.evaluation.Evaluation;
+import com.reviewboard.domain.evaluation.EvaluationResult;
+import com.reviewboard.domain.user.User;
 import com.reviewboard.domain.user.UserRole;
 import com.reviewboard.support.AbstractIntegrationTest;
 import jakarta.servlet.http.Cookie;
@@ -19,6 +22,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class PostSearchIntegrationTest extends AbstractIntegrationTest {
 
     private Cookie cookieA;
+    private User teacherA;
+    private long approvedPostId;   // 最新評価が APPROVED の cohort A 投稿（合格バッジ絞り込み用）
 
     @BeforeEach
     void seed() throws Exception {
@@ -26,13 +31,19 @@ class PostSearchIntegrationTest extends AbstractIntegrationTest {
         var cohortB = newCohort("B");
         var studentA = newUser("a@example.com", UserRole.STUDENT, cohortA.getId());
         var studentB = newUser("b@example.com", UserRole.STUDENT, cohortB.getId());
+        teacherA = newUser("t@example.com", UserRole.TEACHER, cohortA.getId());
 
         // cohort A の投稿（属性を変えて作る）
-        newPost(studentA.getId(), cohortA.getId(), "Spring Boot 入門", "Java の REST API", RecruitStatus.OPEN, 0);
+        Post approved = newPost(studentA.getId(), cohortA.getId(), "Spring Boot 入門", "Java の REST API", RecruitStatus.OPEN, 0);
         newPost(studentA.getId(), cohortA.getId(), "React Tips", "フロントの小ネタ", RecruitStatus.CLOSED, 5);
         newPost(studentA.getId(), cohortA.getId(), "DB 設計", "PostgreSQL と Spring Data", RecruitStatus.OPEN, 2);
         // cohort B に「Spring」を含む投稿（A の検索に漏れてはならない）
-        newPost(studentB.getId(), cohortB.getId(), "Spring Boot 別期", "他 cohort の投稿", RecruitStatus.OPEN, 0);
+        Post approvedB = newPost(studentB.getId(), cohortB.getId(), "Spring Boot 別期", "他 cohort の投稿", RecruitStatus.OPEN, 0);
+
+        approvedPostId = approved.getId();
+        // cohort A は 1 件だけ合格。cohort B も合格にしておき、A の合格絞り込みに漏れないことを確認する。
+        approve(approved.getId());
+        approve(approvedB.getId());
 
         cookieA = login("a@example.com");
     }
@@ -82,7 +93,17 @@ class PostSearchIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.content.length()").value(3));
     }
 
-    private void newPost(Long authorId, Long cohortId, String title, String desc,
+    /** #210：合格バッジ絞り込み（最新評価 APPROVED のみ）。★他 cohort の合格作品は出ない。 */
+    @Test
+    void filter_approved_only_within_cohort() throws Exception {
+        mockMvc.perform(get("/api/posts").param("approved", "true").cookie(cookieA))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1)) // Spring Boot 入門 のみ
+                .andExpect(jsonPath("$.content[0].id").value((int) approvedPostId))
+                .andExpect(jsonPath("$.content[?(@.title == 'Spring Boot 別期')]").doesNotExist());
+    }
+
+    private Post newPost(Long authorId, Long cohortId, String title, String desc,
                          RecruitStatus status, int reviewCount) {
         OffsetDateTime now = OffsetDateTime.now();
         Post p = new Post();
@@ -94,6 +115,18 @@ class PostSearchIntegrationTest extends AbstractIntegrationTest {
         p.setReviewCount(reviewCount);
         p.setCreatedAt(now);
         p.setUpdatedAt(now);
-        postRepository.save(p);
+        return postRepository.save(p);
+    }
+
+    /** 投稿に「最新＝合格」の評価を 1 件付ける（合格バッジ判定の母）。 */
+    private void approve(Long postId) {
+        Evaluation e = new Evaluation();
+        e.setPostId(postId);
+        e.setTeacherUserId(teacherA.getId());
+        e.setResult(EvaluationResult.APPROVED);
+        e.setComment("合格");
+        e.setLatest(true);
+        e.setCreatedAt(OffsetDateTime.now());
+        evaluationRepository.save(e);
     }
 }

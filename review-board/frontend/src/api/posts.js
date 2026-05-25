@@ -1,7 +1,7 @@
 import client from './client';
 
 // F-POST-03 一覧 ＋ F-SEARCH-01 検索 ＋ F-FILTER-01 絞り込み/並び替え。
-// opts: { q, aspects[], tones[], status, unreviewed, sort }（すべて任意）。Spring の Slice 形（content[]）を返す。
+// opts: { q, aspects[], tones[], status, unreviewed, approved, sort }（すべて任意）。Spring の Slice 形（content[]）を返す。
 export const fetchPosts = (opts = {}, page = 0, size = 20) => {
   const params = { page, size };
   if (opts.q) params.q = opts.q;
@@ -10,6 +10,8 @@ export const fetchPosts = (opts = {}, page = 0, size = 20) => {
   if (opts.tones?.length) params.tones = opts.tones.join(',');
   if (opts.status) params.status = opts.status;
   if (opts.unreviewed) params.unreviewed = true;
+  // #210：合格バッジ一覧（最新評価が合格の投稿のみ）。
+  if (opts.approved) params.approved = true;
   if (opts.sort) params.sort = opts.sort;
   return client.get('/posts', { params }).then((r) => r.data);
 };

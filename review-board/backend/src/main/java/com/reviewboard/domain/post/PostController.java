@@ -73,9 +73,10 @@ public class PostController {
                                            @RequestParam(required = false) java.util.List<ReviewTone> tones,
                                            @RequestParam(required = false) RecruitStatus status,
                                            @RequestParam(defaultValue = "false") boolean unreviewed,
+                                           @RequestParam(defaultValue = "false") boolean approved,
                                            @RequestParam(defaultValue = "newest") String sort,
                                            @PageableDefault(size = 20) Pageable pageable) {
-        Slice<Post> slice = postService.search(principal, q, aspects, tones, status, unreviewed, sort, pageable);
+        Slice<Post> slice = postService.search(principal, q, aspects, tones, status, unreviewed, approved, sort, pageable);
         java.util.List<Long> ids = slice.getContent().stream().map(Post::getId).toList();
         // 著者名・いいね済み集合はバッチ解決（N+1 回避）。スクショ URL は短命署名で都度補う（SEC-8）。
         Map<Long, String> authorNames = userRepository.findAllById(

@@ -10,6 +10,7 @@ import com.reviewboard.domain.notification.NotificationService;
 import com.reviewboard.domain.notification.NotificationType;
 import com.reviewboard.domain.post.Post;
 import com.reviewboard.domain.post.PostRepository;
+import com.reviewboard.domain.review.dto.CohortReviewResponse;
 import com.reviewboard.domain.review.dto.ReplyResponse;
 import com.reviewboard.domain.review.dto.ReviewCreateRequest;
 import com.reviewboard.domain.review.dto.ReviewResponse;
@@ -125,6 +126,36 @@ public class ReviewService {
                     reviewer != null ? storageService.presignedGetUrl(reviewer.getAvatarKey()) : null,
                     reviewer != null ? reviewer.getRole() : null,
                     axisByReview.getOrDefault(r.getId(), List.of()));
+        }).toList();
+    }
+
+    /**
+     * cohort 全体のレビュー一覧（#210）。★S軸：母集合は自 cohort の未削除投稿に付いたレビューに限定
+     * （越境しない）。投稿タイトル・reviewer をまとめ引きして新着順で返す（N+1回避・母 P-3）。
+     */
+    @Transactional(readOnly = true)
+    public List<CohortReviewResponse> listForCohort(AuthPrincipal principal) {
+        List<Post> posts = postRepository.findByCohortIdAndDeletedAtIsNull(principal.cohortId());
+        if (posts.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, String> titleByPost = posts.stream()
+                .collect(Collectors.toMap(Post::getId, Post::getTitle));
+        List<Review> reviews = reviewRepository
+                .findByPostIdInAndDeletedAtIsNullOrderByCreatedAtDesc(List.copyOf(titleByPost.keySet()));
+        if (reviews.isEmpty()) {
+            return List.of();
+        }
+        Set<Long> reviewerIds = reviews.stream().map(Review::getReviewerUserId).collect(Collectors.toSet());
+        Map<Long, User> reviewers = userRepository.findAllById(reviewerIds).stream()
+                .collect(Collectors.toMap(User::getId, Function.identity()));
+        return reviews.stream().map(r -> {
+            User reviewer = reviewers.get(r.getReviewerUserId());
+            return CohortReviewResponse.from(r,
+                    titleByPost.get(r.getPostId()),
+                    reviewer != null ? reviewer.getDisplayName() : "(不明)",
+                    reviewer != null ? storageService.presignedGetUrl(reviewer.getAvatarKey()) : null,
+                    reviewer != null ? reviewer.getRole() : null);
         }).toList();
     }
 
