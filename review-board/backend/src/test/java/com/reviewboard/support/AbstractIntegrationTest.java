@@ -89,6 +89,7 @@ public abstract class AbstractIntegrationTest {
     @Autowired protected NotificationRepository notificationRepository;
     @Autowired protected AuditLogRepository auditLogRepository;
     @Autowired protected RefreshTokenRepository refreshTokenRepository;
+    @Autowired protected com.reviewboard.domain.invite.CohortInviteRepository inviteRepository;
     @Autowired protected org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     /** FK 依存順（子 → 親）に全テーブルを掃除する。サブクラスで追加掃除が要れば override 可。 */
@@ -103,6 +104,7 @@ public abstract class AbstractIntegrationTest {
         reviewRepository.deleteAll();
         postRepository.deleteAll();
         refreshTokenRepository.deleteAll();
+        inviteRepository.deleteAll();
         userRepository.deleteAll();
         cohortRepository.deleteAll();
     }

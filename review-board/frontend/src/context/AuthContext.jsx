@@ -22,6 +22,13 @@ export function AuthProvider({ children }) {
     return u;
   }, []);
 
+  // F-AUTH-02 招待コードで登録 → そのままログイン状態にする。
+  const register = useCallback(async (payload) => {
+    const u = await authApi.register(payload);
+    setUser(u);
+    return u;
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       await authApi.logout();
@@ -38,7 +45,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

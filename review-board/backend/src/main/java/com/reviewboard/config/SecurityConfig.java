@@ -61,7 +61,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // health は監視プローブ用に開放（liveness/readiness）。
                 .requestMatchers("/actuator/health",
-                        "/api/auth/login", "/api/auth/refresh", "/api/auth/logout").permitAll()
+                        "/api/auth/login", "/api/auth/refresh", "/api/auth/logout",
+                        "/api/auth/register").permitAll()
                 // 運用メトリクスは情報漏えいを避けるため運用ロール（講師）限定（SEC-2/SEC-11）。
                 // 誰でも JVM ヒープ・Hikari プール・流量を覗ける状態にしない。
                 .requestMatchers("/actuator/**").hasRole("TEACHER")
