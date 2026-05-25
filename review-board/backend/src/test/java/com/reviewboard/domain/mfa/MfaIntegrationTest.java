@@ -42,14 +42,14 @@ class MfaIntegrationTest extends AbstractIntegrationTest {
         MvcResult setup = mockMvc.perform(post("/api/auth/mfa/setup").cookie(access))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.qrDataUri").exists())
+                // #239 QR 一本化：生シークレット・otpauth URI は API で返さない。
+                .andExpect(jsonPath("$.secret").doesNotExist())
+                .andExpect(jsonPath("$.otpauthUri").doesNotExist())
                 .andReturn();
-        String body = setup.getResponse().getContentAsString();
-        String secret = JsonPath.read(body, "$.secret");
-        assertThat(JsonPath.<String>read(body, "$.qrDataUri")).startsWith("data:image");
-        // #237 カメラ無しユーザー向け：otpauth URI を返し、貼り付けで取り込めるようにする。
-        assertThat(JsonPath.<String>read(body, "$.otpauthUri"))
-                .startsWith("otpauth://totp/")
-                .contains(secret);
+        assertThat(JsonPath.<String>read(setup.getResponse().getContentAsString(), "$.qrDataUri"))
+                .startsWith("data:image");
+        // コード生成用のシークレットは QR に内包される。テストは DB から取得して算出する。
+        String secret = userRepository.findByEmail(EMAIL).orElseThrow().getTotpSecret();
 
         mockMvc.perform(post("/api/auth/mfa/enable").cookie(access)
                         .contentType("application/json")

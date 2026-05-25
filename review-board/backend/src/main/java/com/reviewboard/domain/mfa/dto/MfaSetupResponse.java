@@ -1,8 +1,8 @@
 package com.reviewboard.domain.mfa.dto;
 
 /**
- * TOTP セットアップ応答。QR（data URI）・手入力用シークレット・otpauth URI を返す（setup 応答でのみ）。
- * otpauthUri はカメラの無いユーザーが対応アプリへ貼り付けで取り込むための導線（#237）。
+ * TOTP セットアップ応答。QR（data URI）のみを返す。
+ * 生シークレットは API では返さない（QR に内包・取り込みは QR スキャン一本化。#239）。
  */
-public record MfaSetupResponse(String secret, String qrDataUri, String otpauthUri) {
+public record MfaSetupResponse(String qrDataUri) {
 }
