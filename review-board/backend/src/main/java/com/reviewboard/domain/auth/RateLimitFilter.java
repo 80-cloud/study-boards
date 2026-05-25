@@ -78,6 +78,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
             case "/api/auth/login" -> props.loginMax();
             case "/api/auth/register" -> props.registerMax();
             case "/api/auth/refresh" -> props.refreshMax();
+            case "/api/auth/password-reset/request" -> props.passwordResetMax();
             default -> 0;
         };
     }

@@ -6,6 +6,7 @@ import Header from './components/Header';
 import { APP_NAME } from './constants';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import PasswordResetPage from './pages/PasswordResetPage';
 import InvitesPage from './pages/InvitesPage';
 import PostsPage from './pages/PostsPage';
 import NewPostPage from './pages/NewPostPage';
@@ -47,6 +48,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/password-reset" element={<PasswordResetPage />} />
         <Route path="/" element={<Shell><PostsPage /></Shell>} />
         <Route path="/invites" element={<Shell><InvitesPage /></Shell>} />
         <Route path="/posts/new" element={<Shell><NewPostPage /></Shell>} />

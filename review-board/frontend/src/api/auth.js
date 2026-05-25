@@ -11,3 +11,10 @@ export const register = (payload) =>
 export const logout = () => client.post('/auth/logout');
 
 export const fetchMe = () => client.get('/auth/me').then((r) => r.data);
+
+// B-4 パスワードリセット（#231・公開）。request は列挙防止のため常に 204（成功）扱い。
+export const requestPasswordReset = (email) =>
+  client.post('/auth/password-reset/request', { email });
+
+export const confirmPasswordReset = (token, password) =>
+  client.post('/auth/password-reset/confirm', { token, password });
