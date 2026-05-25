@@ -34,6 +34,8 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	// メール通知（#175・過疎化対策）。SMTP は env 駆動・app.mail.enabled で有効化（既定 false）。
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
 	// 4 ゴールデンシグナルの収集（母 §3-1）。http.server.requests（Latency/Traffic/Errors）と
 	// Hikari/JVM（Saturation）を Micrometer が Actuator 経由で /actuator/prometheus に公開する。
 	runtimeOnly 'io.micrometer:micrometer-registry-prometheus'

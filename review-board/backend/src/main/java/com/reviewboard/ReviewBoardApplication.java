@@ -3,6 +3,7 @@ package com.reviewboard;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
@@ -12,6 +13,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @ConfigurationPropertiesScan
 @EnableScheduling // S-3 カウンタ再計算バッチ等の定期実行
+@EnableAsync      // メール通知（#175）を TX 後に別スレッドで送る
 public class ReviewBoardApplication {
 
     public static void main(String[] args) {

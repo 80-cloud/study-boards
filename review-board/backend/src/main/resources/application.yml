@@ -23,6 +23,16 @@ spring:
       # SEC-8：multipart 段でサイズを弾く（サービス側 max-upload-bytes と二重防御）。
       max-file-size: 5MB
       max-request-size: 6MB
+  # メール通知（#175）。host 未設定なら JavaMailSender は生成されない（=送信しない）。
+  # 機密（user/password）はデフォルトを持たせず env 駆動（SEC-9）。
+  mail:
+    host: ${SMTP_HOST:}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
 
 server:
   port: 8082
@@ -34,6 +44,11 @@ management:
         # health は監視プローブ用（SecurityConfig で permitAll）。
         # metrics/prometheus は運用観測（SecurityConfig で ROLE_TEACHER 限定）。
         include: health,info,metrics,prometheus
+  health:
+    # mail は best-effort の付帯機能（#175）。SMTP 到達性で liveness を落とさない
+    # （health はアプリ稼働の可否のみを示す。SMTP 障害でプローブを失敗させない）。
+    mail:
+      enabled: false
   metrics:
     tags:
       application: review-board
@@ -64,6 +79,11 @@ app:
   # 顧客オリジンを設定すると CSP frame-ancestors で限定的に埋め込みを解放する。
   embedding:
     frame-ancestors: ${EMBEDDING_FRAME_ANCESTORS:'none'}
+  # メール通知（#175）。既定 false＝no-op（dev/CI/SMTP 未設定でも安全）。本番で MAIL_ENABLED=true。
+  mail:
+    enabled: ${MAIL_ENABLED:false}
+    from: ${MAIL_FROM:no-reply@review-board.local}
+    base-url: ${PUBLIC_ORIGIN:}
   # 初期管理者の bootstrap（デプロイ直後の「最初の1人」を作る。未設定＝何もしない・冪等）。
   bootstrap:
     admin-email: ${BOOTSTRAP_ADMIN_EMAIL:}
