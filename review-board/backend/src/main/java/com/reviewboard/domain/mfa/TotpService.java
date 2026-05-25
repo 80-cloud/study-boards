@@ -50,14 +50,6 @@ public class TotpService {
         }
     }
 
-    /**
-     * QR と同じ内容の otpauth:// URI を返す（#237）。カメラの無いユーザーが、対応する認証アプリ
-     * （デスクトップ版 1Password / Bitwarden 等）へ手入力でなく貼り付けで取り込めるようにする。
-     */
-    public String otpauthUri(String secret, String accountLabel) {
-        return qrData(secret, accountLabel).getUri();
-    }
-
     private QrData qrData(String secret, String accountLabel) {
         return new QrData.Builder()
                 .label(accountLabel)

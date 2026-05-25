@@ -295,22 +295,10 @@ function Toggle({ label, desc, checked, onChange, disabled = false }) {
 function MfaCard() {
   const { user, refreshUser } = useAuth();
   const enabled = !!user?.mfaEnabled;
-  const [setup, setSetup] = useState(null); // {secret, qrDataUri, otpauthUri}（setup 中のみ）
+  const [setup, setSetup] = useState(null); // { qrDataUri }（setup 中のみ）
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [copied, setCopied] = useState(''); // 直近にコピーした項目のラベル（フィードバック用）
-
-  // #237 カメラ無しユーザー向け：手入力の打ち間違い（O/0 等）を避けるためクリップボードへコピー。
-  const copy = async (text, label) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(label);
-      setTimeout(() => setCopied(''), 1500);
-    } catch {
-      setError('コピーできませんでした。手動で選択してコピーしてください。');
-    }
-  };
 
   const startSetup = async () => {
     setError('');
@@ -378,35 +366,8 @@ function MfaCard() {
       {/* setup 中：QR ＋ コード入力で有効化 */}
       {!enabled && setup && (
         <form onSubmit={confirmEnable} className="space-y-3">
-          <p className="text-sm text-gray-600">認証アプリで以下の QR コードを読み取ってください。</p>
+          <p className="text-sm text-gray-600">認証アプリ（Google Authenticator 等）で以下の QR コードを読み取ってください。</p>
           <img src={setup.qrDataUri} alt="TOTP QR コード" className="h-44 w-44 rounded-lg ring-1 ring-black/5" />
-
-          {/* #237 カメラが無い場合：QR を読まず、キーまたはリンクを貼り付けで取り込む */}
-          <div className="rounded-xl bg-gray-50 p-3 ring-1 ring-black/5">
-            <p className="mb-2 text-xs font-semibold text-gray-600">カメラが無い場合（手入力アプリ向け）</p>
-
-            <div className="mb-2 flex items-center gap-2">
-              <code className="flex-1 break-all rounded-lg bg-white px-2 py-1.5 font-mono text-xs text-gray-700 ring-1 ring-black/5">
-                {setup.secret}
-              </code>
-              <button type="button" onClick={() => copy(setup.secret, 'key')} className="mac-btn-ghost shrink-0 text-xs">
-                {copied === 'key' ? '✓ コピー済' : 'キーをコピー'}
-              </button>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => copy(setup.otpauthUri, 'uri')}
-              className="mac-btn-ghost text-xs"
-            >
-              {copied === 'uri' ? '✓ コピー済' : 'otpauth リンクをコピー'}
-            </button>
-
-            <p className="mt-2 text-[11px] leading-relaxed text-gray-400">
-              キーは大文字の A–Z と 2–7 のみ（数字の 0・1・8・9 は含まれません）。
-              「O」はアルファベットのオーです。手入力より<strong>コピー＆貼り付け</strong>を推奨します。
-            </p>
-          </div>
           <label className="mac-label" htmlFor="mfa-enable-code">アプリに表示された6桁コード</label>
           <input
             id="mfa-enable-code"
