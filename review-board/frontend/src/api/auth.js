@@ -12,6 +12,10 @@ export const logout = () => client.post('/auth/logout');
 
 export const fetchMe = () => client.get('/auth/me').then((r) => r.data);
 
+// C-6 MFA（#235）ログイン2段目。チャレンジ Cookie ＋ TOTP コードで認証を完了する。
+export const loginMfa = (code) =>
+  client.post('/auth/login/mfa', { code }).then((r) => r.data);
+
 // B-4 パスワードリセット（#231・公開）。request は列挙防止のため常に 204（成功）扱い。
 export const requestPasswordReset = (email) =>
   client.post('/auth/password-reset/request', { email });

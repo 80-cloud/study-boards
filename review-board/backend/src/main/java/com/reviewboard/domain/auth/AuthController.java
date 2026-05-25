@@ -1,8 +1,10 @@
 package com.reviewboard.domain.auth;
 
 import com.reviewboard.domain.auth.dto.LoginRequest;
+import com.reviewboard.domain.auth.dto.MfaRequiredResponse;
 import com.reviewboard.domain.auth.dto.RegisterRequest;
 import com.reviewboard.domain.auth.dto.UserResponse;
+import com.reviewboard.domain.mfa.dto.MfaCodeRequest;
 import com.reviewboard.domain.user.User;
 import com.reviewboard.domain.user.UserRepository;
 import com.reviewboard.storage.StorageService;
@@ -24,20 +26,60 @@ public class AuthController {
     private final AuthCookies cookies;
     private final UserRepository userRepository;
     private final StorageService storageService;
+    private final JwtService jwtService;
 
     public AuthController(AuthService authService, AuthCookies cookies, UserRepository userRepository,
-                          StorageService storageService) {
+                          StorageService storageService, JwtService jwtService) {
         this.authService = authService;
         this.cookies = cookies;
         this.userRepository = userRepository;
         this.storageService = storageService;
+        this.jwtService = jwtService;
     }
 
-    /** F-AUTH-01 ログイン */
+    /**
+     * F-AUTH-01 ログイン（1段目）。MFA（#235）有効ユーザーは access/refresh を出さず、
+     * 短命チャレンジ Cookie を立てて {@code {mfaRequired:true}} を返す（続けて /login/mfa を叩く）。
+     */
     @PostMapping("/login")
-    public ResponseEntity<UserResponse> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         AuthService.LoginResult result = authService.login(request.email(), request.password());
+        if (result.mfaRequired()) {
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.SET_COOKIE, cookies.mfa(result.mfaChallengeToken()).toString())
+                    .body(MfaRequiredResponse.required());
+        }
+        return sessionResponse(result, 200);
+    }
+
+    /**
+     * F-AUTH-01 ログイン（2段目・MFA）。チャレンジ Cookie ＋ TOTP コードを検証してセッションを発行する。
+     * チャレンジ欠落・不正・期限切れ・コード不一致はいずれも 401（存在を漏らさない）。
+     */
+    @PostMapping("/login/mfa")
+    public ResponseEntity<?> loginMfa(
+            @CookieValue(name = AuthCookies.MFA, required = false) String mfaToken,
+            @Valid @RequestBody MfaCodeRequest body) {
+        if (mfaToken == null || mfaToken.isBlank()) {
+            throw new BadCredentialsException();
+        }
+        Long userId;
+        try {
+            userId = jwtService.parseMfaChallenge(mfaToken);
+        } catch (io.jsonwebtoken.JwtException e) {
+            throw new BadCredentialsException();
+        }
+        AuthService.LoginResult result = authService.verifyMfaAndLogin(userId, body.code());
         return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookies.access(result.accessToken()).toString())
+                .header(HttpHeaders.SET_COOKIE, cookies.refresh(result.refreshToken()).toString())
+                .header(HttpHeaders.SET_COOKIE, cookies.clearMfa().toString())
+                .body(UserResponse.from(result.user(),
+                        storageService.presignedGetUrl(result.user().getAvatarKey())));
+    }
+
+    private ResponseEntity<UserResponse> sessionResponse(AuthService.LoginResult result, int status) {
+        return ResponseEntity.status(status)
                 .header(HttpHeaders.SET_COOKIE, cookies.access(result.accessToken()).toString())
                 .header(HttpHeaders.SET_COOKIE, cookies.refresh(result.refreshToken()).toString())
                 .body(UserResponse.from(result.user(), storageService.presignedGetUrl(result.user().getAvatarKey())));

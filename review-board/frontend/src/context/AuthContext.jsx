@@ -18,6 +18,15 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (email, password) => {
     const u = await authApi.login(email, password);
+    // C-6（#235）MFA 有効ユーザーはまだログイン未完了（access 無し）。呼び出し側で TOTP を求める。
+    if (u?.mfaRequired) return u;
+    setUser(u);
+    return u;
+  }, []);
+
+  // C-6 MFA ログイン2段目：TOTP コードで確定し、ログイン状態にする。
+  const completeMfaLogin = useCallback(async (code) => {
+    const u = await authApi.loginMfa(code);
     setUser(u);
     return u;
   }, []);
@@ -45,7 +54,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, login, completeMfaLogin, register, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

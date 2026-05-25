@@ -5,20 +5,27 @@ import DolphinIcon from '../components/DolphinIcon';
 import { APP_NAME, APP_TAGLINE } from '../constants';
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, completeMfaLogin } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  // C-6（#235）MFA 2段目：パスワード成功後に TOTP を要求する状態。
+  const [mfaStep, setMfaStep] = useState(false);
+  const [code, setCode] = useState('');
 
   const onSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSubmitting(true);
     try {
-      await login(email, password);
+      const result = await login(email, password);
+      if (result?.mfaRequired) {
+        setMfaStep(true); // TOTP 入力へ
+        return;
+      }
       navigate('/', { replace: true });
     } catch (err) {
       // 認証失敗は存在を漏らさない汎用メッセージ（backend が 401 を返す）
@@ -27,6 +34,59 @@ export default function LoginPage() {
       setSubmitting(false);
     }
   };
+
+  const onSubmitMfa = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSubmitting(true);
+    try {
+      await completeMfaLogin(code);
+      navigate('/', { replace: true });
+    } catch (err) {
+      setError(err.response?.status === 401 ? '認証コードが正しくありません' : '通信に失敗しました');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (mfaStep) {
+    return (
+      <main className="flex min-h-screen items-center justify-center px-4">
+        <div className="w-full max-w-sm">
+          <div className="mb-7 flex flex-col items-center text-center">
+            <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-[20px] bg-[#e8f3ff] shadow-mac ring-1 ring-black/5">
+              <DolphinIcon className="h-12 w-12" />
+            </div>
+            <h1 className="text-2xl font-extrabold tracking-tight text-navy-700">{APP_NAME}</h1>
+            <p className="mt-1 text-sm text-gray-500">二要素認証</p>
+          </div>
+          <form onSubmit={onSubmitMfa} className="mac-card p-7">
+            {error && (
+              <p className="mb-4 rounded-xl border border-red-100 bg-red-50/80 px-3.5 py-2.5 text-sm text-red-600">
+                {error}
+              </p>
+            )}
+            <label className="mac-label" htmlFor="code">認証アプリの6桁コード</label>
+            <input
+              id="code"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              required
+              autoFocus
+              placeholder="123456"
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              className="mac-input mb-6 text-center text-lg tracking-[0.4em]"
+            />
+            <button type="submit" disabled={submitting} className="mac-btn-navy w-full py-2.5">
+              {submitting ? '確認中…' : 'ログイン'}
+            </button>
+          </form>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="flex min-h-screen items-center justify-center px-4">

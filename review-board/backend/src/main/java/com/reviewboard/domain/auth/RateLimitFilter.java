@@ -79,6 +79,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
             case "/api/auth/register" -> props.registerMax();
             case "/api/auth/refresh" -> props.refreshMax();
             case "/api/auth/password-reset/request" -> props.passwordResetMax();
+            // C-6（#235）：MFA コードの総当たり対策。login と同じ上限を課す。
+            case "/api/auth/login/mfa" -> props.loginMax();
             default -> 0;
         };
     }

@@ -45,6 +45,8 @@ dependencies {
 	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+	// C-6 TOTP 二要素認証（#235・任意の MFA）。Apache-2.0・無料。シークレット生成/コード検証/QR を提供。
+	implementation 'dev.samstevens.totp:totp:1.7.1'
 	runtimeOnly 'org.postgresql:postgresql'
 	implementation 'org.flywaydb:flyway-core'
 	implementation 'org.flywaydb:flyway-database-postgresql'
