@@ -11,13 +11,18 @@ resource "aws_budgets_budget" "monthly" {
   limit_unit   = "USD"
   time_unit    = "MONTHLY"
 
-  # 実コストがしきい値の 80% に達したら通知
-  notification {
-    comparison_operator        = "GREATER_THAN"
-    threshold                  = 80
-    threshold_type             = "PERCENTAGE"
-    notification_type          = "ACTUAL"
-    subscriber_email_addresses = [var.budget_notify_email]
+  # 多段の実コスト通知（無料枠運用は本来 $0＝最初の課金を最速で掴む。修練城の事故予防方針）。
+  # しきい値 $0.50 に対し 1%=$0.005 / 50%=$0.25 / 80%=$0.40 / 100%=$0.50。
+  # 1% は実質「最初の課金（数セント）」の検知点。暴走コストの兆候を早期に通知する。
+  dynamic "notification" {
+    for_each = toset([1, 50, 80, 100])
+    content {
+      comparison_operator        = "GREATER_THAN"
+      threshold                  = notification.value
+      threshold_type             = "PERCENTAGE"
+      notification_type          = "ACTUAL"
+      subscriber_email_addresses = [var.budget_notify_email]
+    }
   }
 
   # 予測コストがしきい値の 100% を超える見込みで通知（先回り）
