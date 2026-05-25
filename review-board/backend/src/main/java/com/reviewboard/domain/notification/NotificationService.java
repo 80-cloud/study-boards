@@ -29,15 +29,19 @@ public class NotificationService {
     private final UserRepository userRepository;
     private final com.reviewboard.storage.StorageService storageService;
     private final MailService mailService;
+    /** アプリの表示名（メール署名など外向き文面の単一ソース。完全リネームの仕込み）。 */
+    private final String appName;
 
     public NotificationService(NotificationRepository notificationRepository,
                                UserRepository userRepository,
                                com.reviewboard.storage.StorageService storageService,
-                               MailService mailService) {
+                               MailService mailService,
+                               @org.springframework.beans.factory.annotation.Value("${app.name:レビューラボ}") String appName) {
         this.notificationRepository = notificationRepository;
         this.userRepository = userRepository;
         this.storageService = storageService;
         this.mailService = mailService;
+        this.appName = appName;
     }
 
     /**
@@ -78,7 +82,7 @@ public class NotificationService {
         String body = recipient.getDisplayName() + " さん\n\n"
                 + actorName + " さんがあなたの成果物にレビューを投稿しました。\n"
                 + (link.isBlank() ? "アプリで確認してみましょう。" : link)
-                + "\n\n— review-board";
+                + "\n\n— " + appName;
         mailService.send(recipient.getEmail(), "あなたの成果物にレビューが届きました", body);
     }
 

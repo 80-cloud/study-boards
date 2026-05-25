@@ -66,6 +66,8 @@ logging:
 
 # アプリ固有設定（env 駆動。.env.example 参照）
 app:
+  # アプリの表示名（メール署名など外向き文面の単一ソース。env で上書き可＝完全リネームの仕込み）。
+  name: ${APP_NAME:レビューラボ}
   jwt:
     secret: ${JWT_SECRET}
     access-ttl-seconds: 900       # 15 分（短命 access）
