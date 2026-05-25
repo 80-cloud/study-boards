@@ -22,6 +22,9 @@ public class JwtService {
 
     private final SecretKey key;
     private final long accessTtlSeconds;
+    /** MFA チャレンジ（パスワード検証済み・TOTP 待ち）の寿命。短命にして窓を狭める（#235）。 */
+    private static final long MFA_CHALLENGE_TTL_SECONDS = 300; // 5 分
+    private static final String MFA_PURPOSE = "mfa";
 
     public JwtService(JwtProperties props) {
         byte[] secretBytes = props.secret().getBytes(StandardCharsets.UTF_8);
@@ -44,6 +47,37 @@ public class JwtService {
                 .expiration(Date.from(now.plusSeconds(accessTtlSeconds)))
                 .signWith(key)
                 .compact();
+    }
+
+    /**
+     * MFA チャレンジトークンを発行する（#235）。パスワード検証済みだが TOTP 未確認の中間状態を表す。
+     * purpose=mfa の claim を持ち、access/refresh とは用途を分離する（access として使えない）。
+     */
+    public String issueMfaChallengeToken(Long userId) {
+        Instant now = Instant.now();
+        return Jwts.builder()
+                .subject(String.valueOf(userId))
+                .claim("purpose", MFA_PURPOSE)
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(now.plusSeconds(MFA_CHALLENGE_TTL_SECONDS)))
+                .signWith(key)
+                .compact();
+    }
+
+    /**
+     * MFA チャレンジトークンを検証して userId を返す。purpose=mfa でなければ不正。
+     * 署名不正・期限切れ・purpose 不一致は {@link JwtException} で失敗（呼び出し側で 401）。
+     */
+    public Long parseMfaChallenge(String token) {
+        Claims claims = Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+        if (!MFA_PURPOSE.equals(claims.get("purpose", String.class))) {
+            throw new JwtException("not an mfa challenge token");
+        }
+        return Long.valueOf(claims.getSubject());
     }
 
     /**

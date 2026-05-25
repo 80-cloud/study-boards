@@ -21,15 +21,17 @@ public class AuthService {
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
     private final InviteService inviteService;
+    private final com.reviewboard.domain.mfa.TotpService totpService;
 
     public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder,
                        JwtService jwtService, RefreshTokenService refreshTokenService,
-                       InviteService inviteService) {
+                       InviteService inviteService, com.reviewboard.domain.mfa.TotpService totpService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.refreshTokenService = refreshTokenService;
         this.inviteService = inviteService;
+        this.totpService = totpService;
     }
 
     /**
@@ -55,12 +57,13 @@ public class AuthService {
         user.setUpdatedAt(now);
         userRepository.save(user);
 
-        String access = jwtService.issueAccessToken(user.getId(), user.getRole(), user.getCohortId());
-        String refresh = refreshTokenService.issue(user.getId());
-        return new LoginResult(user, access, refresh);
+        return issueSession(user);
     }
 
-    /** F-AUTH-01 ログイン。失敗は存在を漏らさない汎用エラー（BadCredentials）。 */
+    /**
+     * F-AUTH-01 ログイン。失敗は存在を漏らさない汎用エラー（BadCredentials）。
+     * MFA（#235）有効ユーザーはここでは access/refresh を出さず、TOTP 待ちの「チャレンジ」を返す。
+     */
     @Transactional
     public LoginResult login(String email, String rawPassword) {
         User user = userRepository.findByEmail(email).orElseThrow(BadCredentialsException::new);
@@ -71,9 +74,34 @@ public class AuthService {
         if (user.getStatus() == com.reviewboard.domain.user.UserStatus.DISABLED) {
             throw new org.springframework.security.access.AccessDeniedException("このアカウントは無効化されています");
         }
+        // #235 MFA 有効：パスワードは正しいが、まだログインさせない。TOTP 確認のチャレンジを発行する。
+        if (user.isMfaEnabled()) {
+            return LoginResult.mfaRequired(jwtService.issueMfaChallengeToken(user.getId()));
+        }
+        return issueSession(user);
+    }
+
+    /**
+     * F-AUTH-01(2段目) MFA コード検証＋ログイン確定（#235）。
+     * チャレンジから解決した userId と TOTP コードを検証し、成功時に access/refresh を発行する。
+     * 失敗（MFA 無効化済み・コード不一致）は存在を漏らさない汎用エラー（BadCredentials）。
+     */
+    @Transactional
+    public LoginResult verifyMfaAndLogin(Long userId, String code) {
+        User user = userRepository.findById(userId).orElseThrow(BadCredentialsException::new);
+        if (!user.isMfaEnabled() || !totpService.verify(user.getTotpSecret(), code)) {
+            throw new BadCredentialsException();
+        }
+        if (user.getStatus() == com.reviewboard.domain.user.UserStatus.DISABLED) {
+            throw new org.springframework.security.access.AccessDeniedException("このアカウントは無効化されています");
+        }
+        return issueSession(user);
+    }
+
+    private LoginResult issueSession(User user) {
         String access = jwtService.issueAccessToken(user.getId(), user.getRole(), user.getCohortId());
         String refresh = refreshTokenService.issue(user.getId());
-        return new LoginResult(user, access, refresh);
+        return LoginResult.authenticated(user, access, refresh);
     }
 
     /** F-AUTH-(extra) リフレッシュ。rotation + reuse 検知は RefreshTokenService が担う。 */
@@ -94,7 +122,20 @@ public class AuthService {
         }
     }
 
-    public record LoginResult(User user, String accessToken, String refreshToken) {
+    /**
+     * ログイン結果。通常は認証完了（user＋tokens）。MFA 有効時は {@code mfaRequired=true} で
+     * tokens は無く、代わりに {@code mfaChallengeToken}（短命）を持つ。
+     */
+    public record LoginResult(User user, String accessToken, String refreshToken,
+                              boolean mfaRequired, String mfaChallengeToken) {
+
+        static LoginResult authenticated(User user, String access, String refresh) {
+            return new LoginResult(user, access, refresh, false, null);
+        }
+
+        static LoginResult mfaRequired(String challengeToken) {
+            return new LoginResult(null, null, null, true, challengeToken);
+        }
     }
 
     public record RefreshResult(String accessToken, String refreshToken) {

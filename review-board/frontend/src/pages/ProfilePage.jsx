@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { fetchProfile, updateMyProfile } from '../api/profile';
 import { fetchNotificationPrefs, updateNotificationPrefs } from '../api/notificationPrefs';
+import { setupMfa, enableMfa, disableMfa } from '../api/mfa';
 import { ROLE_LABEL, EVAL_LABEL } from '../constants';
 import { useAuth } from '../context/AuthContext';
 import Avatar from '../components/Avatar';
@@ -65,6 +66,8 @@ export default function ProfilePage() {
       {streak && <StreakCard streak={streak} />}
 
       {isOwn && <NotificationPrefsCard />}
+
+      {isOwn && <MfaCard />}
 
       <section>
         <h3 className="mac-h mb-3 text-lg">投稿した成果物（{posts.length}）</h3>
@@ -285,6 +288,125 @@ function Toggle({ label, desc, checked, onChange, disabled = false }) {
         />
       </button>
     </div>
+  );
+}
+
+// C-6（#235）二要素認証（TOTP）設定：本人のみ。setup→QR表示→コードで有効化／コードで無効化。
+function MfaCard() {
+  const { user, refreshUser } = useAuth();
+  const enabled = !!user?.mfaEnabled;
+  const [setup, setSetup] = useState(null); // {secret, qrDataUri}（setup 中のみ）
+  const [code, setCode] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  const startSetup = async () => {
+    setError('');
+    setBusy(true);
+    try {
+      setSetup(await setupMfa());
+    } catch {
+      setError('セットアップを開始できませんでした');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const confirmEnable = async (e) => {
+    e.preventDefault();
+    setError('');
+    setBusy(true);
+    try {
+      await enableMfa(code);
+      await refreshUser();
+      setSetup(null);
+      setCode('');
+    } catch (err) {
+      setError(err.response?.status === 400 ? 'コードが正しくありません' : '有効化に失敗しました');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const confirmDisable = async (e) => {
+    e.preventDefault();
+    setError('');
+    setBusy(true);
+    try {
+      await disableMfa(code);
+      await refreshUser();
+      setCode('');
+    } catch (err) {
+      setError(err.response?.status === 400 ? 'コードが正しくありません' : '無効化に失敗しました');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="mac-panel p-5">
+      <div className="mb-1 flex items-center justify-between">
+        <h3 className="mac-h text-lg">二要素認証（2FA）</h3>
+        <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${enabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+          {enabled ? '有効' : '無効'}
+        </span>
+      </div>
+      <p className="mb-4 text-xs text-gray-500">
+        認証アプリ（Google Authenticator 等）のワンタイムコードでログインを保護します。
+      </p>
+      {error && <p className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+
+      {/* 無効 & setup 未開始：開始ボタン */}
+      {!enabled && !setup && (
+        <button onClick={startSetup} disabled={busy} className="mac-btn-brand">
+          {busy ? '準備中…' : '二要素認証を設定する'}
+        </button>
+      )}
+
+      {/* setup 中：QR ＋ コード入力で有効化 */}
+      {!enabled && setup && (
+        <form onSubmit={confirmEnable} className="space-y-3">
+          <p className="text-sm text-gray-600">認証アプリで以下の QR コードを読み取ってください。</p>
+          <img src={setup.qrDataUri} alt="TOTP QR コード" className="h-44 w-44 rounded-lg ring-1 ring-black/5" />
+          <p className="break-all text-xs text-gray-400">
+            手入力用キー：<span className="font-mono text-gray-600">{setup.secret}</span>
+          </p>
+          <label className="mac-label" htmlFor="mfa-enable-code">アプリに表示された6桁コード</label>
+          <input
+            id="mfa-enable-code"
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            placeholder="123456"
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            className="mac-input"
+          />
+          <div className="flex gap-2">
+            <button type="button" onClick={() => { setSetup(null); setCode(''); setError(''); }} className="mac-btn-ghost">キャンセル</button>
+            <button type="submit" disabled={busy} className="mac-btn-brand">{busy ? '確認中…' : '有効化する'}</button>
+          </div>
+        </form>
+      )}
+
+      {/* 有効：コード入力で無効化 */}
+      {enabled && (
+        <form onSubmit={confirmDisable} className="space-y-3">
+          <label className="mac-label" htmlFor="mfa-disable-code">無効化するには現在の6桁コードを入力</label>
+          <input
+            id="mfa-disable-code"
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            placeholder="123456"
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            className="mac-input"
+          />
+          <button type="submit" disabled={busy} className="mac-btn-ghost text-red-600">{busy ? '確認中…' : '二要素認証を無効にする'}</button>
+        </form>
+      )}
+    </section>
   );
 }
 

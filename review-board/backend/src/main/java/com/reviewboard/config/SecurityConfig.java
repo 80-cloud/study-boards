@@ -73,7 +73,9 @@ public class SecurityConfig {
                         "/api/auth/login", "/api/auth/refresh", "/api/auth/logout",
                         "/api/auth/register",
                         // B-4 パスワードリセット（#231）。自己回復のため未認証で叩く。
-                        "/api/auth/password-reset/request", "/api/auth/password-reset/confirm").permitAll()
+                        "/api/auth/password-reset/request", "/api/auth/password-reset/confirm",
+                        // C-6 MFA 2段目（#235）。チャレンジ Cookie ＋ TOTP で認証を完了させる。
+                        "/api/auth/login/mfa").permitAll()
                 // 運用メトリクスは情報漏えいを避けるため運用ロール（講師）限定（SEC-2/SEC-11）。
                 // 誰でも JVM ヒープ・Hikari プール・流量を覗ける状態にしない。
                 .requestMatchers("/actuator/**").hasRole("TEACHER")

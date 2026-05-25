@@ -51,6 +51,14 @@ public class User {
     @Column(name = "avatar_key", length = 512)
     private String avatarKey;
 
+    /** TOTP シークレット（Base32・#235）。setup 中は値を持つが mfaEnabled=false（pending）。未設定は null。 */
+    @Column(name = "totp_secret", length = 64)
+    private String totpSecret;
+
+    /** 二要素認証（TOTP）が有効か（#235）。true のときだけログインで TOTP を要求する。 */
+    @Column(name = "mfa_enabled", nullable = false)
+    private boolean mfaEnabled = false;
+
     // --- 非正規化カウンタ（書き込みと同一Txで増減 + 定期再計算で補正。母 S-3） ---
     @Column(name = "received_reviews_count", nullable = false)
     private int receivedReviewsCount = 0;
