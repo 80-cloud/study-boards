@@ -16,6 +16,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 
 /**
  * ★S軸の中核。RBAC + ステートレス認可。
@@ -51,6 +52,14 @@ public class SecurityConfig {
             // app.embedding.frame-ancestors に顧客オリジンを設定したときだけ、X-Frame-Options を外し
             // CSP frame-ancestors で許可オリジンに限定して iframe 埋め込みを解放する。
             .headers(h -> {
+                // SEC-13 防御ヘッダ（無条件付与）。X-Content-Type-Options: nosniff は Spring 既定で付与。
+                // HSTS は HTTPS 応答にのみ付与される（dev の HTTP では出ないが無害）。
+                h.httpStrictTransportSecurity(hsts -> hsts
+                        .includeSubDomains(true).maxAgeInSeconds(31536000)) // 1 年
+                 .referrerPolicy(rp -> rp.policy(
+                        ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                 .permissionsPolicyHeader(pp -> pp.policy(
+                        "camera=(), microphone=(), geolocation=(), payment=()"));
                 if (!isFramingLocked(frameAncestors)) {
                     h.frameOptions(fo -> fo.disable())
                      .contentSecurityPolicy(csp -> csp.policyDirectives("frame-ancestors " + frameAncestors));
