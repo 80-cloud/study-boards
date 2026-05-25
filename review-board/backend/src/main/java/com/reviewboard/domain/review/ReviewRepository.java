@@ -18,6 +18,9 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     /** 成長記録（F-PROF-02）：複数投稿に付いたレビューをまとめて取得（N+1回避） */
     List<Review> findByPostIdInAndDeletedAtIsNull(List<Long> postIds);
 
+    /** cohort 全体のレビュー一覧（#210）：自 cohort の投稿に付いた未削除レビューを新着順で取得 */
+    List<Review> findByPostIdInAndDeletedAtIsNullOrderByCreatedAtDesc(List<Long> postIds);
+
     /** したレビュー実績（F-PROF-03） */
     List<Review> findByReviewerUserIdAndDeletedAtIsNull(Long reviewerUserId);
 

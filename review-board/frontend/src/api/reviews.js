@@ -4,6 +4,9 @@ import client from './client';
 export const fetchReviews = (postId) =>
   client.get(`/posts/${postId}/reviews`).then((r) => r.data);
 
+// #210 cohort 全体のレビュー一覧（投稿タイトル付き・新着順・自 cohort のみ）
+export const fetchCohortReviews = () => client.get('/reviews').then((r) => r.data);
+
 // F-REV-01 作成（good/improvement 必須、axisComments 任意）
 export const createReview = (postId, body) =>
   client.post(`/posts/${postId}/reviews`, body).then((r) => r.data);

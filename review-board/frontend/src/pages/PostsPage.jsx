@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { fetchPosts } from '../api/posts';
 import { fetchLandingStats } from '../api/stats';
 import { matchAspects, matchTones } from '../constants/reviewPrefs';
@@ -43,6 +43,7 @@ const scrollToWorks = () => document.getElementById('works')?.scrollIntoView({ b
 
 // F-POST-03 一覧 ＋ F-SEARCH-01 検索 ＋ F-FILTER-01 絞り込み/並び替え（案L ランディングに内包）。
 export default function PostsPage() {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -53,7 +54,7 @@ export default function PostsPage() {
   // 検索・絞り込み・並び替え。初期 q はヘッダー検索からの URL パラメータを尊重。
   const [q, setQ] = useState(searchParams.get('q') ?? '');
   const [applied, setApplied] = useState({
-    q: searchParams.get('q') ?? '', status: '', unreviewed: false, sort: 'newest',
+    q: searchParams.get('q') ?? '', status: '', unreviewed: false, approved: false, sort: 'newest',
   });
 
   // ヘッダー検索で ?q= が変わったら反映（同一ページ内遷移）。検索語があれば結果（WORKS）まで誘導。
@@ -92,10 +93,12 @@ export default function PostsPage() {
   const setFilter = (patch) => setApplied((p) => ({ ...p, ...patch }));
   const pickCategory = (kw) => { setQ(kw); setApplied((p) => ({ ...p, q: kw })); scrollToWorks(); };
 
+  // #210：統計タイルをクリックで一覧へ。成果物→WORKS へスクロール、レビュー→/reviews、
+  // 合格バッジ→合格作品のみに絞って WORKS へ（いずれも自 cohort・S軸は backend が担保）。
   const tiles = [
-    [stats?.postsCount ?? '—', '成果物'],
-    [stats?.reviewsCount ?? '—', 'レビュー'],
-    [stats?.approvedBadgesCount ?? '—', '合格バッジ'],
+    [stats?.postsCount ?? '—', '成果物', 'みんなの成果物一覧へ', () => { setFilter({ approved: false }); scrollToWorks(); }],
+    [stats?.reviewsCount ?? '—', 'レビュー', 'みんなのレビュー一覧へ', () => navigate('/reviews')],
+    [stats?.approvedBadgesCount ?? '—', '合格バッジ', '合格作品の一覧へ', () => { setFilter({ approved: true }); scrollToWorks(); }],
   ];
 
   return (
@@ -135,11 +138,12 @@ export default function PostsPage() {
               </Link>
             ))}
             <div className="grid grid-cols-3 gap-3 pt-1 text-center">
-              {tiles.map(([n, l]) => (
-                <div key={l} className="rounded-2xl bg-white p-3 shadow-mac-sm">
+              {tiles.map(([n, l, label, onClick]) => (
+                <button key={l} type="button" onClick={onClick} aria-label={label}
+                  className="rounded-2xl bg-white p-3 shadow-mac-sm transition hover:-translate-y-0.5 hover:shadow-mac focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400">
                   <div className="text-2xl font-extrabold text-navy-700">{n}</div>
-                  <div className="text-xs text-gray-500">{l}</div>
-                </div>
+                  <div className="text-xs text-gray-500">{l} ›</div>
+                </button>
               ))}
             </div>
           </div>
@@ -248,6 +252,13 @@ export default function PostsPage() {
             <span className="rounded-full bg-brand-400/15 px-3 py-1 text-xs font-medium text-brand-600">
               「{applied.q}」で絞り込み中
               <button onClick={() => pickCategory('')} className="ml-1.5 font-bold">×</button>
+            </span>
+          )}
+          {/* #210 合格バッジ・タイルからの絞り込み中であることを明示し、解除できるようにする。 */}
+          {applied.approved && (
+            <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">
+              🏅 合格作品のみ
+              <button onClick={() => setFilter({ approved: false })} className="ml-1.5 font-bold" aria-label="合格作品の絞り込みを解除">×</button>
             </span>
           )}
           <Link to="/posts/new" className="mac-btn-brand ml-auto">＋ 投稿する</Link>

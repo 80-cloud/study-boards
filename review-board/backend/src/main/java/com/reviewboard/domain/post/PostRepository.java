@@ -30,6 +30,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
      *       本文に無くてもヒットさせる（F-SEARCH-01「観点から探す」）。空集合なら一致しない。</li>
      *   <li>{@code status}：募集状態（OPEN/CLOSED）。null なら無視。</li>
      *   <li>{@code unreviewedOnly}：true なら未レビュー（review_count = 0）のみ。</li>
+     *   <li>{@code approvedOnly}：true なら最新評価が「合格」の投稿のみ（合格バッジ一覧・#210）。</li>
      * </ul>
      * 並び順は {@link Pageable} の Sort で与える（新着 / レビュー数）。
      */
@@ -43,6 +44,10 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                    or exists (select 1 from p.reviewTones tn where tn in :tones))
               and (:status is null or p.recruitStatus = :status)
               and (:unreviewedOnly = false or p.reviewCount = 0)
+              and (:approvedOnly = false
+                   or exists (select 1 from Evaluation e
+                              where e.postId = p.id and e.latest = true
+                                and e.result = com.reviewboard.domain.evaluation.EvaluationResult.APPROVED))
             """)
     Slice<Post> search(@Param("cohortId") Long cohortId,
                        @Param("q") String q,
@@ -50,5 +55,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                        @Param("tones") Collection<ReviewTone> tones,
                        @Param("status") RecruitStatus status,
                        @Param("unreviewedOnly") boolean unreviewedOnly,
+                       @Param("approvedOnly") boolean approvedOnly,
                        Pageable pageable);
 }

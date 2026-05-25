@@ -4,6 +4,7 @@ import com.reviewboard.domain.auth.AuthPrincipal;
 import com.reviewboard.domain.review.dto.GrowthUpdateRequest;
 import com.reviewboard.domain.review.dto.ReplyRequest;
 import com.reviewboard.domain.review.dto.ReplyResponse;
+import com.reviewboard.domain.review.dto.CohortReviewResponse;
 import com.reviewboard.domain.review.dto.ReviewCreateRequest;
 import com.reviewboard.domain.review.dto.ReviewResponse;
 import jakarta.validation.Valid;
@@ -34,6 +35,15 @@ public class ReviewController {
                                                  @Valid @RequestBody ReviewCreateRequest request) {
         ReviewResponse res = reviewService.create(principal, postId, request);
         return ResponseEntity.created(URI.create("/api/reviews/" + res.id())).body(res);
+    }
+
+    /**
+     * cohort 全体のレビュー一覧（#210）。★S軸：自 cohort の投稿に付いたレビューのみ（越境しない）。
+     * トップ統計「レビュー」タイルからの導線。投稿タイトル付きで新着順に返す。
+     */
+    @GetMapping("/api/reviews")
+    public List<CohortReviewResponse> listForCohort(@AuthenticationPrincipal AuthPrincipal principal) {
+        return reviewService.listForCohort(principal);
     }
 
     /** F-REV-01/02 一覧（reviewer の role を含む＝講師の特別表示が可能） */
