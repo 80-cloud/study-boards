@@ -76,9 +76,9 @@ public class AuthService {
         if (!passwordEncoder.matches(rawPassword, user.getPasswordHash())) {
             throw new BadCredentialsException();
         }
-        // #229 無効化（kick）されたアカウントはログイン不可（403）。
-        if (user.getStatus() == com.reviewboard.domain.user.UserStatus.DISABLED) {
-            throw new org.springframework.security.access.AccessDeniedException("このアカウントは無効化されています");
+        // #229 無効化（kick）・#263 退会（DELETED）はログイン不可（403）。ACTIVE 以外は遮断。
+        if (user.getStatus() != com.reviewboard.domain.user.UserStatus.ACTIVE) {
+            throw new org.springframework.security.access.AccessDeniedException("このアカウントは利用できません");
         }
         // #235 MFA 有効：パスワードは正しいが、まだログインさせない。TOTP 確認のチャレンジを発行する。
         if (user.isMfaEnabled()) {
@@ -104,8 +104,8 @@ public class AuthService {
         if (!ok) {
             throw new BadCredentialsException();
         }
-        if (user.getStatus() == com.reviewboard.domain.user.UserStatus.DISABLED) {
-            throw new org.springframework.security.access.AccessDeniedException("このアカウントは無効化されています");
+        if (user.getStatus() != com.reviewboard.domain.user.UserStatus.ACTIVE) {
+            throw new org.springframework.security.access.AccessDeniedException("このアカウントは利用できません");
         }
         return issueSession(user);
     }
