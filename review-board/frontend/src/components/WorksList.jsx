@@ -37,7 +37,6 @@ export default function WorksList({ posts, loading, error, applied, setFilter, o
           className="rounded-xl border border-black/10 bg-white px-3 py-1.5 text-sm text-gray-700 outline-none">
           <option value="newest">新着順</option>
           <option value="reviews">レビュー数順</option>
-          <option value="likes">いいね順</option>
         </select>
         {applied.q && (
           <span className="rounded-full bg-brand-400/15 px-3 py-1 text-xs font-medium text-brand-600">
