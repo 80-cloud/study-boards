@@ -37,7 +37,6 @@ export default function PostsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [stats, setStats] = useState(null);
-  const [ranking, setRanking] = useState([]);
 
   // 検索・絞り込み・並び替え。初期 q はヘッダー検索からの URL パラメータを尊重。
   const [q, setQ] = useState(searchParams.get('q') ?? '');
@@ -51,7 +50,7 @@ export default function PostsPage() {
     setQ(urlQ);
     setApplied((p) => ({ ...p, q: urlQ }));
     if (urlQ) {
-      // レイアウト確定後にスクロール（ランキング・統計の読み込みでズレないよう少し待つ）。
+      // レイアウト確定後にスクロール（統計の読み込みでズレないよう少し待つ）。
       const t = setTimeout(scrollToWorks, 120);
       return () => clearTimeout(t);
     }
@@ -69,8 +68,6 @@ export default function PostsPage() {
 
   useEffect(() => {
     fetchLandingStats().then(setStats).catch(() => {});
-    // いいね人気ランキング：いいね数順の上位3件。
-    fetchPosts({ sort: 'likes' }, 0, 3).then((s) => setRanking(s.content ?? [])).catch(() => {});
   }, []);
 
   const submitSearch = (e) => {
@@ -183,34 +180,7 @@ export default function PostsPage() {
         </div>
       </section>
 
-      {/* RANKING：いいね数順の人気成果物トップ3（👍 が基準） */}
-      {ranking.length > 0 && (
-        <section className="mx-auto max-w-6xl px-6 py-14">
-          <Eyebrow>RANKING</Eyebrow>
-          <SectionHeading>いいね人気ランキング</SectionHeading>
-          <div className="mt-9 grid grid-cols-1 gap-5 md:grid-cols-3">
-            {ranking.map((p, i) => {
-              const medal = ['🥇', '🥈', '🥉'][i] ?? `#${i + 1}`;
-              return (
-                <Link key={p.id} to={`/posts/${p.id}`}
-                  className="group relative flex items-center gap-4 rounded-2xl border border-black/5 bg-white p-5 shadow-mac-sm transition hover:-translate-y-1 hover:shadow-mac">
-                  <span className="text-3xl leading-none">{medal}</span>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="line-clamp-2 text-[15px] font-bold leading-snug text-navy-700">{p.title}</h3>
-                    <div className="mt-1 flex items-center gap-2 text-xs text-gray-500">
-                      <Avatar name={p.authorDisplayName ?? ''} size="sm" />
-                      <span className="truncate">{p.authorDisplayName ?? '—'}</span>
-                    </div>
-                  </div>
-                  <span className="flex flex-shrink-0 items-center gap-1 rounded-full bg-navy-700/[0.06] px-3 py-1 text-sm font-bold text-navy-700">
-                    👍 <span className="tabular-nums">{p.likeCount}</span>
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-      )}
+      {/* いいね人気ランキングは非競争方針との矛盾のため撤去（#269）。👍 は各投稿に「軽い励まし」として残す。 */}
 
       {/* WORKS：成果物一覧（検索/絞り込み/並び替えの機能はここに集約。専用ページ /works と共通部品で共有） */}
       <section id="works" className="mx-auto max-w-6xl px-6 py-14">
