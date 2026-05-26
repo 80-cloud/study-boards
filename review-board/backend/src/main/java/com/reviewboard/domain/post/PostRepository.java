@@ -59,6 +59,20 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             + "where p.cohortId = :cohortId and p.deletedAt is null group by p.authorUserId")
     List<Object[]> lastPostAtByAuthor(@Param("cohortId") Long cohortId);
 
+    // ---- 週次トレンド（#275）：期間 [start, end) の集計（週バケットをループで叩く） ----
+
+    /** cohort 内・期間 [start, end) の非削除投稿数。 */
+    @Query("select count(p) from Post p where p.cohortId = :cohortId and p.deletedAt is null "
+            + "and p.createdAt >= :start and p.createdAt < :end")
+    long countPostsInRange(@Param("cohortId") Long cohortId,
+                           @Param("start") OffsetDateTime start, @Param("end") OffsetDateTime end);
+
+    /** cohort 内・期間 [start, end) の distinct な投稿者数。 */
+    @Query("select count(distinct p.authorUserId) from Post p where p.cohortId = :cohortId and p.deletedAt is null "
+            + "and p.createdAt >= :start and p.createdAt < :end")
+    long countDistinctPostersInRange(@Param("cohortId") Long cohortId,
+                                     @Param("start") OffsetDateTime start, @Param("end") OffsetDateTime end);
+
     /**
      * 一覧・検索・絞り込み（F-POST-03 / F-SEARCH-01 / F-FILTER-01）。
      * ★cohort 境界（IDOR 遮断）は常に効かせたまま、任意条件を AND で重ねる。

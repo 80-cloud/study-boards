@@ -2,6 +2,7 @@ package com.reviewboard.domain.insights;
 
 import com.reviewboard.domain.auth.AuthPrincipal;
 import com.reviewboard.domain.insights.dto.EngagementMetricsResponse;
+import com.reviewboard.domain.insights.dto.WeeklyTrendResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,5 +38,19 @@ public class InsightsController {
                     defaultValue = "" + EngagementMetricsService.DEFAULT_STAGNANT_DAYS) int days) {
         int clamped = Math.min(Math.max(days, 1), 365);
         return engagementMetricsService.compute(principal, clamped);
+    }
+
+    /**
+     * 自 cohort の週次トレンド（#275・運営ダッシュボードの推移グラフ用）。
+     *
+     * @param weeks 取得する週数（7 日バケット）。1〜52 にクランプ。既定は 8。
+     */
+    @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
+    @GetMapping("/engagement/trend")
+    public WeeklyTrendResponse engagementTrend(
+            @AuthenticationPrincipal AuthPrincipal principal,
+            @RequestParam(name = "weeks", required = false, defaultValue = "8") int weeks) {
+        int clamped = Math.min(Math.max(weeks, 1), 52);
+        return engagementMetricsService.computeTrend(principal, clamped);
     }
 }

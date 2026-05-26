@@ -8,6 +8,8 @@ import com.reviewboard.domain.insights.dto.EngagementMetricsResponse.Quality;
 import com.reviewboard.domain.insights.dto.EngagementMetricsResponse.Reviews;
 import com.reviewboard.domain.insights.dto.EngagementMetricsResponse.StagnantMember;
 import com.reviewboard.domain.insights.dto.EngagementMetricsResponse.Ttfr;
+import com.reviewboard.domain.insights.dto.WeeklyTrendResponse;
+import com.reviewboard.domain.insights.dto.WeeklyTrendResponse.WeekBucket;
 import com.reviewboard.domain.post.PostRepository;
 import com.reviewboard.domain.review.ReviewAxisCommentRepository;
 import com.reviewboard.domain.review.ReviewRepository;
@@ -106,6 +108,29 @@ public class EngagementMetricsService {
         return new EngagementMetricsResponse(
                 cohortId, now, members, posts, reviews, reviewCoverageRate, ttfr,
                 weeklyActiveReviewers, weeklyActiveReviewerRate, weeklyActivePosters, quality, stagnant);
+    }
+
+    /**
+     * 週次トレンド（#275）。直近 weeks 週を 7 日バケットで集計し、古い週 → 新しい週の順で返す。
+     * 週数が小さい（既定8）ため週ごとに期間付きクエリをループで叩く（材料化は不要）。
+     */
+    @Transactional(readOnly = true)
+    public WeeklyTrendResponse computeTrend(AuthPrincipal principal, int weeks) {
+        Long cohortId = principal.cohortId();
+        OffsetDateTime now = OffsetDateTime.now();
+        List<WeekBucket> buckets = new ArrayList<>();
+        // i=0 が最古、i=weeks-1 が最新（now で終わる窓）。
+        for (int i = 0; i < weeks; i++) {
+            OffsetDateTime start = now.minusDays(7L * (weeks - i));
+            OffsetDateTime end = now.minusDays(7L * (weeks - i - 1));
+            buckets.add(new WeekBucket(
+                    start,
+                    reviewRepository.countDistinctReviewersInRange(cohortId, start, end),
+                    postRepository.countDistinctPostersInRange(cohortId, start, end),
+                    postRepository.countPostsInRange(cohortId, start, end),
+                    reviewRepository.countReviewsInRange(cohortId, start, end)));
+        }
+        return new WeeklyTrendResponse(cohortId, now, buckets);
     }
 
     private Ttfr computeTtfr(Long cohortId, OffsetDateTime since30, OffsetDateTime now) {

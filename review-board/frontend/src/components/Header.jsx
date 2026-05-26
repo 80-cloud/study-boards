@@ -59,7 +59,10 @@ export default function Header() {
             </form>
             <Link to="/posts/new" className="hidden shrink-0 whitespace-nowrap rounded-lg bg-wrblue-500 px-3.5 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-wrblue-600 sm:inline-flex">＋ 投稿する</Link>
             {(user.role === 'TEACHER' || user.role === 'ADMIN') && (
-              <Link to="/invites" className="hidden shrink-0 whitespace-nowrap text-sm font-medium text-gray-600 transition hover:text-navy-700 lg:inline">招待</Link>
+              <>
+                <Link to="/dashboard" className="hidden shrink-0 whitespace-nowrap text-sm font-medium text-gray-600 transition hover:text-navy-700 lg:inline">ダッシュボード</Link>
+                <Link to="/invites" className="hidden shrink-0 whitespace-nowrap text-sm font-medium text-gray-600 transition hover:text-navy-700 lg:inline">招待</Link>
+              </>
             )}
             <Link to="/notifications" className="relative text-gray-500 transition hover:text-navy-700" aria-label={`通知${unread > 0 ? `（未読 ${unread} 件）` : ''}`}>
               <span className="inline-block text-xl leading-none">🔔</span>
