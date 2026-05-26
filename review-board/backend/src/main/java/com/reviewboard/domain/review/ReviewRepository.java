@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -36,4 +37,31 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     @Query("select count(r) from Review r where r.deletedAt is null "
             + "and r.postId in (select p.id from Post p where p.authorUserId = :authorId)")
     int countReceivedForAuthor(@Param("authorId") Long authorId);
+
+    // ---- エンゲージメント計測（#273・運営限定）。cohort 境界は review.postId → post.cohortId の join で絞る ----
+
+    /** cohort 内の未削除レビュー総数。 */
+    @Query("select count(r) from Review r join Post p on p.id = r.postId "
+            + "where p.cohortId = :cohortId and r.deletedAt is null")
+    long countReviewsInCohort(@Param("cohortId") Long cohortId);
+
+    /** cohort 内・直近窓（since 以降）の未削除レビュー数。 */
+    @Query("select count(r) from Review r join Post p on p.id = r.postId "
+            + "where p.cohortId = :cohortId and r.deletedAt is null and r.createdAt > :since")
+    long countReviewsInCohortSince(@Param("cohortId") Long cohortId, @Param("since") OffsetDateTime since);
+
+    /** cohort 内・直近窓に1件以上レビューした distinct なレビュアー数（週次アクティブレビュアー）。 */
+    @Query("select count(distinct r.reviewerUserId) from Review r join Post p on p.id = r.postId "
+            + "where p.cohortId = :cohortId and r.deletedAt is null and r.createdAt > :since")
+    long countDistinctActiveReviewers(@Param("cohortId") Long cohortId, @Param("since") OffsetDateTime since);
+
+    /** 質指標：cohort 内で🙏を1件以上受けた未削除レビュー数（🙏率の分子）。 */
+    @Query("select count(r) from Review r join Post p on p.id = r.postId "
+            + "where p.cohortId = :cohortId and r.deletedAt is null and r.thanksCount > 0")
+    long countThankedReviewsInCohort(@Param("cohortId") Long cohortId);
+
+    /** 停滞判定用：cohort 内のレビュアーごとの最終レビュー時刻。返却：{@code [reviewerUserId, max(createdAt)]}。 */
+    @Query("select r.reviewerUserId, max(r.createdAt) from Review r join Post p on p.id = r.postId "
+            + "where p.cohortId = :cohortId and r.deletedAt is null group by r.reviewerUserId")
+    List<Object[]> lastReviewAtByReviewer(@Param("cohortId") Long cohortId);
 }
