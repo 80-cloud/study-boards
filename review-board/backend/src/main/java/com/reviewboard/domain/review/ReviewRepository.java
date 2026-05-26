@@ -64,4 +64,18 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     @Query("select r.reviewerUserId, max(r.createdAt) from Review r join Post p on p.id = r.postId "
             + "where p.cohortId = :cohortId and r.deletedAt is null group by r.reviewerUserId")
     List<Object[]> lastReviewAtByReviewer(@Param("cohortId") Long cohortId);
+
+    // ---- 週次トレンド（#275）：期間 [start, end) の集計 ----
+
+    /** cohort 内・期間 [start, end) の非削除レビュー数。 */
+    @Query("select count(r) from Review r join Post p on p.id = r.postId "
+            + "where p.cohortId = :cohortId and r.deletedAt is null and r.createdAt >= :start and r.createdAt < :end")
+    long countReviewsInRange(@Param("cohortId") Long cohortId,
+                             @Param("start") OffsetDateTime start, @Param("end") OffsetDateTime end);
+
+    /** cohort 内・期間 [start, end) の distinct なレビュアー数。 */
+    @Query("select count(distinct r.reviewerUserId) from Review r join Post p on p.id = r.postId "
+            + "where p.cohortId = :cohortId and r.deletedAt is null and r.createdAt >= :start and r.createdAt < :end")
+    long countDistinctReviewersInRange(@Param("cohortId") Long cohortId,
+                                       @Param("start") OffsetDateTime start, @Param("end") OffsetDateTime end);
 }
