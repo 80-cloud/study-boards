@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { fetchProfile, updateMyProfile } from '../api/profile';
 import { fetchNotificationPrefs, updateNotificationPrefs } from '../api/notificationPrefs';
 import { setupMfa, enableMfa, disableMfa, getRecoveryStatus, regenerateRecoveryCodes } from '../api/mfa';
-import { exportMyData } from '../api/me';
+import { exportMyData, deleteMyAccount } from '../api/me';
 import { ROLE_LABEL, EVAL_LABEL } from '../constants';
 import { useAuth } from '../context/AuthContext';
 import Avatar from '../components/Avatar';
@@ -523,11 +523,11 @@ function RecoveryCodesPanel({ codes, onDone }) {
   );
 }
 
-// データと privacy（本人のみ・#261）。自分のデータを JSON でエクスポート（ダウンロード）。
-// 退会（アカウント削除）は後続で本カードに追加予定。
+// データと privacy（本人のみ・#261/#263）。自分のデータの JSON エクスポートと退会（論理削除＋匿名化）。
 function DataPrivacyCard() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const onExport = async () => {
     setError('');
@@ -548,6 +548,19 @@ function DataPrivacyCard() {
     }
   };
 
+  const onDelete = async () => {
+    setError('');
+    setBusy(true);
+    try {
+      await deleteMyAccount();
+      // サーバが認証 Cookie を消すので、全状態を破棄して公開ページへ。
+      window.location.assign('/login');
+    } catch {
+      setError('退会処理に失敗しました');
+      setBusy(false);
+    }
+  };
+
   return (
     <section className="mac-panel p-5">
       <h3 className="mac-h text-lg">データと privacy</h3>
@@ -558,6 +571,28 @@ function DataPrivacyCard() {
       <button onClick={onExport} disabled={busy} className="mac-btn-ghost">
         {busy ? '準備中…' : 'データをエクスポート'}
       </button>
+
+      <div className="mt-5 border-t border-black/5 pt-4">
+        <h4 className="text-sm font-semibold text-gray-700">退会（アカウント削除）</h4>
+        <p className="mt-1 text-xs text-gray-500">
+          退会すると、メールアドレス・表示名などの個人情報は削除（匿名化）され、以後ログインできなく
+          なります。これまでの投稿・レビューは「退会したユーザー」の寄与として残ります。この操作は取り消せません。
+        </p>
+        {!confirmingDelete ? (
+          <button onClick={() => { setConfirmingDelete(true); setError(''); }} disabled={busy}
+            className="mac-btn-ghost mt-3 text-red-600">退会する</button>
+        ) : (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="text-sm text-red-600">本当に退会しますか？</span>
+            <button onClick={onDelete} disabled={busy} className="mac-btn-ghost text-red-600">
+              {busy ? '処理中…' : '退会を確定する'}
+            </button>
+            <button onClick={() => setConfirmingDelete(false)} disabled={busy} className="mac-btn-ghost">
+              キャンセル
+            </button>
+          </div>
+        )}
+      </div>
     </section>
   );
 }
