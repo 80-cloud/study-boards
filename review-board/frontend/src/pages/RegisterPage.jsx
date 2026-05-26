@@ -77,6 +77,11 @@ export default function RegisterPage() {
           <button type="submit" disabled={submitting} className="mac-btn-navy w-full py-2.5">
             {submitting ? '登録中…' : '登録して始める'}
           </button>
+
+          <p className="mt-3 text-center text-[11px] leading-relaxed text-gray-400">
+            登録すると <Link to="/terms" className="underline hover:text-navy-700">利用規約</Link> と{' '}
+            <Link to="/privacy" className="underline hover:text-navy-700">プライバシーポリシー</Link> に同意したものとみなされます。
+          </p>
         </form>
 
         <p className="mt-6 text-center text-xs text-gray-400">
