@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -23,6 +24,40 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     /** 週次ダイジェスト（C-5・#233）：cohort 内の未レビュー（review_count=0）成果物の件数。 */
     int countByCohortIdAndDeletedAtIsNullAndReviewCount(Long cohortId, int reviewCount);
+
+    // ---- エンゲージメント計測（#273・運営限定・compute-on-read） ----
+
+    /** cohort 内の非削除投稿総数（レビュー網羅率の分母）。 */
+    long countByCohortIdAndDeletedAtIsNull(Long cohortId);
+
+    /** cohort 内・直近窓（since 以降）の非削除投稿数。 */
+    long countByCohortIdAndDeletedAtIsNullAndCreatedAtAfter(Long cohortId, OffsetDateTime since);
+
+    /** cohort 内・ベスト選出済み（best_review_id 非 null）の非削除投稿数（質指標）。 */
+    long countByCohortIdAndDeletedAtIsNullAndBestReviewIdIsNotNull(Long cohortId);
+
+    /**
+     * time-to-first-review 用：直近窓の各投稿について「投稿時刻」と「最初の未削除レビュー時刻（無ければ null）」を返す。
+     * percentile は DB 非依存とするため duration の算出・集計は Java 側で行う。
+     * 返却：{@code [postId, postCreatedAt, firstReviewAtOrNull]}。
+     */
+    @Query("""
+            select p.id, p.createdAt, min(r.createdAt)
+            from Post p left join Review r on r.postId = p.id and r.deletedAt is null
+            where p.cohortId = :cohortId and p.deletedAt is null and p.createdAt > :since
+            group by p.id, p.createdAt
+            """)
+    List<Object[]> firstReviewTimings(@Param("cohortId") Long cohortId, @Param("since") OffsetDateTime since);
+
+    /** cohort 内・直近窓に投稿した distinct な投稿者数（週次アクティブ投稿者）。 */
+    @Query("select count(distinct p.authorUserId) from Post p "
+            + "where p.cohortId = :cohortId and p.deletedAt is null and p.createdAt > :since")
+    long countDistinctActivePosters(@Param("cohortId") Long cohortId, @Param("since") OffsetDateTime since);
+
+    /** 停滞判定用：cohort 内の投稿者ごとの最終投稿時刻。返却：{@code [authorUserId, max(createdAt)]}。 */
+    @Query("select p.authorUserId, max(p.createdAt) from Post p "
+            + "where p.cohortId = :cohortId and p.deletedAt is null group by p.authorUserId")
+    List<Object[]> lastPostAtByAuthor(@Param("cohortId") Long cohortId);
 
     /**
      * 一覧・検索・絞り込み（F-POST-03 / F-SEARCH-01 / F-FILTER-01）。
