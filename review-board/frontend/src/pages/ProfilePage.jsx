@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { fetchProfile, updateMyProfile } from '../api/profile';
 import { fetchNotificationPrefs, updateNotificationPrefs } from '../api/notificationPrefs';
 import { setupMfa, enableMfa, disableMfa, getRecoveryStatus, regenerateRecoveryCodes } from '../api/mfa';
+import { exportMyData } from '../api/me';
 import { ROLE_LABEL, EVAL_LABEL } from '../constants';
 import { useAuth } from '../context/AuthContext';
 import Avatar from '../components/Avatar';
@@ -68,6 +69,8 @@ export default function ProfilePage() {
       {isOwn && <NotificationPrefsCard />}
 
       {isOwn && <MfaCard />}
+
+      {isOwn && <DataPrivacyCard />}
 
       <section>
         <h3 className="mac-h mb-3 text-lg">投稿した成果物（{posts.length}）</h3>
@@ -517,6 +520,45 @@ function RecoveryCodesPanel({ codes, onDone }) {
         <button type="button" onClick={onDone} className="mac-btn-brand">保存しました（閉じる）</button>
       </div>
     </div>
+  );
+}
+
+// データと privacy（本人のみ・#261）。自分のデータを JSON でエクスポート（ダウンロード）。
+// 退会（アカウント削除）は後続で本カードに追加予定。
+function DataPrivacyCard() {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  const onExport = async () => {
+    setError('');
+    setBusy(true);
+    try {
+      const data = await exportMyData();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'my-data.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setError('エクスポートに失敗しました');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="mac-panel p-5">
+      <h3 className="mac-h text-lg">データと privacy</h3>
+      <p className="mb-4 mt-1 text-xs text-gray-500">
+        あなたのプロフィール・投稿・レビューを JSON 形式でダウンロードできます。
+      </p>
+      {error && <p className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+      <button onClick={onExport} disabled={busy} className="mac-btn-ghost">
+        {busy ? '準備中…' : 'データをエクスポート'}
+      </button>
+    </section>
   );
 }
 
