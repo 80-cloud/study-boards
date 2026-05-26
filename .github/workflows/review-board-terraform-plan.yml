@@ -44,10 +44,10 @@ jobs:
       # secret が未設定なら空文字。空かどうかで plan の実行可否を分岐する。
       AWS_KEY: ${{ secrets.AWS_ACCESS_KEY_ID }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v4
         with:
           # ローカル検証環境と version を揃える（fmt 差異の回避）。versions.tf の >= 1.5.0 を満たす。
           terraform_version: "1.15.2"
@@ -66,7 +66,7 @@ jobs:
       # ---- ここから先は AWS 認証がある時だけ（実 plan は AWS API を叩くため） ----
       - name: Configure AWS credentials
         if: env.AWS_KEY != ''
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

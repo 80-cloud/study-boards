@@ -73,7 +73,7 @@ jobs:
       SPRING_PROFILES_ACTIVE: dev
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Start MinIO + create bucket
         run: |
@@ -93,16 +93,16 @@ jobs:
           "
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
 
@@ -121,7 +121,7 @@ jobs:
         run: npm install
 
       - name: Cache Playwright browsers
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('review-board/e2e/package.json') }}
@@ -146,7 +146,7 @@ jobs:
 
       - name: Upload Playwright report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rb-playwright-report-${{ github.run_id }}
           path: review-board/e2e/playwright-report/
@@ -155,7 +155,7 @@ jobs:
 
       - name: Upload traces (failures only)
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rb-playwright-traces-${{ github.run_id }}
           path: review-board/e2e/test-results/
