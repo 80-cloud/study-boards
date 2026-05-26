@@ -157,6 +157,12 @@ export default function LoginPage() {
         <p className="mt-6 text-center text-xs text-gray-400">
           招待コードをお持ちの方は <Link to="/register" className="font-semibold text-navy-700 hover:underline">こちらから登録</Link>
         </p>
+
+        <p className="mt-4 text-center text-xs text-gray-400">
+          <Link to="/terms" className="hover:underline">利用規約</Link>
+          <span className="mx-1.5">·</span>
+          <Link to="/privacy" className="hover:underline">プライバシーポリシー</Link>
+        </p>
       </div>
     </main>
   );

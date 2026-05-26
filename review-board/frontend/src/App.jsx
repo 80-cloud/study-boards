@@ -7,6 +7,8 @@ import { APP_NAME } from './constants';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import PasswordResetPage from './pages/PasswordResetPage';
+import TermsPage from './pages/TermsPage';
+import PrivacyPage from './pages/PrivacyPage';
 import InvitesPage from './pages/InvitesPage';
 import PostsPage from './pages/PostsPage';
 import NewPostPage from './pages/NewPostPage';
@@ -49,6 +51,9 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/password-reset" element={<PasswordResetPage />} />
+        {/* 公開（ログイン不要）の法務ページ（#258） */}
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/" element={<Shell><PostsPage /></Shell>} />
         <Route path="/invites" element={<Shell><InvitesPage /></Shell>} />
         <Route path="/posts/new" element={<Shell><NewPostPage /></Shell>} />
