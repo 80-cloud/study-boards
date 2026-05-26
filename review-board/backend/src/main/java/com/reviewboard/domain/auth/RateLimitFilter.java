@@ -14,18 +14,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * ★SEC-12：認証エンドポイントの総当たり・列挙対策（軽量な in-memory 固定窓レートリミット）。
+ * ★SEC-12：認証エンドポイントの総当たり・列挙対策（固定窓レートリミット）。
  *
- * <p>POST /api/auth/{login,register,refresh} に IP 単位で上限を課す。超過は 429（JSON）。
- * 新規依存を避け、{@link ConcurrentHashMap} の固定窓で実装する。
- *
- * <p>制約：単一インスタンス前提（メモリ保持）。多インスタンス化時は共有ストア（Redis 等）が要る。
- * 本番は nginx の {@code limit_req} と併用して多層化することも可能。
+ * <p>POST /api/auth/{login,register,refresh,login/mfa,password-reset/request} に IP 単位で上限を課す。
+ * 超過は 429（JSON）。カウントは {@link RateLimitStore}（Postgres）で共有するため**多インスタンスでも有効**
+ * （#267 で in-memory から移行）。本番は nginx の {@code limit_req} と併用して多層化することも可能。
  *
  * <p>{@code @Component} の {@link OncePerRequestFilter} は Spring Boot がサーブレットチェーンへ自動登録する。
  * {@code @Order(HIGHEST_PRECEDENCE)} で Security チェーンより前段に置き、認証処理前に総当たりを弾く。
@@ -36,11 +31,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private final RateLimitProperties props;
     private final ObjectMapper objectMapper;
-    private final Map<String, Window> windows = new ConcurrentHashMap<>();
+    private final RateLimitStore store;
 
-    public RateLimitFilter(RateLimitProperties props, ObjectMapper objectMapper) {
+    public RateLimitFilter(RateLimitProperties props, ObjectMapper objectMapper, RateLimitStore store) {
         this.props = props;
         this.objectMapper = objectMapper;
+        this.store = store;
     }
 
     /** 対象は POST の login/register/refresh のみ。それ以外と無効時は素通し。 */
@@ -85,17 +81,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
         };
     }
 
-    /** 固定窓カウント。窓を跨いだらリセット。上限超過なら true。 */
+    /** 固定窓カウント（Postgres 共有・#267）。窓を跨いだらキーが変わりリセット。上限超過なら true。 */
     private boolean overLimit(String key, int limit) {
-        long now = System.currentTimeMillis();
-        long windowMs = props.windowSeconds() * 1000L;
-        Window w = windows.compute(key, (k, cur) -> {
-            if (cur == null || now - cur.startMs >= windowMs) {
-                return new Window(now);
-            }
-            return cur;
-        });
-        return w.count.incrementAndGet() > limit;
+        return store.incrementAndCount(key, props.windowSeconds()) > limit;
     }
 
     /** X-Forwarded-For（nginx 経由）の先頭ホップを優先。無ければ remoteAddr。 */
@@ -110,15 +98,6 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     /** テスト用：窓カウントを全消去（テスト間で状態を持ち越さないため）。 */
     public void clear() {
-        windows.clear();
-    }
-
-    private static final class Window {
-        final long startMs;
-        final AtomicInteger count = new AtomicInteger(0);
-
-        Window(long startMs) {
-            this.startMs = startMs;
-        }
+        store.clear();
     }
 }
