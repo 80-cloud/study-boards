@@ -93,11 +93,32 @@ tasks.named('test') {
 	finalizedBy jacocoTestReport
 }
 
-// JaCoCo カバレッジ。Phase 1 はレポート生成のみ・閾値ゲートなし（テスト計画書 §5）。
+// JaCoCo カバレッジ。レポート生成＋回帰床ゲート（母 M-9・#251）。
 jacocoTestReport {
 	dependsOn test
 	reports {
 		xml.required = true
 		html.required = true
+	}
+}
+
+// カバレッジ回帰床（#251）。満点目標ではなく「静かに下がるのを防ぐ床」。
+// 現状（INSTRUCTION 83% / BRANCH 61%）に余裕を持たせて flaky 化を避ける。
+// テスト拡充に伴い将来引き上げてよい。
+jacocoTestCoverageVerification {
+	dependsOn jacocoTestReport
+	violationRules {
+		rule {
+			limit {
+				counter = 'INSTRUCTION'
+				value = 'COVEREDRATIO'
+				minimum = 0.75
+			}
+			limit {
+				counter = 'BRANCH'
+				value = 'COVEREDRATIO'
+				minimum = 0.50
+			}
+		}
 	}
 }
