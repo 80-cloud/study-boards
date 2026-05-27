@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuiz } from "./hooks/useQuiz";
 import { useUserContent } from "./hooks/useUserContent";
 import { useBookmarks } from "./hooks/useBookmarks";
+import { useTheme } from "./hooks/useTheme";
 import { CategoryFilter } from "./components/CategoryFilter";
 import { QuizView } from "./components/QuizView";
 import { InterviewView } from "./components/InterviewView";
@@ -12,6 +13,7 @@ type View = "quiz" | "dictionary" | "interview" | "author";
 
 export default function App() {
   const [view, setView] = useState<View>("quiz");
+  const theme = useTheme();
   const user = useUserContent();
   const bookmarks = useBookmarks();
   // ユーザー作問の件数を渡し、追加・取り込みで出題に即反映する（F-USER）。
@@ -22,21 +24,41 @@ export default function App() {
       : 0;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="border-b border-slate-200 bg-white">
+    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+      <header className="border-b border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
         <div className="mx-auto flex max-w-2xl flex-col gap-3 px-4 py-4">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 className="text-xl font-bold">IT用語ボード</h1>
-              <p className="text-xs text-slate-500">面接で言えるまで、4択で定着させる</p>
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <h1 className="text-xl font-bold">IT用語ボード</h1>
+                <p className="text-xs text-slate-500 dark:text-slate-400">面接で言えるまで、4択で定着させる</p>
+              </div>
+              <button
+                type="button"
+                onClick={theme.toggle}
+                aria-label={theme.theme === "dark" ? "ライトモードに切り替え" : "ダークモードに切り替え"}
+                className="rounded-lg px-2 py-1 text-lg ring-1 ring-slate-300 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400 dark:ring-slate-600 dark:hover:bg-slate-700 sm:hidden"
+              >
+                {theme.theme === "dark" ? "☀️" : "🌙"}
+              </button>
             </div>
-            {view === "quiz" && quiz.status === "ready" && (
-              <CategoryFilter
-                categories={quiz.categories}
-                value={quiz.category}
-                onChange={quiz.setCategory}
-              />
-            )}
+            <div className="flex items-center gap-2">
+              {view === "quiz" && quiz.status === "ready" && (
+                <CategoryFilter
+                  categories={quiz.categories}
+                  value={quiz.category}
+                  onChange={quiz.setCategory}
+                />
+              )}
+              <button
+                type="button"
+                onClick={theme.toggle}
+                aria-label={theme.theme === "dark" ? "ライトモードに切り替え" : "ダークモードに切り替え"}
+                className="hidden rounded-lg px-2 py-1 text-lg ring-1 ring-slate-300 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400 dark:ring-slate-600 dark:hover:bg-slate-700 sm:block"
+              >
+                {theme.theme === "dark" ? "☀️" : "🌙"}
+              </button>
+            </div>
           </div>
 
           <nav className="flex flex-wrap gap-2" aria-label="モード切替">
@@ -51,18 +73,18 @@ export default function App() {
       <main className="mx-auto max-w-2xl px-4 py-6">
         {view === "quiz" && (
           <>
-            {quiz.status === "loading" && <p className="text-center text-slate-500">読み込み中…</p>}
+            {quiz.status === "loading" && <p className="text-center text-slate-500 dark:text-slate-400">読み込み中…</p>}
             {quiz.status === "error" && (
-              <p className="rounded-xl bg-rose-50 p-4 text-center text-rose-700 ring-1 ring-rose-200">
+              <p className="rounded-xl bg-rose-50 p-4 text-center text-rose-700 ring-1 ring-rose-200 dark:bg-rose-950 dark:text-rose-300 dark:ring-rose-900">
                 用語データを読み込めませんでした。
               </p>
             )}
             {quiz.status === "ready" && (
               <>
-                <div className="mb-5 flex items-center justify-between rounded-xl bg-white px-4 py-3 text-sm shadow-sm ring-1 ring-slate-200">
-                  <span className="text-slate-600">解答数 <span className="font-bold text-slate-900">{quiz.answeredCount}</span></span>
-                  <span className="text-slate-600">正答 <span className="font-bold text-emerald-700">{quiz.correctCount}</span></span>
-                  <span className="text-slate-600">正答率 <span className="font-bold text-sky-700">{rate}%</span></span>
+                <div className="mb-5 flex items-center justify-between rounded-xl bg-white px-4 py-3 text-sm shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
+                  <span className="text-slate-600 dark:text-slate-300">解答数 <span className="font-bold text-slate-900 dark:text-slate-100">{quiz.answeredCount}</span></span>
+                  <span className="text-slate-600 dark:text-slate-300">正答 <span className="font-bold text-emerald-700 dark:text-emerald-400">{quiz.correctCount}</span></span>
+                  <span className="text-slate-600 dark:text-slate-300">正答率 <span className="font-bold text-sky-700 dark:text-sky-400">{rate}%</span></span>
                 </div>
                 {quiz.question ? (
                   <QuizView
@@ -73,7 +95,7 @@ export default function App() {
                     onNext={quiz.next}
                   />
                 ) : (
-                  <p className="text-center text-slate-500">この分野には出題できる用語がありません。</p>
+                  <p className="text-center text-slate-500 dark:text-slate-400">この分野には出題できる用語がありません。</p>
                 )}
               </>
             )}
@@ -107,7 +129,9 @@ function NavTab({
       onClick={onClick}
       aria-current={active ? "page" : undefined}
       className={`rounded-lg px-3 py-1.5 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-sky-400 ${
-        active ? "bg-sky-700 text-white" : "bg-white text-slate-600 ring-1 ring-slate-300"
+        active
+          ? "bg-sky-700 text-white"
+          : "bg-white text-slate-600 ring-1 ring-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-600"
       }`}
     >
       {children}

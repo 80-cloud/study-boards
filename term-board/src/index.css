@@ -1,1 +1,5 @@
 @import "tailwindcss";
+
+/* B2: ダークを「クラス式」に（.dark 配下でのみ dark: が効く）。
+   prefers-color-scheme 依存だと背景と文字が食い違うため、手動トグルで制御する。 */
+@custom-variant dark (&:where(.dark, .dark *));
