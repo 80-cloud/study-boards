@@ -1,4 +1,4 @@
-import type { Term, Progress, UserContent } from "../types";
+import type { Term, Progress, UserContent, ProfileDraft } from "../types";
 
 // 要件定義書 §8-4「api/ 層の隔離（育つ設計の核）」。
 // 画面・フックは「データがどこから来るか」を知らず、このインタフェースだけに依存する。
@@ -20,4 +20,8 @@ export interface TermRepository {
   // B3: 学習した日（YYYY-MM-DD の配列）。ストリーク・学習日数の算出に使う。
   getStudyDays(): Promise<string[]>;
   recordStudyDay(day: string): Promise<void>;
+
+  // B5: 自己紹介・志望動機の下書き。
+  getProfileDraft(): Promise<ProfileDraft | null>;
+  saveProfileDraft(p: ProfileDraft): Promise<void>;
 }
