@@ -127,6 +127,8 @@ export function useQuiz(reloadKey: number | string = 0): UseQuiz {
         void repository.saveProgress(updated);
         return updated;
       });
+      // B3: 学習した日を記録（ストリーク・学習日数の算出用）。ローカル日付。
+      void repository.recordStudyDay(new Date().toLocaleDateString("sv-SE"));
     },
     [question, selected],
   );

@@ -6,6 +6,7 @@ import termsData from "../data/terms.json";
 const PROGRESS_KEY = "term-board:progress:v1";
 const USER_CONTENT_KEY = "term-board:userContent:v1";
 const BOOKMARKS_KEY = "term-board:bookmarks:v1";
+const STUDY_DAYS_KEY = "term-board:studyDays:v1";
 
 const EMPTY_USER_CONTENT: UserContent = { quizTerms: [], interviewQuestions: [] };
 
@@ -95,6 +96,27 @@ export const localStorageTermRepository: TermRepository = {
       localStorage.setItem(BOOKMARKS_KEY, JSON.stringify(ids));
     } catch {
       console.warn("[term-board] ブックマークの保存に失敗しました。");
+    }
+  },
+
+  async getStudyDays(): Promise<string[]> {
+    try {
+      const raw = localStorage.getItem(STUDY_DAYS_KEY);
+      if (!raw) return [];
+      const parsed: unknown = JSON.parse(raw);
+      return Array.isArray(parsed) ? (parsed as string[]) : [];
+    } catch {
+      return [];
+    }
+  },
+
+  async recordStudyDay(day: string): Promise<void> {
+    try {
+      const days = await this.getStudyDays();
+      if (days.includes(day)) return;
+      localStorage.setItem(STUDY_DAYS_KEY, JSON.stringify([...days, day]));
+    } catch {
+      // 記録失敗でも学習は継続
     }
   },
 };
