@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Term, Progress, LearningSession } from "../types";
 import { repository } from "../api";
 import type { UseBookmarks } from "../hooks/useBookmarks";
+import { DataManager } from "./DataManager";
 
 type Props = { bookmarks: UseBookmarks };
 
@@ -207,6 +208,8 @@ export function DashboardView({ bookmarks }: Props) {
       <p className="text-center text-xs text-slate-500 dark:text-slate-400">
         学習日数 {studyDays.length} 日 ／ 未学習 {unlearned} 件
       </p>
+
+      <DataManager />
     </section>
   );
 }

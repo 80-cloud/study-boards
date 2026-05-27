@@ -28,4 +28,10 @@ export interface TermRepository {
   // F-INTV-02: 学習ログ（面接練習の自己採点など）。追記方式で蓄積する。
   getLearningLog(): Promise<LearningSession[]>;
   appendLearningSession(session: LearningSession): Promise<void>;
+
+  // F-PROG-04 / F-LOG-05: データの入出力・初期化。
+  // サーバー無しのためブラウザのデータをバックアップ・移行できるようにする。
+  exportAll(): Promise<string>; // 全データを JSON 文字列で返す
+  importAll(json: string): Promise<boolean>; // 復元（成功なら true）
+  resetProgress(): Promise<void>; // 学習進捗（正誤・学習日・学習ログ）を初期化
 }
