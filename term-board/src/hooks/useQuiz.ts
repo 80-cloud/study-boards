@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Term, Progress } from "../types";
 import { repository } from "../api";
-import { shuffle, pickRandom } from "../utils/shuffle";
+import { shuffle, pickWeighted } from "../utils/shuffle";
 
 // 1問分の出題データ。options は正解 meaning と distractors を混ぜてシャッフル済み（F-QUIZ-03）。
 export type Question = {
@@ -16,6 +16,16 @@ export type QuizStatus = "loading" | "ready" | "error";
 function buildQuestion(term: Term): Question {
   const options = shuffle([term.meaning, ...term.distractors]);
   return { term, options, answer: term.meaning };
+}
+
+// F-QUIZ-05: SRS（間隔反復）の出題優先度。Leitner 方式の簡易版。
+// 未出題を最優先、誤答が多いほど高く、正答を積むほど低く（間隔が伸びる）。
+// 重みが大きいほど選ばれやすい（pickWeighted）。
+function srsWeight(p?: Progress[string]): number {
+  if (!p) return 6; // 未出題を最優先
+  const net = p.correct - p.wrong; // 定着度（正答超過＝定着）
+  // net 0 → 5、誤答超過で増、正答を積むほど減（下限1で必ず再登場の余地を残す）。
+  return Math.max(1, 5 - net);
 }
 
 export type UseQuiz = {
@@ -35,8 +45,8 @@ export type UseQuiz = {
 // reloadKey: ユーザー作問の件数などを渡すと、変化時に用語を再読込して出題に反映する（F-USER）。
 export function useQuiz(reloadKey: number | string = 0): UseQuiz {
   const [terms, setTerms] = useState<Term[]>([]);
-  // 進捗の現在値は Phase3 のダッシュボードで読む。MVP では記録（localStorage 保存）だけ行う。
-  const [, setProgress] = useState<Progress>({});
+  // 進捗は SRS の出題優先度に使う。再レンダーを誘発せず常に最新を読むため ref で保持する。
+  const progressRef = useRef<Progress>({});
   const [status, setStatus] = useState<QuizStatus>("loading");
 
   const [category, setCategory] = useState<string>("");
@@ -57,7 +67,7 @@ export function useQuiz(reloadKey: number | string = 0): UseQuiz {
         ]);
         if (!active) return;
         setTerms(loadedTerms);
-        setProgress(loadedProgress);
+        progressRef.current = loadedProgress;
         setStatus(loadedTerms.length > 0 ? "ready" : "error");
       } catch {
         if (active) setStatus("error");
@@ -79,7 +89,8 @@ export function useQuiz(reloadKey: number | string = 0): UseQuiz {
     [terms, category],
   );
 
-  // 次の問題を出す。直前と同じ用語が連続しないよう軽く避ける。
+  // 次の問題を出す。SRS の重み付き選択で苦手・未出題を優先しつつ、
+  // 直前と同じ用語が連続しないよう軽く避ける。
   const next = useCallback(() => {
     if (pool.length === 0) {
       setQuestion(null);
@@ -87,9 +98,10 @@ export function useQuiz(reloadKey: number | string = 0): UseQuiz {
     }
     setSelected(null);
     setQuestion((prev) => {
-      let picked = pickRandom(pool);
+      const pick = () => pickWeighted(pool, (t) => srsWeight(progressRef.current[t.id]));
+      let picked = pick();
       if (pool.length > 1 && prev) {
-        while (picked.id === prev.term.id) picked = pickRandom(pool);
+        while (picked.id === prev.term.id) picked = pick();
       }
       return buildQuestion(picked);
     });
@@ -113,20 +125,20 @@ export function useQuiz(reloadKey: number | string = 0): UseQuiz {
       if (correct) setCorrectCount((n) => n + 1);
 
       const id = question.term.id;
-      setProgress((prev) => {
-        const cur = prev[id] ?? { correct: 0, wrong: 0, lastAnsweredAt: "" };
-        const updated: Progress = {
-          ...prev,
-          [id]: {
-            correct: cur.correct + (correct ? 1 : 0),
-            wrong: cur.wrong + (correct ? 0 : 1),
-            lastAnsweredAt: new Date().toISOString(),
-          },
-        };
-        // 保存は fire-and-forget（ローカル即時判定なので UI はブロックしない）。
-        void repository.saveProgress(updated);
-        return updated;
-      });
+      const prev = progressRef.current;
+      const cur = prev[id] ?? { correct: 0, wrong: 0, lastAnsweredAt: "" };
+      const updated: Progress = {
+        ...prev,
+        [id]: {
+          correct: cur.correct + (correct ? 1 : 0),
+          wrong: cur.wrong + (correct ? 0 : 1),
+          lastAnsweredAt: new Date().toISOString(),
+        },
+      };
+      // SRS の次回出題に即反映されるよう ref を更新（再レンダー不要）。
+      progressRef.current = updated;
+      // 保存は fire-and-forget（ローカル即時判定なので UI はブロックしない）。
+      void repository.saveProgress(updated);
       // B3: 学習した日を記録（ストリーク・学習日数の算出用）。ローカル日付。
       void repository.recordStudyDay(new Date().toLocaleDateString("sv-SE"));
     },
