@@ -11,11 +11,12 @@ import { DictionaryView } from "./components/DictionaryView";
 import { DashboardView } from "./components/DashboardView";
 import { PrepView } from "./components/PrepView";
 import { LearnView } from "./components/LearnView";
+import { HomeView } from "./components/HomeView";
 
-type View = "quiz" | "dictionary" | "interview" | "author" | "dashboard" | "prep" | "learn";
+type View = "home" | "quiz" | "dictionary" | "interview" | "author" | "dashboard" | "prep" | "learn";
 
 export default function App() {
-  const [view, setView] = useState<View>("quiz");
+  const [view, setView] = useState<View>("home");
   const theme = useTheme();
   const user = useUserContent();
   const bookmarks = useBookmarks();
@@ -65,6 +66,7 @@ export default function App() {
           </div>
 
           <nav className="flex flex-wrap gap-2" aria-label="モード切替">
+            <NavTab active={view === "home"} onClick={() => setView("home")}>ホーム</NavTab>
             <NavTab active={view === "quiz"} onClick={() => setView("quiz")}>4択クイズ</NavTab>
             <NavTab active={view === "dictionary"} onClick={() => setView("dictionary")}>用語辞典</NavTab>
             <NavTab active={view === "learn"} onClick={() => setView("learn")}>学ぶ</NavTab>
@@ -77,6 +79,8 @@ export default function App() {
       </header>
 
       <main className="mx-auto max-w-2xl px-4 py-6">
+        {view === "home" && <HomeView onNavigate={(v) => setView(v)} />}
+
         {view === "quiz" && (
           <>
             {quiz.status === "loading" && <p className="text-center text-slate-500 dark:text-slate-400">読み込み中…</p>}
