@@ -6,6 +6,7 @@ import { useTheme } from "./hooks/useTheme";
 import { CategoryFilter } from "./components/CategoryFilter";
 import { QuizView } from "./components/QuizView";
 import { InterviewView } from "./components/InterviewView";
+import { MockInterviewView } from "./components/MockInterviewView";
 import { AuthorView } from "./components/AuthorView";
 import { DictionaryView } from "./components/DictionaryView";
 import { DashboardView } from "./components/DashboardView";
@@ -13,7 +14,7 @@ import { PrepView } from "./components/PrepView";
 import { LearnView } from "./components/LearnView";
 import { HomeView } from "./components/HomeView";
 
-type View = "home" | "quiz" | "dictionary" | "interview" | "author" | "dashboard" | "prep" | "learn";
+type View = "home" | "quiz" | "dictionary" | "interview" | "mock" | "author" | "dashboard" | "prep" | "learn";
 
 export default function App() {
   const [view, setView] = useState<View>("home");
@@ -71,6 +72,7 @@ export default function App() {
             <NavTab active={view === "dictionary"} onClick={() => setView("dictionary")}>用語辞典</NavTab>
             <NavTab active={view === "learn"} onClick={() => setView("learn")}>学ぶ</NavTab>
             <NavTab active={view === "interview"} onClick={() => setView("interview")}>面接練習</NavTab>
+            <NavTab active={view === "mock"} onClick={() => setView("mock")}>模擬面接</NavTab>
             <NavTab active={view === "dashboard"} onClick={() => setView("dashboard")}>ダッシュボード</NavTab>
             <NavTab active={view === "prep"} onClick={() => setView("prep")}>自己PR</NavTab>
             <NavTab active={view === "author"} onClick={() => setView("author")}>マイ問題</NavTab>
@@ -123,6 +125,8 @@ export default function App() {
         {view === "interview" && (
           <InterviewView userQuestions={user.content.interviewQuestions} />
         )}
+
+        {view === "mock" && <MockInterviewView />}
 
         {view === "author" && <AuthorView user={user} />}
       </main>
