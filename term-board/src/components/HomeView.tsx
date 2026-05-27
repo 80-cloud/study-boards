@@ -1,4 +1,4 @@
-type Target = "quiz" | "card" | "dictionary" | "learn" | "interview" | "mock" | "dashboard" | "prep" | "author";
+type Target = "quiz" | "card" | "dictionary" | "learn" | "interview" | "mock" | "dashboard" | "review" | "prep" | "author";
 
 type Props = { onNavigate: (view: Target) => void };
 
@@ -10,6 +10,7 @@ const MODES: { key: Target; title: string; desc: string }[] = [
   { key: "interview", title: "面接練習", desc: "想定質問に声で答え、模範回答・型・NG例で確認。" },
   { key: "mock", title: "模擬面接", desc: "用語の説明を30秒で。模範解答と並べて自己評価する。" },
   { key: "dashboard", title: "ダッシュボード", desc: "正答率・苦手・連続学習を可視化。次の一手が分かる。" },
+  { key: "review", title: "振り返り", desc: "今日のメモと、日々の学習を時系列で振り返る。" },
   { key: "prep", title: "自己PR", desc: "自己紹介・志望動機を穴埋めで下書き作成。" },
   { key: "author", title: "マイ問題", desc: "自分で問題を作り、共有コードで配布・取り込み。" },
 ];

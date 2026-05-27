@@ -29,6 +29,10 @@ export interface TermRepository {
   getLearningLog(): Promise<LearningSession[]>;
   appendLearningSession(session: LearningSession): Promise<void>;
 
+  // F-LOG-03: 学習メモ（日付 YYYY-MM-DD → 自由テキスト）。
+  getNotes(): Promise<Record<string, string>>;
+  saveNote(day: string, text: string): Promise<void>;
+
   // F-PROG-04 / F-LOG-05: データの入出力・初期化。
   // サーバー無しのためブラウザのデータをバックアップ・移行できるようにする。
   exportAll(): Promise<string>; // 全データを JSON 文字列で返す
