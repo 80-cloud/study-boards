@@ -1,4 +1,4 @@
-import type { Term, Progress, UserContent, ProfileDraft } from "../types";
+import type { Term, Progress, UserContent, ProfileDraft, LearningSession } from "../types";
 import type { TermRepository } from "./termRepository";
 import termsData from "../data/terms.json";
 
@@ -8,6 +8,10 @@ const USER_CONTENT_KEY = "term-board:userContent:v1";
 const BOOKMARKS_KEY = "term-board:bookmarks:v1";
 const STUDY_DAYS_KEY = "term-board:studyDays:v1";
 const PROFILE_KEY = "term-board:profile:v1";
+const LEARNING_LOG_KEY = "term-board:learningLog:v1";
+
+// ログの肥大化を防ぐため、直近 N 件のみ保持する（集計は件数で十分）。
+const LEARNING_LOG_MAX = 1000;
 
 const EMPTY_USER_CONTENT: UserContent = { quizTerms: [], interviewQuestions: [] };
 
@@ -138,6 +142,36 @@ export const localStorageTermRepository: TermRepository = {
       localStorage.setItem(PROFILE_KEY, JSON.stringify(p));
     } catch {
       console.warn("[term-board] 自己PRの保存に失敗しました。");
+    }
+  },
+
+  async getLearningLog(): Promise<LearningSession[]> {
+    try {
+      const raw = localStorage.getItem(LEARNING_LOG_KEY);
+      if (!raw) return [];
+      const parsed: unknown = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      // 壊れた要素は除外（必須フィールドの型を最低限ガード）。
+      return (parsed as unknown[]).filter(
+        (s): s is LearningSession =>
+          typeof s === "object" &&
+          s !== null &&
+          typeof (s as LearningSession).id === "string" &&
+          typeof (s as LearningSession).asked === "number" &&
+          typeof (s as LearningSession).correct === "number",
+      );
+    } catch {
+      return [];
+    }
+  },
+
+  async appendLearningSession(session: LearningSession): Promise<void> {
+    try {
+      const log = await this.getLearningLog();
+      const next = [...log, session].slice(-LEARNING_LOG_MAX);
+      localStorage.setItem(LEARNING_LOG_KEY, JSON.stringify(next));
+    } catch {
+      console.warn("[term-board] 学習ログの保存に失敗しました。学習は継続します。");
     }
   },
 };
