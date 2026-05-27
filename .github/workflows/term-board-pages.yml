@@ -1,0 +1,81 @@
+name: term-board Pages deploy
+
+# term-board（静的SPA）を GitHub Pages へ公開する（Issue #285）。
+# 認証・サーバー・DBを持たない学習アプリのため、静的配信のみで「誰でもURLを開けば使える」。
+# 進捗は各利用者のブラウザの localStorage に保存される。
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "term-board/**"
+      - ".github/workflows/term-board-pages.yml"
+  workflow_dispatch:
+
+# deploy-pages に必要な最小権限。
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同時実行を1本に絞る（古いデプロイをキャンセル）。
+concurrency:
+  group: term-board-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: term-board
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node (use .nvmrc = 24 LTS)
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: term-board/.nvmrc
+          cache: npm
+          cache-dependency-path: term-board/package-lock.json
+
+      - name: Install (clean, reproducible)
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Stage site (/term-board/ にネームスペース＋ルートはリダイレクト)
+        run: |
+          mkdir -p ../_site/term-board
+          cp -r dist/* ../_site/term-board/
+          # ルート（/hideharu-AI/）アクセスを term-board へ誘導する。
+          cat > ../_site/index.html <<'HTML'
+          <!doctype html>
+          <html lang="ja">
+            <head>
+              <meta charset="utf-8" />
+              <title>IT用語ボード</title>
+              <meta http-equiv="refresh" content="0; url=./term-board/" />
+            </head>
+            <body>
+              <a href="./term-board/">IT用語ボードへ移動</a>
+            </body>
+          </html>
+          HTML
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
