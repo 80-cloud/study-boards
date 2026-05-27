@@ -9,6 +9,7 @@ const BOOKMARKS_KEY = "term-board:bookmarks:v1";
 const STUDY_DAYS_KEY = "term-board:studyDays:v1";
 const PROFILE_KEY = "term-board:profile:v1";
 const LEARNING_LOG_KEY = "term-board:learningLog:v1";
+const NOTES_KEY = "term-board:notes:v1";
 
 // ログの肥大化を防ぐため、直近 N 件のみ保持する（集計は件数で十分）。
 const LEARNING_LOG_MAX = 1000;
@@ -21,6 +22,7 @@ const EXPORT_KEYS = [
   STUDY_DAYS_KEY,
   PROFILE_KEY,
   LEARNING_LOG_KEY,
+  NOTES_KEY,
 ] as const;
 
 const EMPTY_USER_CONTENT: UserContent = { quizTerms: [], interviewQuestions: [] };
@@ -182,6 +184,37 @@ export const localStorageTermRepository: TermRepository = {
       localStorage.setItem(LEARNING_LOG_KEY, JSON.stringify(next));
     } catch {
       console.warn("[term-board] 学習ログの保存に失敗しました。学習は継続します。");
+    }
+  },
+
+  async getNotes(): Promise<Record<string, string>> {
+    try {
+      const raw = localStorage.getItem(NOTES_KEY);
+      if (!raw) return {};
+      const parsed: unknown = JSON.parse(raw);
+      if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return {};
+      // 値が文字列のものだけ採用（破損ガード）。
+      const out: Record<string, string> = {};
+      for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+        if (typeof v === "string") out[k] = v;
+      }
+      return out;
+    } catch {
+      return {};
+    }
+  },
+
+  async saveNote(day: string, text: string): Promise<void> {
+    try {
+      const notes = await this.getNotes();
+      if (text.trim() === "") {
+        delete notes[day]; // 空メモは保持しない
+      } else {
+        notes[day] = text;
+      }
+      localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
+    } catch {
+      console.warn("[term-board] 学習メモの保存に失敗しました。");
     }
   },
 
