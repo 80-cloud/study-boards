@@ -16,4 +16,8 @@ export interface TermRepository {
   // B1: ブックマーク（用語IDの配列）。
   getBookmarks(): Promise<string[]>;
   saveBookmarks(ids: string[]): Promise<void>;
+
+  // B3: 学習した日（YYYY-MM-DD の配列）。ストリーク・学習日数の算出に使う。
+  getStudyDays(): Promise<string[]>;
+  recordStudyDay(day: string): Promise<void>;
 }
