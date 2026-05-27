@@ -139,6 +139,8 @@ export function useQuiz(reloadKey: number | string = 0): UseQuiz {
       progressRef.current = updated;
       // 保存は fire-and-forget（ローカル即時判定なので UI はブロックしない）。
       void repository.saveProgress(updated);
+      // F-QUIZ-06: 誤答時は「選んだ誤答」を記録（混同ペア分析の入力）。
+      if (!correct) void repository.recordMiss(id, choice);
       // B3: 学習した日を記録（ストリーク・学習日数の算出用）。ローカル日付。
       void repository.recordStudyDay(new Date().toLocaleDateString("sv-SE"));
     },

@@ -37,6 +37,10 @@ export interface TermRepository {
   getReverseQuestions(): Promise<string[]>;
   saveReverseQuestions(questions: string[]): Promise<void>;
 
+  // F-QUIZ-06: 混同ペア分析。誤答時に選んだ誤答テキストを用語ごとに記録する。
+  getMisses(): Promise<Record<string, string[]>>;
+  recordMiss(termId: string, chosen: string): Promise<void>;
+
   // F-PROG-04 / F-LOG-05: データの入出力・初期化。
   // サーバー無しのためブラウザのデータをバックアップ・移行できるようにする。
   exportAll(): Promise<string>; // 全データを JSON 文字列で返す
