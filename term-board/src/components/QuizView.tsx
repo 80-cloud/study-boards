@@ -90,6 +90,12 @@ export function QuizView({ question, selected, isCorrect, onAnswer, onNext }: Pr
             <span className="font-semibold text-slate-800">面接での言い方：</span>
             {question.term.interview}
           </p>
+          {question.term.scene && (
+            <p className="mt-2 text-sm leading-relaxed text-slate-600">
+              <span className="font-semibold text-slate-800">現場では：</span>
+              {question.term.scene}
+            </p>
+          )}
           <button
             type="button"
             onClick={onNext}
