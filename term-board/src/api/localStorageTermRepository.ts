@@ -5,6 +5,7 @@ import termsData from "../data/terms.json";
 // MVP 実装: 用語は同梱 JSON、進捗・ユーザー作問は localStorage（要件定義書 §2 C-1/C-2・§8-4）。
 const PROGRESS_KEY = "term-board:progress:v1";
 const USER_CONTENT_KEY = "term-board:userContent:v1";
+const BOOKMARKS_KEY = "term-board:bookmarks:v1";
 
 const EMPTY_USER_CONTENT: UserContent = { quizTerms: [], interviewQuestions: [] };
 
@@ -75,6 +76,25 @@ export const localStorageTermRepository: TermRepository = {
       localStorage.setItem(USER_CONTENT_KEY, JSON.stringify(c));
     } catch {
       console.warn("[term-board] 作問データの保存に失敗しました。");
+    }
+  },
+
+  async getBookmarks(): Promise<string[]> {
+    try {
+      const raw = localStorage.getItem(BOOKMARKS_KEY);
+      if (!raw) return [];
+      const parsed: unknown = JSON.parse(raw);
+      return Array.isArray(parsed) ? (parsed as string[]) : [];
+    } catch {
+      return [];
+    }
+  },
+
+  async saveBookmarks(ids: string[]): Promise<void> {
+    try {
+      localStorage.setItem(BOOKMARKS_KEY, JSON.stringify(ids));
+    } catch {
+      console.warn("[term-board] ブックマークの保存に失敗しました。");
     }
   },
 };

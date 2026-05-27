@@ -1,16 +1,19 @@
 import { useState } from "react";
 import { useQuiz } from "./hooks/useQuiz";
 import { useUserContent } from "./hooks/useUserContent";
+import { useBookmarks } from "./hooks/useBookmarks";
 import { CategoryFilter } from "./components/CategoryFilter";
 import { QuizView } from "./components/QuizView";
 import { InterviewView } from "./components/InterviewView";
 import { AuthorView } from "./components/AuthorView";
+import { DictionaryView } from "./components/DictionaryView";
 
-type View = "quiz" | "interview" | "author";
+type View = "quiz" | "dictionary" | "interview" | "author";
 
 export default function App() {
   const [view, setView] = useState<View>("quiz");
   const user = useUserContent();
+  const bookmarks = useBookmarks();
   // ユーザー作問の件数を渡し、追加・取り込みで出題に即反映する（F-USER）。
   const quiz = useQuiz(user.content.quizTerms.length);
   const rate =
@@ -36,8 +39,9 @@ export default function App() {
             )}
           </div>
 
-          <nav className="flex gap-2" aria-label="モード切替">
+          <nav className="flex flex-wrap gap-2" aria-label="モード切替">
             <NavTab active={view === "quiz"} onClick={() => setView("quiz")}>4択クイズ</NavTab>
+            <NavTab active={view === "dictionary"} onClick={() => setView("dictionary")}>用語辞典</NavTab>
             <NavTab active={view === "interview"} onClick={() => setView("interview")}>面接練習</NavTab>
             <NavTab active={view === "author"} onClick={() => setView("author")}>マイ問題</NavTab>
           </nav>
@@ -75,6 +79,8 @@ export default function App() {
             )}
           </>
         )}
+
+        {view === "dictionary" && <DictionaryView bookmarks={bookmarks} />}
 
         {view === "interview" && (
           <InterviewView userQuestions={user.content.interviewQuestions} />
