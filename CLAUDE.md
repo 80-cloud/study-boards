@@ -11,7 +11,7 @@
 |---|---|
 | プロジェクト名 | タスク管理ボード (hideharu-AI) |
 | リポジトリ | https://github.com/80-cloud/hideharu-AI |
-| バックエンド | Java 21 + Spring Boot 3.5.0 + Gradle |
+| バックエンド | Java 25 + Spring Boot 3.5.14 + Gradle 9.x |
 | フロントエンド | HTML / CSS / JavaScript (v1.0) → React + Tailwind CSS (v2.0) |
 | データベース | PostgreSQL 16（Docker コンテナ） |
 | 作業ディレクトリ | /Users/macmini/dev/Cursor |
@@ -215,7 +215,7 @@ npm run dev
     │       │   └── TaskCard.jsx
     │       ├── context/TaskContext.jsx
     │       └── utils/dateUtils.js
-    └── backend/                 ← Spring Boot (Java 21)
+    └── backend/                 ← Spring Boot (Java 25)
         ├── build.gradle
         └── src/main/java/com/taskboard/
             ├── config/CorsConfig.java
