@@ -11,6 +11,10 @@ const PROFILE_KEY = "term-board:profile:v1";
 const LEARNING_LOG_KEY = "term-board:learningLog:v1";
 const NOTES_KEY = "term-board:notes:v1";
 const REVERSE_Q_KEY = "term-board:reverseQuestions:v1";
+const MISSES_KEY = "term-board:misses:v1";
+
+// 1用語あたり保持する「選んだ誤答」の最大件数（直近のみ）。
+const MISSES_PER_TERM_MAX = 3;
 
 // ログの肥大化を防ぐため、直近 N 件のみ保持する（集計は件数で十分）。
 const LEARNING_LOG_MAX = 1000;
@@ -25,6 +29,7 @@ const EXPORT_KEYS = [
   LEARNING_LOG_KEY,
   NOTES_KEY,
   REVERSE_Q_KEY,
+  MISSES_KEY,
 ] as const;
 
 const EMPTY_USER_CONTENT: UserContent = { quizTerms: [], interviewQuestions: [] };
@@ -237,6 +242,35 @@ export const localStorageTermRepository: TermRepository = {
       localStorage.setItem(REVERSE_Q_KEY, JSON.stringify(questions));
     } catch {
       console.warn("[term-board] 逆質問の保存に失敗しました。");
+    }
+  },
+
+  async getMisses(): Promise<Record<string, string[]>> {
+    try {
+      const raw = localStorage.getItem(MISSES_KEY);
+      if (!raw) return {};
+      const parsed: unknown = JSON.parse(raw);
+      if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return {};
+      const out: Record<string, string[]> = {};
+      for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+        if (Array.isArray(v)) out[k] = v.filter((x): x is string => typeof x === "string");
+      }
+      return out;
+    } catch {
+      return {};
+    }
+  },
+
+  async recordMiss(termId: string, chosen: string): Promise<void> {
+    try {
+      const misses = await this.getMisses();
+      const prev = misses[termId] ?? [];
+      // 直近の誤答を先頭に、重複を除き上限まで保持する。
+      const next = [chosen, ...prev.filter((c) => c !== chosen)].slice(0, MISSES_PER_TERM_MAX);
+      misses[termId] = next;
+      localStorage.setItem(MISSES_KEY, JSON.stringify(misses));
+    } catch {
+      // 記録失敗でも学習は継続
     }
   },
 

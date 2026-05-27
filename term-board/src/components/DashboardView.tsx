@@ -34,6 +34,7 @@ export function DashboardView({ bookmarks }: Props) {
   const [progress, setProgress] = useState<Progress>({});
   const [studyDays, setStudyDays] = useState<string[]>([]);
   const [learningLog, setLearningLog] = useState<LearningSession[]>([]);
+  const [misses, setMisses] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
     let active = true;
@@ -42,12 +43,14 @@ export function DashboardView({ bookmarks }: Props) {
       repository.getProgress(),
       repository.getStudyDays(),
       repository.getLearningLog(),
-    ]).then(([t, p, d, log]) => {
+      repository.getMisses(),
+    ]).then(([t, p, d, log, m]) => {
       if (!active) return;
       setTerms(t);
       setProgress(p);
       setStudyDays(d);
       setLearningLog(log);
+      setMisses(m);
     });
     return () => {
       active = false;
@@ -102,6 +105,14 @@ export function DashboardView({ bookmarks }: Props) {
   );
 
   const streak = useMemo(() => calcStreak(studyDays), [studyDays]);
+
+  // F-QUIZ-06: 混同ペア分析。誤答で選んだ選択肢と正しい意味を対比する。
+  const confusions = useMemo(() => {
+    return terms
+      .map((t) => ({ term: t, chosen: misses[t.id] ?? [] }))
+      .filter((c) => c.chosen.length > 0)
+      .slice(0, 5);
+  }, [terms, misses]);
 
   // F-INTV-02: 面接練習の自己採点実績（練習回数・言えた率）。
   const interview = useMemo(() => {
@@ -204,6 +215,29 @@ export function DashboardView({ bookmarks }: Props) {
           </ul>
         )}
       </div>
+
+      {/* 混同ペア分析（F-QUIZ-06） */}
+      {confusions.length > 0 && (
+        <div className={card}>
+          <h2 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">混同しやすい用語</h2>
+          <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">4択で選んだ誤答と、正しい意味を見比べましょう。</p>
+          <ul className="flex flex-col gap-3">
+            {confusions.map((c) => (
+              <li key={c.term.id}>
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{c.term.term}</p>
+                {c.chosen.map((ch) => (
+                  <p key={ch} className="mt-1 text-sm leading-relaxed text-rose-700 dark:text-rose-400">
+                    ✕ 選んだ誤答：{ch}
+                  </p>
+                ))}
+                <p className="mt-1 text-sm leading-relaxed text-emerald-700 dark:text-emerald-400">
+                  ◯ 正しい意味：{c.term.meaning}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <p className="text-center text-xs text-slate-500 dark:text-slate-400">
         学習日数 {studyDays.length} 日 ／ 未学習 {unlearned} 件
