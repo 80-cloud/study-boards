@@ -62,7 +62,7 @@ export function InterviewView({ userQuestions }: Props) {
 
   if (pool.length === 0) {
     return (
-      <p className="text-center text-slate-500">
+      <p className="text-center text-slate-500 dark:text-slate-400">
         面接の質問がありません。「マイ問題」で追加できます。
       </p>
     );
@@ -72,20 +72,20 @@ export function InterviewView({ userQuestions }: Props) {
 
   return (
     <section className="flex flex-col gap-5" aria-live="polite">
-      <p className="text-center text-sm text-slate-500">
+      <p className="text-center text-sm text-slate-500 dark:text-slate-400">
         質問に声に出して答えてから「模範回答を見る」で答え合わせ
       </p>
 
-      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-sky-700">{current.category}</span>
+          <span className="text-sm font-medium text-sky-700 dark:text-sky-400">{current.category}</span>
           {current.source === "user" && (
-            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900 dark:text-amber-200">
               みんなの問題
             </span>
           )}
         </div>
-        <h2 className="mt-1 text-2xl font-bold text-slate-900">{current.question}</h2>
+        <h2 className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{current.question}</h2>
       </div>
 
       {!revealed ? (
@@ -97,14 +97,14 @@ export function InterviewView({ userQuestions }: Props) {
           模範回答を見る
         </button>
       ) : (
-        <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-          <p className="text-sm leading-relaxed text-slate-700">
-            <span className="font-semibold text-slate-900">模範回答：</span>
+        <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
+          <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+            <span className="font-semibold text-slate-900 dark:text-slate-100">模範回答：</span>
             {current.answer}
           </p>
           {current.memo && (
-            <p className="mt-2 text-sm leading-relaxed text-slate-600">
-              <span className="font-semibold text-slate-800">メモ：</span>
+            <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+              <span className="font-semibold text-slate-800 dark:text-slate-200">メモ：</span>
               {current.memo}
             </p>
           )}
