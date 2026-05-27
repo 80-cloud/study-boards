@@ -1,0 +1,44 @@
+name: term-board CI
+
+# term-board の品質ゲート（要件定義書 §4-2・受入 A-6）。
+# 型チェック＋本番ビルドの成功と、依存脆弱性 High/Critical 0件を常設で担保する。
+# lint/test は設定・テスト未整備のため現状は対象外（整備後に追加予定）。
+
+on:
+  pull_request:
+    paths:
+      - "term-board/**"
+      - ".github/workflows/term-board-ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "term-board/**"
+      - ".github/workflows/term-board-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-audit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: term-board
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node (use .nvmrc = 24 LTS)
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: term-board/.nvmrc
+          cache: npm
+          cache-dependency-path: term-board/package-lock.json
+
+      - name: Install (clean, reproducible)
+        run: npm ci
+
+      - name: Type check & build
+        run: npm run build
+
+      - name: Dependency vulnerability scan (fail on High/Critical)
+        run: npm audit --audit-level=high
