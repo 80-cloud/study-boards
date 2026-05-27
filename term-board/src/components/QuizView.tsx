@@ -74,6 +74,14 @@ export function QuizView({ question, selected, isCorrect, onAnswer, onNext }: Pr
           >
             {isCorrect ? "◯ 正解！" : "✕ 不正解"}
           </p>
+          {question.term.plainMeaning && (
+            <div className="mt-3 rounded-xl bg-sky-50 p-3 ring-1 ring-sky-100">
+              <p className="text-sm leading-relaxed text-slate-700">
+                <span className="font-semibold text-sky-800">かんたんに言うと：</span>
+                {question.term.plainMeaning}
+              </p>
+            </div>
+          )}
           <p className="mt-2 text-sm leading-relaxed text-slate-700">
             <span className="font-semibold text-slate-900">正しい意味：</span>
             {question.answer}
@@ -86,7 +94,7 @@ export function QuizView({ question, selected, isCorrect, onAnswer, onNext }: Pr
             type="button"
             onClick={onNext}
             autoFocus
-            className="mt-4 rounded-xl bg-sky-600 px-5 py-2.5 font-semibold text-white transition hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-400"
+            className="mt-4 rounded-xl bg-sky-700 px-5 py-2.5 font-semibold text-white transition hover:bg-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-400"
           >
             次の問題 →
           </button>
