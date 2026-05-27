@@ -33,6 +33,10 @@ export interface TermRepository {
   getNotes(): Promise<Record<string, string>>;
   saveNote(day: string, text: string): Promise<void>;
 
+  // F-INTV-07: 逆質問ストック（面接終盤の「最後に質問は?」に備える）。
+  getReverseQuestions(): Promise<string[]>;
+  saveReverseQuestions(questions: string[]): Promise<void>;
+
   // F-PROG-04 / F-LOG-05: データの入出力・初期化。
   // サーバー無しのためブラウザのデータをバックアップ・移行できるようにする。
   exportAll(): Promise<string>; // 全データを JSON 文字列で返す

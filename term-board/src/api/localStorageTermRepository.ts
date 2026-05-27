@@ -10,6 +10,7 @@ const STUDY_DAYS_KEY = "term-board:studyDays:v1";
 const PROFILE_KEY = "term-board:profile:v1";
 const LEARNING_LOG_KEY = "term-board:learningLog:v1";
 const NOTES_KEY = "term-board:notes:v1";
+const REVERSE_Q_KEY = "term-board:reverseQuestions:v1";
 
 // ログの肥大化を防ぐため、直近 N 件のみ保持する（集計は件数で十分）。
 const LEARNING_LOG_MAX = 1000;
@@ -23,6 +24,7 @@ const EXPORT_KEYS = [
   PROFILE_KEY,
   LEARNING_LOG_KEY,
   NOTES_KEY,
+  REVERSE_Q_KEY,
 ] as const;
 
 const EMPTY_USER_CONTENT: UserContent = { quizTerms: [], interviewQuestions: [] };
@@ -215,6 +217,26 @@ export const localStorageTermRepository: TermRepository = {
       localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
     } catch {
       console.warn("[term-board] 学習メモの保存に失敗しました。");
+    }
+  },
+
+  async getReverseQuestions(): Promise<string[]> {
+    try {
+      const raw = localStorage.getItem(REVERSE_Q_KEY);
+      if (!raw) return [];
+      const parsed: unknown = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter((q): q is string => typeof q === "string");
+    } catch {
+      return [];
+    }
+  },
+
+  async saveReverseQuestions(questions: string[]): Promise<void> {
+    try {
+      localStorage.setItem(REVERSE_Q_KEY, JSON.stringify(questions));
+    } catch {
+      console.warn("[term-board] 逆質問の保存に失敗しました。");
     }
   },
 
