@@ -17,6 +17,7 @@ export function DictionaryView({ bookmarks }: Props) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
   const [onlyBookmarked, setOnlyBookmarked] = useState(false);
+  const [sort, setSort] = useState<"default" | "asc" | "desc">("default");
   const [openId, setOpenId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -36,7 +37,7 @@ export function DictionaryView({ bookmarks }: Props) {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return terms.filter((t) => {
+    const list = terms.filter((t) => {
       if (category && t.category !== category) return false;
       if (onlyBookmarked && !bookmarks.isBookmarked(t.id)) return false;
       if (q && !`${t.term} ${t.meaning} ${t.plainMeaning ?? ""}`.toLowerCase().includes(q)) {
@@ -44,7 +45,13 @@ export function DictionaryView({ bookmarks }: Props) {
       }
       return true;
     });
-  }, [terms, query, category, onlyBookmarked, bookmarks]);
+    if (sort !== "default") {
+      // あいうえお順（日本語照合）。英字・カタカナ・漢字も自然な順に並ぶ。
+      const sorted = [...list].sort((a, b) => a.term.localeCompare(b.term, "ja"));
+      return sort === "desc" ? sorted.reverse() : sorted;
+    }
+    return list;
+  }, [terms, query, category, onlyBookmarked, bookmarks, sort]);
 
   return (
     <section className="flex flex-col gap-4">
@@ -73,6 +80,19 @@ export function DictionaryView({ bookmarks }: Props) {
               {categories.map((c) => (
                 <option key={c} value={c}>{c}</option>
               ))}
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <label htmlFor="dict-sort" className="text-sm font-medium text-slate-600 dark:text-slate-300">並び替え</label>
+            <select
+              id="dict-sort"
+              value={sort}
+              onChange={(e) => setSort(e.target.value as "default" | "asc" | "desc")}
+              className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-800 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-400 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+            >
+              <option value="default">標準（分野順）</option>
+              <option value="asc">あいうえお順</option>
+              <option value="desc">あいうえお順（逆）</option>
             </select>
           </div>
           <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
