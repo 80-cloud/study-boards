@@ -7,6 +7,7 @@ import { CategoryFilter } from "./components/CategoryFilter";
 import { QuizView } from "./components/QuizView";
 import { InterviewView } from "./components/InterviewView";
 import { MockInterviewView } from "./components/MockInterviewView";
+import { CardView } from "./components/CardView";
 import { AuthorView } from "./components/AuthorView";
 import { DictionaryView } from "./components/DictionaryView";
 import { DashboardView } from "./components/DashboardView";
@@ -14,7 +15,7 @@ import { PrepView } from "./components/PrepView";
 import { LearnView } from "./components/LearnView";
 import { HomeView } from "./components/HomeView";
 
-type View = "home" | "quiz" | "dictionary" | "interview" | "mock" | "author" | "dashboard" | "prep" | "learn";
+type View = "home" | "quiz" | "card" | "dictionary" | "interview" | "mock" | "author" | "dashboard" | "prep" | "learn";
 
 export default function App() {
   const [view, setView] = useState<View>("home");
@@ -69,6 +70,7 @@ export default function App() {
           <nav className="flex flex-wrap gap-2" aria-label="モード切替">
             <NavTab active={view === "home"} onClick={() => setView("home")}>ホーム</NavTab>
             <NavTab active={view === "quiz"} onClick={() => setView("quiz")}>4択クイズ</NavTab>
+            <NavTab active={view === "card"} onClick={() => setView("card")}>暗記カード</NavTab>
             <NavTab active={view === "dictionary"} onClick={() => setView("dictionary")}>用語辞典</NavTab>
             <NavTab active={view === "learn"} onClick={() => setView("learn")}>学ぶ</NavTab>
             <NavTab active={view === "interview"} onClick={() => setView("interview")}>面接練習</NavTab>
@@ -113,6 +115,8 @@ export default function App() {
             )}
           </>
         )}
+
+        {view === "card" && <CardView />}
 
         {view === "dictionary" && <DictionaryView bookmarks={bookmarks} />}
 

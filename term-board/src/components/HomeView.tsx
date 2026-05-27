@@ -1,9 +1,10 @@
-type Target = "quiz" | "dictionary" | "learn" | "interview" | "mock" | "dashboard" | "prep" | "author";
+type Target = "quiz" | "card" | "dictionary" | "learn" | "interview" | "mock" | "dashboard" | "prep" | "author";
 
 type Props = { onNavigate: (view: Target) => void };
 
 const MODES: { key: Target; title: string; desc: string }[] = [
   { key: "quiz", title: "4択クイズ", desc: "用語の意味を4択で。即採点＋解説で定着させる。" },
+  { key: "card", title: "暗記カード", desc: "表に用語、裏に意味。タップで裏返してサクッと暗記。" },
   { key: "dictionary", title: "用語辞典", desc: "用語を検索・分野・レベルで探し、ブックマーク。" },
   { key: "learn", title: "学ぶ", desc: "学習ロードマップ・職種解説・図解で全体像をつかむ。" },
   { key: "interview", title: "面接練習", desc: "想定質問に声で答え、模範回答・型・NG例で確認。" },
