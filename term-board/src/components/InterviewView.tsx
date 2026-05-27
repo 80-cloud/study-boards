@@ -2,18 +2,23 @@ import { useEffect, useMemo, useState } from "react";
 import type { InterviewQuestion } from "../types";
 import { repository } from "../api";
 import { pickRandom } from "../utils/shuffle";
+import bundledQuestions from "../data/interviewQuestions.json";
 
 type Props = {
   // ユーザー作問の面接Q&A（F-USER）。
   userQuestions: InterviewQuestion[];
 };
 
-// F-INTV-01（面接想定問答）の最小実装＋F-USER の面接Q&A表示。
-// 同梱用語の interview を「『term』とは？」の質問として使い、ユーザー作問のQ&Aと混ぜて出す。
+// 同梱の頻出質問（B4・テンプレ/NG例/タグつき）。
+const bundled = bundledQuestions as InterviewQuestion[];
+
+// F-INTV-01（面接想定問答）＋ B4（想定質問集・頻出タグ・テンプレ・NG例）＋ F-USER。
+// 同梱用語の interview を「『term』とは？」として、頻出質問・ユーザー作問と混ぜて出す。
 export function InterviewView({ userQuestions }: Props) {
   const [builtin, setBuiltin] = useState<InterviewQuestion[]>([]);
   const [current, setCurrent] = useState<InterviewQuestion | null>(null);
   const [revealed, setRevealed] = useState(false);
+  const [tag, setTag] = useState<string>(""); // "" = すべて
 
   useEffect(() => {
     let active = true;
@@ -36,14 +41,29 @@ export function InterviewView({ userQuestions }: Props) {
     };
   }, []);
 
-  const pool = useMemo(
-    () => [...builtin, ...userQuestions],
+  const allQuestions = useMemo(
+    () => [...bundled, ...builtin, ...userQuestions],
     [builtin, userQuestions],
   );
 
-  // pool が揃ったら最初の質問を出す。
+  const tags = useMemo(
+    () => [...new Set(allQuestions.flatMap((q) => q.tags ?? []))].sort(),
+    [allQuestions],
+  );
+
+  const pool = useMemo(
+    () => (tag ? allQuestions.filter((q) => q.tags?.includes(tag)) : allQuestions),
+    [allQuestions, tag],
+  );
+
+  // pool が揃ったら／タグ変更で pool 外になったら出題し直す。
   useEffect(() => {
-    if (pool.length > 0 && current === null) {
+    if (pool.length === 0) {
+      setCurrent(null);
+      return;
+    }
+    if (current === null || !pool.some((q) => q.id === current.id)) {
+      setRevealed(false);
       setCurrent(pickRandom(pool));
     }
   }, [pool, current]);
@@ -72,18 +92,41 @@ export function InterviewView({ userQuestions }: Props) {
 
   return (
     <section className="flex flex-col gap-5" aria-live="polite">
-      <p className="text-center text-sm text-slate-500 dark:text-slate-400">
-        質問に声に出して答えてから「模範回答を見る」で答え合わせ
-      </p>
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          声に出して答えてから「模範回答を見る」
+        </p>
+        {tags.length > 0 && (
+          <div className="flex items-center gap-2">
+            <label htmlFor="iv-tag" className="text-sm font-medium text-slate-600 dark:text-slate-300">タグ</label>
+            <select
+              id="iv-tag"
+              value={tag}
+              onChange={(e) => setTag(e.target.value)}
+              className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-800 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-400 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+            >
+              <option value="">すべて</option>
+              {tags.map((tg) => (
+                <option key={tg} value={tg}>{tg}</option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
 
       <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium text-sky-700 dark:text-sky-400">{current.category}</span>
           {current.source === "user" && (
             <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900 dark:text-amber-200">
               みんなの問題
             </span>
           )}
+          {current.tags?.map((tg) => (
+            <span key={tg} className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800 dark:bg-sky-900 dark:text-sky-200">
+              {tg}
+            </span>
+          ))}
         </div>
         <h2 className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{current.question}</h2>
       </div>
@@ -102,6 +145,22 @@ export function InterviewView({ userQuestions }: Props) {
             <span className="font-semibold text-slate-900 dark:text-slate-100">模範回答：</span>
             {current.answer}
           </p>
+          {current.template && (
+            <div className="mt-3 rounded-xl bg-sky-50 p-3 ring-1 ring-sky-100 dark:bg-sky-950 dark:ring-sky-900">
+              <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-200">
+                <span className="font-semibold text-sky-800 dark:text-sky-300">回答の型：</span>
+                {current.template}
+              </p>
+            </div>
+          )}
+          {current.ngExample && (
+            <div className="mt-2 rounded-xl bg-rose-50 p-3 ring-1 ring-rose-100 dark:bg-rose-950 dark:ring-rose-900">
+              <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-200">
+                <span className="font-semibold text-rose-800 dark:text-rose-300">NG例と改善：</span>
+                {current.ngExample}
+              </p>
+            </div>
+          )}
           {current.memo && (
             <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
               <span className="font-semibold text-slate-800 dark:text-slate-200">メモ：</span>

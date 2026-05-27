@@ -34,6 +34,11 @@ export type InterviewQuestion = {
   answer: string; // 模範回答／自分の答え
   memo?: string; // 補足（聞かれた状況・コツなど）
   source?: "builtin" | "user";
+
+  // B4: 面接コンテンツの強化（任意）。
+  tags?: string[]; // 例 ["頻出", "未経験定番"]。面接練習でフィルタに使う
+  template?: string; // 回答の型（PREP/STAR 等）のヒント
+  ngExample?: string; // ありがちなNG回答＋改善ポイント
 };
 
 // F-USER-02: 共有・保存の単位。エクスポート/インポートはこの形をやり取りする。
