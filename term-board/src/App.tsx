@@ -9,8 +9,9 @@ import { InterviewView } from "./components/InterviewView";
 import { AuthorView } from "./components/AuthorView";
 import { DictionaryView } from "./components/DictionaryView";
 import { DashboardView } from "./components/DashboardView";
+import { PrepView } from "./components/PrepView";
 
-type View = "quiz" | "dictionary" | "interview" | "author" | "dashboard";
+type View = "quiz" | "dictionary" | "interview" | "author" | "dashboard" | "prep";
 
 export default function App() {
   const [view, setView] = useState<View>("quiz");
@@ -67,6 +68,7 @@ export default function App() {
             <NavTab active={view === "dictionary"} onClick={() => setView("dictionary")}>用語辞典</NavTab>
             <NavTab active={view === "interview"} onClick={() => setView("interview")}>面接練習</NavTab>
             <NavTab active={view === "dashboard"} onClick={() => setView("dashboard")}>ダッシュボード</NavTab>
+            <NavTab active={view === "prep"} onClick={() => setView("prep")}>自己PR</NavTab>
             <NavTab active={view === "author"} onClick={() => setView("author")}>マイ問題</NavTab>
           </nav>
         </div>
@@ -107,6 +109,8 @@ export default function App() {
         {view === "dictionary" && <DictionaryView bookmarks={bookmarks} />}
 
         {view === "dashboard" && <DashboardView bookmarks={bookmarks} />}
+
+        {view === "prep" && <PrepView />}
 
         {view === "interview" && (
           <InterviewView userQuestions={user.content.interviewQuestions} />

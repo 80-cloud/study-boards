@@ -47,6 +47,23 @@ export type UserContent = {
   interviewQuestions: InterviewQuestion[]; // ユーザー作問の面接Q&A
 };
 
+// B5: 自己紹介・志望動機の下書き素材（穴埋め式・localStorage保存）。
+export type ProfileDraft = {
+  selfIntro: {
+    name: string; // 名前
+    background: string; // 前職・経歴
+    learning: string; // 学習中のこと
+    work: string; // 制作物・成果
+    closing: string; // 意気込み
+  };
+  motivation: {
+    trigger: string; // IT/その仕事に興味を持ったきっかけ
+    companyReason: string; // その会社固有の惹かれた点
+    action: string; // 学習・制作など起こした行動
+    future: string; // 入社後どうしたいか
+  };
+};
+
 // 用語ごとの「実力」。termId で Term と結合する（用語の追加・修正が進捗を壊さない）。
 export type Progress = {
   [termId: string]: {
