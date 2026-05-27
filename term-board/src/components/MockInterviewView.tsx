@@ -17,6 +17,8 @@ export function MockInterviewView() {
   const [revealed, setRevealed] = useState(false);
   const [sessionAsked, setSessionAsked] = useState(0);
   const [sessionSaid, setSessionSaid] = useState(0);
+  // F-INTV-05: 構造採点ルーブリック（結論→理由→具体の3観点）。
+  const [rubric, setRubric] = useState({ conclusion: false, reason: false, concrete: false });
 
   // 30秒タイマー（任意・結論を30秒でまとめる練習）。
   const [remaining, setRemaining] = useState<number | null>(null);
@@ -72,8 +74,12 @@ export function MockInterviewView() {
     setRevealed(true);
   };
 
-  // 自己評価（言えた/言えなかった）を学習ログへ記録し、次の問題へ。
-  const selfAssess = (said: boolean) => {
+  // 構造採点ルーブリックのスコア（0〜3）。2観点以上で「言えた」扱い。
+  const rubricScore = (rubric.conclusion ? 1 : 0) + (rubric.reason ? 1 : 0) + (rubric.concrete ? 1 : 0);
+
+  // 3観点の自己採点を学習ログへ記録し、次の問題へ。
+  const submitAssessment = () => {
+    const said = rubricScore >= 2;
     const session: LearningSession = {
       id: newId(),
       startedAt: new Date().toISOString(),
@@ -90,6 +96,7 @@ export function MockInterviewView() {
     setRemaining(null);
     setInput("");
     setRevealed(false);
+    setRubric({ conclusion: false, reason: false, concrete: false });
     setCurrent((prev) => (terms.length > 0 ? pickNext(terms, prev) : null));
   };
 
@@ -206,24 +213,35 @@ export function MockInterviewView() {
           )}
 
           <div className="mt-4 flex flex-col gap-2">
-            <p className="text-sm font-medium text-slate-600 dark:text-slate-300">結論から自分の言葉で言えましたか？</p>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => selfAssess(true)}
-                autoFocus
-                className="rounded-xl bg-emerald-700 px-5 py-2.5 font-semibold text-white transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-400"
-              >
-                ◯ 言えた
-              </button>
-              <button
-                type="button"
-                onClick={() => selfAssess(false)}
-                className="rounded-xl bg-slate-200 px-5 py-2.5 font-semibold text-slate-800 transition hover:bg-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"
-              >
-                △ 言えなかった
-              </button>
-            </div>
+            <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
+              自己採点（3観点）<span className="ml-2 font-bold text-sky-700 dark:text-sky-400">{rubricScore} / 3</span>
+            </p>
+            <fieldset className="flex flex-col gap-1.5">
+              <legend className="sr-only">構造採点ルーブリック</legend>
+              {([
+                ["conclusion", "結論から述べた"],
+                ["reason", "理由を説明した"],
+                ["concrete", "具体例・現場のイメージを出した"],
+              ] as const).map(([key, label]) => (
+                <label key={key} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+                  <input
+                    type="checkbox"
+                    checked={rubric[key]}
+                    onChange={(e) => setRubric((r) => ({ ...r, [key]: e.target.checked }))}
+                    className="h-4 w-4 rounded border-slate-400 text-sky-700 focus:ring-2 focus:ring-sky-400 dark:border-slate-500"
+                  />
+                  {label}
+                </label>
+              ))}
+            </fieldset>
+            <button
+              type="button"
+              onClick={submitAssessment}
+              autoFocus
+              className="mt-1 self-start rounded-xl bg-sky-700 px-5 py-2.5 font-semibold text-white transition hover:bg-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-400"
+            >
+              記録して次へ →
+            </button>
           </div>
         </div>
       )}
