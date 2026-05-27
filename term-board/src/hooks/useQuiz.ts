@@ -32,7 +32,8 @@ export type UseQuiz = {
   next: () => void;
 };
 
-export function useQuiz(): UseQuiz {
+// reloadKey: ユーザー作問の件数などを渡すと、変化時に用語を再読込して出題に反映する（F-USER）。
+export function useQuiz(reloadKey: number | string = 0): UseQuiz {
   const [terms, setTerms] = useState<Term[]>([]);
   // 進捗の現在値は Phase3 のダッシュボードで読む。MVP では記録（localStorage 保存）だけ行う。
   const [, setProgress] = useState<Progress>({});
@@ -65,7 +66,7 @@ export function useQuiz(): UseQuiz {
     return () => {
       active = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   const categories = useMemo(
     () => [...new Set(terms.map((t) => t.category))].sort(),
