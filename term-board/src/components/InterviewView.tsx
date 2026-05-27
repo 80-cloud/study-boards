@@ -3,6 +3,7 @@ import type { InterviewQuestion, LearningSession } from "../types";
 import { repository } from "../api";
 import { pickRandom } from "../utils/shuffle";
 import { newId } from "../utils/share";
+import { ReverseQuestionStock } from "./ReverseQuestionStock";
 import bundledQuestions from "../data/interviewQuestions.json";
 
 type Props = {
@@ -112,6 +113,7 @@ export function InterviewView({ userQuestions }: Props) {
   if (!current) return null;
 
   return (
+    <div className="flex flex-col gap-6">
     <section className="flex flex-col gap-5" aria-live="polite">
       <div className="flex flex-wrap items-center justify-center gap-3">
         <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -218,5 +220,7 @@ export function InterviewView({ userQuestions }: Props) {
         </div>
       )}
     </section>
+      <ReverseQuestionStock />
+    </div>
   );
 }
