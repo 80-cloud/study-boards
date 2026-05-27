@@ -13,6 +13,16 @@ const LEARNING_LOG_KEY = "term-board:learningLog:v1";
 // ログの肥大化を防ぐため、直近 N 件のみ保持する（集計は件数で十分）。
 const LEARNING_LOG_MAX = 1000;
 
+// F-LOG-05: エクスポート/インポート対象のキー（テーマは UI 設定なので除外）。
+const EXPORT_KEYS = [
+  PROGRESS_KEY,
+  USER_CONTENT_KEY,
+  BOOKMARKS_KEY,
+  STUDY_DAYS_KEY,
+  PROFILE_KEY,
+  LEARNING_LOG_KEY,
+] as const;
+
 const EMPTY_USER_CONTENT: UserContent = { quizTerms: [], interviewQuestions: [] };
 
 // 要件定義書 §4-1 / A-4: localStorage の破損・容量超過・未対応でも
@@ -172,6 +182,50 @@ export const localStorageTermRepository: TermRepository = {
       localStorage.setItem(LEARNING_LOG_KEY, JSON.stringify(next));
     } catch {
       console.warn("[term-board] 学習ログの保存に失敗しました。学習は継続します。");
+    }
+  },
+
+  async exportAll(): Promise<string> {
+    // 入出力対象の全データキー（テーマは UI 設定なので含めない）。
+    const data: Record<string, unknown> = {};
+    for (const key of EXPORT_KEYS) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (raw === null) continue;
+        data[key] = JSON.parse(raw);
+      } catch {
+        // 壊れたキーはスキップ（エクスポートは止めない）。
+      }
+    }
+    return JSON.stringify({ app: "term-board", version: 1, exportedAt: new Date().toISOString(), data }, null, 2);
+  },
+
+  async importAll(json: string): Promise<boolean> {
+    try {
+      const parsed: unknown = JSON.parse(json);
+      if (typeof parsed !== "object" || parsed === null) return false;
+      const obj = parsed as { data?: unknown };
+      if (typeof obj.data !== "object" || obj.data === null) return false;
+      const data = obj.data as Record<string, unknown>;
+      // 既知キーのみ復元（未知キーは無視＝安全側）。
+      for (const key of EXPORT_KEYS) {
+        if (!(key in data)) continue;
+        localStorage.setItem(key, JSON.stringify(data[key]));
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  async resetProgress(): Promise<void> {
+    try {
+      // 学習記録のみ初期化。作問・ブックマーク・自己PR下書きは保持する。
+      localStorage.removeItem(PROGRESS_KEY);
+      localStorage.removeItem(STUDY_DAYS_KEY);
+      localStorage.removeItem(LEARNING_LOG_KEY);
+    } catch {
+      console.warn("[term-board] 進捗のリセットに失敗しました。");
     }
   },
 };
