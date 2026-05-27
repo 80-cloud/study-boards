@@ -12,4 +12,8 @@ export interface TermRepository {
   // F-USER: ユーザー作問データ（4択用語・面接Q&A）。
   getUserContent(): Promise<UserContent>;
   saveUserContent(c: UserContent): Promise<void>;
+
+  // B1: ブックマーク（用語IDの配列）。
+  getBookmarks(): Promise<string[]>;
+  saveBookmarks(ids: string[]): Promise<void>;
 }
