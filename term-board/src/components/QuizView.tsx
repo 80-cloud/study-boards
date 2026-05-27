@@ -35,7 +35,7 @@ export function QuizView({ question, selected, isCorrect, onAnswer, onNext }: Pr
   return (
     <section className="flex flex-col gap-5" aria-live="polite">
       <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <p className="text-sm font-medium text-sky-600">{question.term.category}</p>
+        <p className="text-sm font-medium text-sky-700">{question.term.category}</p>
         <h2 className="mt-1 text-2xl font-bold text-slate-900">
           「{question.term.term}」の意味は？
         </h2>
