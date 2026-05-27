@@ -37,7 +37,17 @@ export default function App() {
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start justify-between gap-2">
               <div>
-                <h1 className="text-xl font-bold">IT用語ボード</h1>
+                <h1 className="text-xl font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setView("home")}
+                    aria-label="IT用語ボード（ホームへ戻る）"
+                    title="ホームへ戻る"
+                    className="rounded transition hover:text-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-400 dark:hover:text-sky-400"
+                  >
+                    IT用語ボード
+                  </button>
+                </h1>
                 <p className="text-xs text-slate-500 dark:text-slate-400">面接で言えるまで、4択で定着させる</p>
               </div>
               <button
