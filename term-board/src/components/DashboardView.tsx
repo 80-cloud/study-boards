@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Term, Progress } from "../types";
+import type { Term, Progress, LearningSession } from "../types";
 import { repository } from "../api";
 import type { UseBookmarks } from "../hooks/useBookmarks";
 
@@ -32,17 +32,22 @@ export function DashboardView({ bookmarks }: Props) {
   const [terms, setTerms] = useState<Term[]>([]);
   const [progress, setProgress] = useState<Progress>({});
   const [studyDays, setStudyDays] = useState<string[]>([]);
+  const [learningLog, setLearningLog] = useState<LearningSession[]>([]);
 
   useEffect(() => {
     let active = true;
-    Promise.all([repository.getTerms(), repository.getProgress(), repository.getStudyDays()]).then(
-      ([t, p, d]) => {
-        if (!active) return;
-        setTerms(t);
-        setProgress(p);
-        setStudyDays(d);
-      },
-    );
+    Promise.all([
+      repository.getTerms(),
+      repository.getProgress(),
+      repository.getStudyDays(),
+      repository.getLearningLog(),
+    ]).then(([t, p, d, log]) => {
+      if (!active) return;
+      setTerms(t);
+      setProgress(p);
+      setStudyDays(d);
+      setLearningLog(log);
+    });
     return () => {
       active = false;
     };
@@ -97,12 +102,26 @@ export function DashboardView({ bookmarks }: Props) {
 
   const streak = useMemo(() => calcStreak(studyDays), [studyDays]);
 
+  // F-INTV-02: 面接練習の自己採点実績（練習回数・言えた率）。
+  const interview = useMemo(() => {
+    let asked = 0;
+    let said = 0;
+    for (const s of learningLog) {
+      if (s.mode !== "interview") continue;
+      asked += s.asked;
+      said += s.correct;
+    }
+    return { asked, said, rate: asked ? Math.round((said / asked) * 100) : 0 };
+  }, [learningLog]);
+
   const recommendation = useMemo(() => {
     if (totals.answered === 0) return "まずは4択クイズを1問解いてみましょう。";
     if (weakTerms.length > 0) return `苦手な「${weakTerms[0].term.term}」を復習しましょう。`;
     if (unlearned > 0) return `未学習の用語が ${unlearned} 件あります。新しい分野に挑戦しましょう。`;
-    return "よくできています！面接練習で「言える」かも試しましょう。";
-  }, [totals.answered, weakTerms, unlearned]);
+    if (interview.asked === 0) return "よくできています！面接練習で「言える」かも試しましょう。";
+    if (interview.rate < 70) return "面接練習の「言えた率」を上げましょう。模範回答の型を意識して。";
+    return "知識も「言える」も好調です。この調子で続けましょう。";
+  }, [totals.answered, weakTerms, unlearned, interview]);
 
   const card = "rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700";
 
@@ -120,6 +139,26 @@ export function DashboardView({ bookmarks }: Props) {
       <div className={card}>
         <h2 className="text-sm font-semibold text-sky-700 dark:text-sky-400">学習おすすめ</h2>
         <p className="mt-1 text-slate-800 dark:text-slate-100">{recommendation}</p>
+      </div>
+
+      {/* 面接練習の実績（F-INTV-02） */}
+      <div className={card}>
+        <h2 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">面接練習の実績</h2>
+        {interview.asked === 0 ? (
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            まだ面接練習の記録がありません。「面接練習」で答えて自己採点しましょう。
+          </p>
+        ) : (
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm text-slate-700 dark:text-slate-300">
+              練習回数 <span className="font-semibold text-slate-900 dark:text-slate-100">{interview.asked}</span> 回
+              <span className="ml-2">言えた <span className="font-semibold text-slate-900 dark:text-slate-100">{interview.said}</span> 回</span>
+            </p>
+            <p className="text-sm">
+              言えた率 <span className="font-bold text-emerald-700 dark:text-emerald-400">{interview.rate}%</span>
+            </p>
+          </div>
+        )}
       </div>
 
       {/* 分野別正答率 */}

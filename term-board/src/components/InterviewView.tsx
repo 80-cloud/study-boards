@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import type { InterviewQuestion } from "../types";
+import type { InterviewQuestion, LearningSession } from "../types";
 import { repository } from "../api";
 import { pickRandom } from "../utils/shuffle";
+import { newId } from "../utils/share";
 import bundledQuestions from "../data/interviewQuestions.json";
 
 type Props = {
@@ -19,6 +20,9 @@ export function InterviewView({ userQuestions }: Props) {
   const [current, setCurrent] = useState<InterviewQuestion | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [tag, setTag] = useState<string>(""); // "" = すべて
+  // F-INTV-02: この練習セッションの自己採点カウンタ（言えた / 練習数）。
+  const [sessionAsked, setSessionAsked] = useState(0);
+  const [sessionSaid, setSessionSaid] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -80,6 +84,23 @@ export function InterviewView({ userQuestions }: Props) {
     });
   };
 
+  // F-INTV-02: 自己採点（言えた/言えなかった）を学習ログに記録し、次の質問へ進む。
+  // 面接練習も studyDays に効くよう、解答時に学習日を記録する。
+  const selfAssess = (said: boolean) => {
+    const session: LearningSession = {
+      id: newId(),
+      startedAt: new Date().toISOString(),
+      mode: "interview",
+      asked: 1,
+      correct: said ? 1 : 0,
+    };
+    void repository.appendLearningSession(session);
+    void repository.recordStudyDay(new Date().toLocaleDateString("sv-SE"));
+    setSessionAsked((n) => n + 1);
+    if (said) setSessionSaid((n) => n + 1);
+    next();
+  };
+
   if (pool.length === 0) {
     return (
       <p className="text-center text-slate-500 dark:text-slate-400">
@@ -96,6 +117,11 @@ export function InterviewView({ userQuestions }: Props) {
         <p className="text-sm text-slate-500 dark:text-slate-400">
           声に出して答えてから「模範回答を見る」
         </p>
+        {sessionAsked > 0 && (
+          <p className="text-sm font-medium text-slate-600 dark:text-slate-300" aria-live="polite">
+            この練習：言えた {sessionSaid} ／ {sessionAsked}
+          </p>
+        )}
         {tags.length > 0 && (
           <div className="flex items-center gap-2">
             <label htmlFor="iv-tag" className="text-sm font-medium text-slate-600 dark:text-slate-300">タグ</label>
@@ -167,14 +193,28 @@ export function InterviewView({ userQuestions }: Props) {
               {current.memo}
             </p>
           )}
-          <button
-            type="button"
-            onClick={next}
-            autoFocus
-            className="mt-4 rounded-xl bg-sky-700 px-5 py-2.5 font-semibold text-white transition hover:bg-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-400"
-          >
-            次の質問 →
-          </button>
+          <div className="mt-4 flex flex-col gap-2">
+            <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
+              自分の言葉で言えましたか？
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => selfAssess(true)}
+                autoFocus
+                className="rounded-xl bg-emerald-700 px-5 py-2.5 font-semibold text-white transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              >
+                ◯ 言えた
+              </button>
+              <button
+                type="button"
+                onClick={() => selfAssess(false)}
+                className="rounded-xl bg-slate-200 px-5 py-2.5 font-semibold text-slate-800 transition hover:bg-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"
+              >
+                △ 言えなかった
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </section>

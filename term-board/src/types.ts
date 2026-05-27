@@ -64,6 +64,17 @@ export type ProfileDraft = {
   };
 };
 
+// F-INTV-02 / 要件定義書 §8-3: 学習セッション（学習ログ）。
+// 面接練習の「言えた/言えなかった」自己採点1回＝1セッション（asked=1, correct=0|1）として
+// 追記する。将来 quiz/card モードのログ集約にも使えるよう mode を持たせている。
+export type LearningSession = {
+  id: string;
+  startedAt: string; // ISO 文字列
+  mode: "quiz" | "card" | "interview";
+  asked: number; // 出題（自己採点）した数
+  correct: number; // 「言えた」と申告した数
+};
+
 // 用語ごとの「実力」。termId で Term と結合する（用語の追加・修正が進捗を壊さない）。
 export type Progress = {
   [termId: string]: {
