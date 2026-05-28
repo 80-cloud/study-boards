@@ -2,19 +2,42 @@ type Target = "quiz" | "card" | "dictionary" | "learn" | "interview" | "mock" | 
 
 type Props = { onNavigate: (view: Target) => void };
 
-const MODES: { key: Target; title: string; desc: string }[] = [
-  { key: "quiz", title: "4択クイズ", desc: "用語の意味を4択で。即採点＋解説で定着させる。" },
-  { key: "card", title: "暗記カード", desc: "表に用語、裏に意味。タップで裏返してサクッと暗記。" },
-  { key: "dictionary", title: "用語辞典", desc: "IT用語の意味を引く・覚える。検索・分野・レベル・あいうえお順。" },
-  { key: "learn", title: "学ぶ", desc: "学習ロードマップ・職種解説・図解で全体像をつかむ。" },
-  { key: "interview", title: "面接練習", desc: "面接の質問（志望動機・技術など）に声で答え、模範回答・型・NG例で確認。" },
-  { key: "mock", title: "模擬面接", desc: "用語の説明を30秒で。模範解答と並べて3観点で自己採点。" },
-  { key: "guide", title: "解説集", desc: "面接で訊かれる質問（論点）と模範解答を分類別に一覧。" },
-  { key: "dashboard", title: "ダッシュボード", desc: "正答率・苦手・連続学習を可視化。次の一手が分かる。" },
-  { key: "review", title: "振り返り", desc: "今日のメモと、日々の学習を時系列で振り返る。" },
-  { key: "prep", title: "自己PR", desc: "自己紹介・志望動機を穴埋めで下書き作成。" },
-  { key: "author", title: "マイ問題", desc: "自分で問題を作り、共有コードで配布・取り込み。" },
-  { key: "reverseq", title: "逆質問", desc: "「最後に質問は？」に備えて逆質問を貯める。いつでも編集。" },
+type Mode = { key: Target; title: string; desc: string };
+
+// ナビ（App.tsx の NAV_GROUPS）と同じ4グループで整理し、一貫した導線にする。
+const MODE_GROUPS: { label: string; modes: Mode[] }[] = [
+  {
+    label: "覚える",
+    modes: [
+      { key: "quiz", title: "4択クイズ", desc: "用語の意味を4択で。即採点＋解説で定着させる。" },
+      { key: "card", title: "暗記カード", desc: "表に用語、裏に意味。タップで裏返してサクッと暗記。" },
+      { key: "dictionary", title: "用語辞典", desc: "IT用語の意味を引く・覚える。検索・分野・レベル・あいうえお順。" },
+    ],
+  },
+  {
+    label: "面接対策",
+    modes: [
+      { key: "interview", title: "面接練習", desc: "面接の質問（志望動機・技術など）に声で答え、模範回答・型・NG例で確認。" },
+      { key: "mock", title: "模擬面接", desc: "用語の説明を30秒で。模範解答と並べて3観点で自己採点。" },
+      { key: "guide", title: "解説集", desc: "面接で訊かれる質問（論点）と模範解答を分類別に一覧。" },
+      { key: "reverseq", title: "逆質問", desc: "「最後に質問は？」に備えて逆質問を貯める。いつでも編集。" },
+    ],
+  },
+  {
+    label: "学ぶ・記録",
+    modes: [
+      { key: "learn", title: "学ぶ", desc: "学習ロードマップ・職種解説・図解で全体像をつかむ。" },
+      { key: "dashboard", title: "ダッシュボード", desc: "正答率・苦手・連続学習を可視化。次の一手が分かる。" },
+      { key: "review", title: "振り返り", desc: "今日のメモと、日々の学習を時系列で振り返る。" },
+      { key: "prep", title: "自己PR", desc: "自己紹介・志望動機を穴埋めで下書き作成。" },
+    ],
+  },
+  {
+    label: "マイ問題",
+    modes: [
+      { key: "author", title: "マイ問題", desc: "自分で問題を作り、共有コードで配布・取り込み。" },
+    ],
+  },
 ];
 
 // B7: トップページ（アプリ紹介・各モードへの入口）。
@@ -60,22 +83,29 @@ export function HomeView({ onNavigate }: Props) {
         </ol>
       </div>
 
-      {/* モード一覧 */}
-      <div>
-        <h2 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">機能から選ぶ</h2>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {MODES.map((m) => (
-            <button
-              key={m.key}
-              type="button"
-              onClick={() => onNavigate(m.key)}
-              className="rounded-2xl bg-white p-4 text-left shadow-sm ring-1 ring-slate-200 transition hover:ring-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-400 dark:bg-slate-800 dark:ring-slate-700 dark:hover:ring-sky-500"
-            >
-              <p className="font-bold text-slate-900 dark:text-slate-100">{m.title}</p>
-              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{m.desc}</p>
-            </button>
-          ))}
-        </div>
+      {/* モード一覧（ナビと同じ4グループで整理） */}
+      <div className="flex flex-col gap-5">
+        <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">機能から選ぶ</h2>
+        {MODE_GROUPS.map((group) => (
+          <div key={group.label}>
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              {group.label}
+            </h3>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {group.modes.map((m) => (
+                <button
+                  key={m.key}
+                  type="button"
+                  onClick={() => onNavigate(m.key)}
+                  className="rounded-2xl bg-white p-4 text-left shadow-sm ring-1 ring-slate-200 transition hover:ring-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-400 dark:bg-slate-800 dark:ring-slate-700 dark:hover:ring-sky-500"
+                >
+                  <p className="font-bold text-slate-900 dark:text-slate-100">{m.title}</p>
+                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{m.desc}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </section>
   );
