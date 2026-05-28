@@ -32,6 +32,20 @@ test.describe('smoke @smoke', () => {
     await expect(page.getByRole('heading', { name: /面接で言える/ })).toBeVisible();
   });
 
+  test('PCナビをサイドバーに切替でき、サイドバーから遷移できる', async ({ page }) => {
+    await page.goto('/');
+    // desktop の様式トグルでサイドバーへ。
+    await page.getByRole('button', { name: /サイドバーに切り替え/ }).click();
+    // サイドバー（モード一覧）から用語辞典へ。
+    const side = page.getByRole('navigation', { name: 'モード一覧' });
+    await expect(side).toBeVisible();
+    await side.getByRole('button', { name: '用語辞典', exact: true }).click();
+    await expect(page.getByPlaceholder('用語・意味で検索')).toBeVisible();
+    // 上部ツールバーへ戻せる。
+    await page.getByRole('button', { name: /上部ツールバーに切り替え/ }).click();
+    await expect(side).toBeHidden();
+  });
+
   test('4択クイズを1問解ける（採点と解説が出る）', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: '覚える', exact: true }).click();
