@@ -20,6 +20,51 @@ import { HomeView } from "./components/HomeView";
 
 type View = "home" | "quiz" | "card" | "dictionary" | "interview" | "mock" | "guide" | "author" | "reverseq" | "dashboard" | "review" | "prep" | "learn";
 
+// ナビのグループ定義（モバイルUX：13タブを4グループに集約）。
+// View ユニオンは維持し、ナビUIのみ2段構成にする。
+type NavGroup = {
+  key: string;
+  label: string;
+  views: { view: Exclude<View, "home">; label: string }[];
+};
+
+const NAV_GROUPS: NavGroup[] = [
+  {
+    key: "memorize",
+    label: "覚える",
+    views: [
+      { view: "quiz", label: "4択クイズ" },
+      { view: "card", label: "暗記カード" },
+      { view: "dictionary", label: "用語辞典" },
+    ],
+  },
+  {
+    key: "interview",
+    label: "面接対策",
+    views: [
+      { view: "interview", label: "面接練習" },
+      { view: "mock", label: "模擬面接" },
+      { view: "guide", label: "解説集" },
+      { view: "reverseq", label: "逆質問" },
+    ],
+  },
+  {
+    key: "learn",
+    label: "学ぶ・記録",
+    views: [
+      { view: "learn", label: "学ぶ" },
+      { view: "dashboard", label: "ダッシュボード" },
+      { view: "review", label: "振り返り" },
+      { view: "prep", label: "自己PR" },
+    ],
+  },
+  {
+    key: "mine",
+    label: "マイ問題",
+    views: [{ view: "author", label: "マイ問題" }],
+  },
+];
+
 export default function App() {
   const [view, setView] = useState<View>("home");
   const theme = useTheme();
@@ -31,6 +76,9 @@ export default function App() {
     quiz.answeredCount > 0
       ? Math.round((quiz.correctCount / quiz.answeredCount) * 100)
       : 0;
+
+  // 現在のビューが属するグループ（home のときは未選択）。
+  const activeGroup = NAV_GROUPS.find((g) => g.views.some((v) => v.view === view));
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
@@ -80,21 +128,36 @@ export default function App() {
             </div>
           </div>
 
-          <nav className="flex flex-wrap gap-2" aria-label="モード切替">
-            <NavTab active={view === "home"} onClick={() => setView("home")}>ホーム</NavTab>
-            <NavTab active={view === "quiz"} onClick={() => setView("quiz")}>4択クイズ</NavTab>
-            <NavTab active={view === "card"} onClick={() => setView("card")}>暗記カード</NavTab>
-            <NavTab active={view === "dictionary"} onClick={() => setView("dictionary")}>用語辞典</NavTab>
-            <NavTab active={view === "learn"} onClick={() => setView("learn")}>学ぶ</NavTab>
-            <NavTab active={view === "interview"} onClick={() => setView("interview")}>面接練習</NavTab>
-            <NavTab active={view === "mock"} onClick={() => setView("mock")}>模擬面接</NavTab>
-            <NavTab active={view === "guide"} onClick={() => setView("guide")}>解説集</NavTab>
-            <NavTab active={view === "dashboard"} onClick={() => setView("dashboard")}>ダッシュボード</NavTab>
-            <NavTab active={view === "review"} onClick={() => setView("review")}>振り返り</NavTab>
-            <NavTab active={view === "prep"} onClick={() => setView("prep")}>自己PR</NavTab>
-            <NavTab active={view === "author"} onClick={() => setView("author")}>マイ問題</NavTab>
-            <NavTab active={view === "reverseq"} onClick={() => setView("reverseq")}>逆質問</NavTab>
+          {/* 第1段：グループ（13タブを4グループに集約してモバイルでも2段以内に収める） */}
+          <nav className="flex flex-wrap gap-2" aria-label="カテゴリ切替">
+            {NAV_GROUPS.map((g) => (
+              <NavTab
+                key={g.key}
+                active={activeGroup?.key === g.key}
+                onClick={() => setView(g.views[0].view)}
+              >
+                {g.label}
+              </NavTab>
+            ))}
           </nav>
+
+          {/* 第2段：選択中グループのモード（単独グループは第1段で完結するため省略） */}
+          {activeGroup && activeGroup.views.length > 1 && (
+            <nav
+              className="flex flex-wrap gap-2 border-t border-slate-100 pt-3 dark:border-slate-700"
+              aria-label={`${activeGroup.label}のモード切替`}
+            >
+              {activeGroup.views.map((v) => (
+                <NavTab
+                  key={v.view}
+                  active={view === v.view}
+                  onClick={() => setView(v.view)}
+                >
+                  {v.label}
+                </NavTab>
+              ))}
+            </nav>
+          )}
         </div>
       </header>
 
