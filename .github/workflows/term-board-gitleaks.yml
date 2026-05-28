@@ -1,0 +1,68 @@
+name: term-board Secret Scan (gitleaks / S軸)
+
+# ============================================================
+# 機密情報の server-side スキャン（最後の防衛線）。
+# review-board-gitleaks.yml を term-board スコープで複製したもの。
+#
+# 目的: GitHub Web 編集 / `git commit --no-verify` 等、ローカル hook を
+#       バイパスする経路を塞ぐ。task-board の平文パスワード Public コミット
+#       事故（不可逆）と同型の再発防止（S軸の核）。
+#
+# 方式: バージョン固定の gitleaks で term-board ツリーを走査。設定は
+#       リポジトリルートの .gitleaks.toml を review-board と共用する。
+# ============================================================
+
+on:
+  pull_request:
+    paths:
+      - 'term-board/**'
+      - '.gitleaks.toml'
+      - '.github/workflows/term-board-gitleaks.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'term-board/**'
+      - '.gitleaks.toml'
+      - '.github/workflows/term-board-gitleaks.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: tb-gitleaks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secret-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    env:
+      GITLEAKS_VERSION: 8.30.1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: gitleaks をインストール（バージョン固定）
+        run: |
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | tar -xz -C /tmp gitleaks
+          sudo install /tmp/gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+
+      - name: term-board を機密情報スキャン
+        run: |
+          # 検知時は gitleaks が exit 1 → step が fail。設定は repo ルートの .gitleaks.toml。
+          gitleaks dir term-board \
+            --config .gitleaks.toml \
+            --report-path gitleaks-report.json \
+            --report-format json \
+            --redact \
+            --verbose
+
+      - name: 検出レポートを artifact 化（失敗時のみ）
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tb-gitleaks-report
+          path: gitleaks-report.json
+          retention-days: 7
