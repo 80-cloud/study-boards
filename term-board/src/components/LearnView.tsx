@@ -10,7 +10,7 @@ const jobRoles = jobRolesData as JobRole[];
 
 type Tab = "roadmap" | "jobs" | "diagram";
 
-const card = "rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700";
+const card = "hig-card p-5";
 const chip = "rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800 dark:bg-sky-900 dark:text-sky-200";
 
 // B6: 学ぶ指針（学習ロードマップ・業界職種解説・図解説明）。
@@ -30,12 +30,12 @@ export function LearnView() {
           {roadmap.map((s) => (
             <li key={s.step} className={card}>
               <div className="flex items-center gap-3">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sky-700 text-sm font-bold text-white">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent-fill text-sm font-bold text-white">
                   {s.step}
                 </span>
-                <h2 className="font-bold text-slate-900 dark:text-slate-100">{s.title}</h2>
+                <h2 className="font-bold text-label">{s.title}</h2>
               </div>
-              <p className="mt-2 text-sm leading-relaxed text-slate-700 dark:text-slate-300">{s.desc}</p>
+              <p className="mt-2 text-sm leading-relaxed text-label-2">{s.desc}</p>
               {s.keywords.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {s.keywords.map((k) => (
@@ -52,9 +52,9 @@ export function LearnView() {
         <ul className="flex flex-col gap-3">
           {jobRoles.map((j) => (
             <li key={j.role} className={card}>
-              <h2 className="font-bold text-slate-900 dark:text-slate-100">{j.role}</h2>
-              <p className="mt-1 text-sm font-medium text-sky-700 dark:text-sky-400">{j.summary}</p>
-              <p className="mt-1 text-sm leading-relaxed text-slate-700 dark:text-slate-300">{j.doing}</p>
+              <h2 className="font-bold text-label">{j.role}</h2>
+              <p className="mt-1 text-sm font-medium text-accent">{j.summary}</p>
+              <p className="mt-1 text-sm leading-relaxed text-label-2">{j.doing}</p>
               {j.keywords.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {j.keywords.map((k) => (
@@ -89,13 +89,13 @@ export function LearnView() {
 function ClientServerDiagram() {
   return (
     <figure className={card}>
-      <figcaption className="font-bold text-slate-900 dark:text-slate-100">クライアントとサーバー</figcaption>
-      <p className="mt-1 mb-3 text-sm text-slate-700 dark:text-slate-300">
+      <figcaption className="font-bold text-label">クライアントとサーバー</figcaption>
+      <p className="mt-1 mb-3 text-sm text-label-2">
         ブラウザ（クライアント）が「ください」と頼み、サーバーが「どうぞ」と返す関係。
       </p>
       <div className="flex items-center justify-center gap-3 text-center text-sm">
         <Box label="ブラウザ" sub="クライアント" />
-        <div className="flex flex-col items-center text-xs text-slate-500 dark:text-slate-400">
+        <div className="flex flex-col items-center text-xs text-label-2">
           <span aria-hidden="true">→ リクエスト</span>
           <span aria-hidden="true">← レスポンス</span>
         </div>
@@ -109,8 +109,8 @@ function ClientServerDiagram() {
 function RequestFlowDiagram() {
   return (
     <figure className={card}>
-      <figcaption className="font-bold text-slate-900 dark:text-slate-100">ページが表示されるまで</figcaption>
-      <p className="mt-1 mb-3 text-sm text-slate-700 dark:text-slate-300">
+      <figcaption className="font-bold text-label">ページが表示されるまで</figcaption>
+      <p className="mt-1 mb-3 text-sm text-label-2">
         名前を住所に変換し（DNS）、確実に届け（TCP/IP）、暗号化して安全にやりとりする（HTTPS）。
       </p>
       <ol className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
@@ -130,8 +130,8 @@ function RequestFlowDiagram() {
 function ThreeTierDiagram() {
   return (
     <figure className={card}>
-      <figcaption className="font-bold text-slate-900 dark:text-slate-100">アプリの3層構造</figcaption>
-      <p className="mt-1 mb-3 text-sm text-slate-700 dark:text-slate-300">
+      <figcaption className="font-bold text-label">アプリの3層構造</figcaption>
+      <p className="mt-1 mb-3 text-sm text-label-2">
         画面・処理・保存で役割を分ける。フロントは見た目、バックは処理とAPI、DBはデータ保存を担う。
       </p>
       <ol className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
@@ -149,8 +149,8 @@ function ThreeTierDiagram() {
 function TestTypesDiagram() {
   return (
     <figure className={card}>
-      <figcaption className="font-bold text-slate-900 dark:text-slate-100">テストの種類</figcaption>
-      <p className="mt-1 mb-3 text-sm text-slate-700 dark:text-slate-300">
+      <figcaption className="font-bold text-label">テストの種類</figcaption>
+      <p className="mt-1 mb-3 text-sm text-label-2">
         小さく速い単体から、つないで確認する結合、ユーザー操作全体のE2Eへ。役割を分けて組み合わせる。
       </p>
       <ol className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
@@ -233,8 +233,8 @@ const COMPARE_DIAGRAMS: Compare[] = [
 function FlowDiagram({ title, desc, steps }: Flow) {
   return (
     <figure className={card}>
-      <figcaption className="font-bold text-slate-900 dark:text-slate-100">{title}</figcaption>
-      <p className="mt-1 mb-3 text-sm text-slate-700 dark:text-slate-300">{desc}</p>
+      <figcaption className="font-bold text-label">{title}</figcaption>
+      <p className="mt-1 mb-3 text-sm text-label-2">{desc}</p>
       <ol className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-stretch">
         {steps.map((s, i) => (
           <Fragment key={s.t + i}>
@@ -250,13 +250,13 @@ function FlowDiagram({ title, desc, steps }: Flow) {
 function CompareDiagram({ title, desc, left, right }: Compare) {
   return (
     <figure className={card}>
-      <figcaption className="font-bold text-slate-900 dark:text-slate-100">{title}</figcaption>
-      <p className="mt-1 mb-3 text-sm text-slate-700 dark:text-slate-300">{desc}</p>
+      <figcaption className="font-bold text-label">{title}</figcaption>
+      <p className="mt-1 mb-3 text-sm text-label-2">{desc}</p>
       <div className="grid grid-cols-2 gap-3">
         {[left, right].map((col) => (
           <div key={col.label} className="rounded-xl border-2 border-sky-300 bg-sky-50 p-3 dark:border-sky-700 dark:bg-sky-950">
-            <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{col.label}</p>
-            <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-slate-600 dark:text-slate-300">
+            <p className="text-sm font-bold text-label">{col.label}</p>
+            <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-label-2">
               {col.points.map((p) => (
                 <li key={p}>{p}</li>
               ))}
@@ -271,19 +271,19 @@ function CompareDiagram({ title, desc, left, right }: Compare) {
 function Box({ label, sub }: { label: string; sub: string }) {
   return (
     <div className="rounded-xl border-2 border-sky-300 bg-sky-50 px-4 py-3 dark:border-sky-700 dark:bg-sky-950">
-      <p className="font-bold text-slate-900 dark:text-slate-100">{label}</p>
-      <p className="text-xs text-slate-600 dark:text-slate-300">{sub}</p>
+      <p className="font-bold text-label">{label}</p>
+      <p className="text-xs text-label-2">{sub}</p>
     </div>
   );
 }
 
 function Step({ n, t, d }: { n: string; t: string; d: string }) {
   return (
-    <li className="flex flex-1 items-center gap-2 rounded-xl bg-slate-100 px-3 py-2 dark:bg-slate-700">
-      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sky-700 text-xs font-bold text-white">{n}</span>
+    <li className="flex flex-1 items-center gap-2 rounded-control bg-surface-2 px-3 py-2">
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent-fill text-xs font-bold text-white">{n}</span>
       <span>
-        <span className="block text-sm font-semibold text-slate-900 dark:text-slate-100">{t}</span>
-        <span className="block text-xs text-slate-600 dark:text-slate-300">{d}</span>
+        <span className="block text-sm font-semibold text-label">{t}</span>
+        <span className="block text-xs text-label-2">{d}</span>
       </span>
     </li>
   );
@@ -291,7 +291,7 @@ function Step({ n, t, d }: { n: string; t: string; d: string }) {
 
 function Arrow() {
   return (
-    <li aria-hidden="true" className="flex items-center justify-center text-slate-400 dark:text-slate-500">
+    <li aria-hidden="true" className="flex items-center justify-center text-label-3">
       <span className="hidden sm:inline">→</span>
       <span className="sm:hidden">↓</span>
     </li>
@@ -305,8 +305,8 @@ function SubTab({ active, onClick, children }: { active: boolean; onClick: () =>
       role="tab"
       aria-selected={active}
       onClick={onClick}
-      className={`rounded-lg px-3 py-1.5 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-sky-400 ${
-        active ? "bg-sky-700 text-white" : "bg-white text-slate-600 ring-1 ring-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-600"
+      className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+        active ? "bg-accent-fill text-white" : "bg-surface text-label-2 ring-1 ring-separator hover:text-label"
       }`}
     >
       {children}

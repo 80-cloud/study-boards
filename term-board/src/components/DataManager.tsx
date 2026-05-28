@@ -51,33 +51,33 @@ export function DataManager() {
     setTimeout(() => window.location.reload(), 800);
   };
 
-  const card = "rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700";
+  const card = "hig-card p-5";
 
   return (
     <div className={card}>
-      <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">データ管理</h2>
-      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+      <h2 className="text-sm font-semibold text-label">データ管理</h2>
+      <p className="mt-1 text-xs text-label-2">
         データはこのブラウザにのみ保存されます。機種変更やバックアップにはエクスポートをご利用ください。
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
         <button
           type="button"
           onClick={handleExport}
-          className="rounded-xl bg-sky-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-400"
+          className="hig-btn-primary px-4 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           エクスポート（保存）
         </button>
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
-          className="rounded-xl bg-slate-200 px-4 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"
+          className="rounded-control bg-fill-quaternary px-4 py-2 text-sm font-semibold text-label transition hover:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           インポート（復元）
         </button>
         <button
           type="button"
           onClick={handleReset}
-          className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-rose-700 ring-1 ring-rose-300 transition hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-400 dark:bg-slate-800 dark:text-rose-300 dark:ring-rose-800 dark:hover:bg-rose-950"
+          className="rounded-control bg-surface px-4 py-2 text-sm font-semibold text-rose-700 ring-1 ring-rose-300 transition hover:bg-rose-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 dark:text-rose-300 dark:ring-rose-800 dark:hover:bg-rose-950"
         >
           進捗をリセット
         </button>

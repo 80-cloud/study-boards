@@ -135,7 +135,7 @@ export function DashboardView({ bookmarks }: Props) {
     return "知識も「言える」も好調です。この調子で続けましょう。";
   }, [totals.answered, weakTerms, unlearned, interview]);
 
-  const card = "rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700";
+  const card = "hig-card p-5";
 
   return (
     <section className="flex flex-col gap-4">
@@ -149,22 +149,22 @@ export function DashboardView({ bookmarks }: Props) {
 
       {/* 学習おすすめ */}
       <div className={card}>
-        <h2 className="text-sm font-semibold text-sky-700 dark:text-sky-400">学習おすすめ</h2>
-        <p className="mt-1 text-slate-800 dark:text-slate-100">{recommendation}</p>
+        <h2 className="text-sm font-semibold text-accent">学習おすすめ</h2>
+        <p className="mt-1 text-label">{recommendation}</p>
       </div>
 
       {/* 面接練習の実績（F-INTV-02） */}
       <div className={card}>
-        <h2 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">面接練習の実績</h2>
+        <h2 className="mb-2 text-sm font-semibold text-label-2">面接練習の実績</h2>
         {interview.asked === 0 ? (
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-sm text-label-2">
             まだ面接練習の記録がありません。「面接練習」で答えて自己採点しましょう。
           </p>
         ) : (
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-slate-700 dark:text-slate-300">
-              練習回数 <span className="font-semibold text-slate-900 dark:text-slate-100">{interview.asked}</span> 回
-              <span className="ml-2">言えた <span className="font-semibold text-slate-900 dark:text-slate-100">{interview.said}</span> 回</span>
+            <p className="text-sm text-label-2">
+              練習回数 <span className="font-semibold text-label">{interview.asked}</span> 回
+              <span className="ml-2">言えた <span className="font-semibold text-label">{interview.said}</span> 回</span>
             </p>
             <p className="text-sm">
               言えた率 <span className="font-bold text-emerald-700 dark:text-emerald-400">{interview.rate}%</span>
@@ -175,21 +175,21 @@ export function DashboardView({ bookmarks }: Props) {
 
       {/* 分野別正答率 */}
       <div className={card}>
-        <h2 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-300">分野別の正答率</h2>
+        <h2 className="mb-3 text-sm font-semibold text-label-2">分野別の正答率</h2>
         {catStats.length === 0 ? (
-          <p className="text-sm text-slate-500 dark:text-slate-400">まだ解答記録がありません。</p>
+          <p className="text-sm text-label-2">まだ解答記録がありません。</p>
         ) : (
           <ul className="flex flex-col gap-3">
             {catStats.map((c) => (
               <li key={c.category}>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-700 dark:text-slate-300">{c.category}</span>
-                  <span className="font-semibold text-slate-900 dark:text-slate-100">
-                    {c.rate}%<span className="ml-1 text-xs font-normal text-slate-500 dark:text-slate-400">（{c.correct}/{c.correct + c.wrong}）</span>
+                  <span className="text-label-2">{c.category}</span>
+                  <span className="font-semibold text-label">
+                    {c.rate}%<span className="ml-1 text-xs font-normal text-label-2">（{c.correct}/{c.correct + c.wrong}）</span>
                   </span>
                 </div>
-                <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
-                  <div className="h-full rounded-full bg-sky-600 dark:bg-sky-500" style={{ width: `${c.rate}%` }} />
+                <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-fill-quaternary">
+                  <div className="h-full rounded-full bg-accent-fill" style={{ width: `${c.rate}%` }} />
                 </div>
               </li>
             ))}
@@ -199,14 +199,14 @@ export function DashboardView({ bookmarks }: Props) {
 
       {/* 苦手用語 */}
       <div className={card}>
-        <h2 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">苦手な用語（要復習）</h2>
+        <h2 className="mb-2 text-sm font-semibold text-label-2">苦手な用語（要復習）</h2>
         {weakTerms.length === 0 ? (
-          <p className="text-sm text-slate-500 dark:text-slate-400">苦手な用語はまだありません。</p>
+          <p className="text-sm text-label-2">苦手な用語はまだありません。</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {weakTerms.map((w) => (
               <li key={w.term.id} className="flex items-center justify-between gap-3 text-sm">
-                <span className="truncate text-slate-800 dark:text-slate-200">{w.term.term}</span>
+                <span className="truncate text-label">{w.term.term}</span>
                 <span className="shrink-0 text-rose-700 dark:text-rose-400">
                   誤答 {w.wrong}/{w.total}
                 </span>
@@ -219,12 +219,12 @@ export function DashboardView({ bookmarks }: Props) {
       {/* 混同ペア分析（F-QUIZ-06） */}
       {confusions.length > 0 && (
         <div className={card}>
-          <h2 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">混同しやすい用語</h2>
-          <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">4択で選んだ誤答と、正しい意味を見比べましょう。</p>
+          <h2 className="mb-2 text-sm font-semibold text-label-2">混同しやすい用語</h2>
+          <p className="mb-3 text-xs text-label-2">4択で選んだ誤答と、正しい意味を見比べましょう。</p>
           <ul className="flex flex-col gap-3">
             {confusions.map((c) => (
               <li key={c.term.id}>
-                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{c.term.term}</p>
+                <p className="text-sm font-semibold text-label">{c.term.term}</p>
                 {c.chosen.map((ch) => (
                   <p key={ch} className="mt-1 text-sm leading-relaxed text-rose-700 dark:text-rose-400">
                     ✕ 選んだ誤答：{ch}
@@ -239,7 +239,7 @@ export function DashboardView({ bookmarks }: Props) {
         </div>
       )}
 
-      <p className="text-center text-xs text-slate-500 dark:text-slate-400">
+      <p className="text-center text-xs text-label-2">
         学習日数 {studyDays.length} 日 ／ 未学習 {unlearned} 件
       </p>
 
@@ -250,9 +250,9 @@ export function DashboardView({ bookmarks }: Props) {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-white px-3 py-3 text-center shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
-      <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
-      <p className="mt-0.5 text-lg font-bold text-slate-900 dark:text-slate-100">{value}</p>
+    <div className="hig-card px-3 py-3 text-center">
+      <p className="text-xs text-label-2">{label}</p>
+      <p className="mt-0.5 text-lg font-bold text-label">{value}</p>
     </div>
   );
 }

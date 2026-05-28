@@ -4,9 +4,9 @@ import { useProfileDraft } from "../hooks/useProfileDraft";
 type Tab = "selfIntro" | "motivation";
 
 const inputClass =
-  "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-400 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100";
-const labelClass = "block text-sm font-medium text-slate-700 dark:text-slate-300";
-const card = "rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700";
+  "w-full rounded-control border border-separator bg-surface px-3 py-2 text-sm text-label focus:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent";
+const labelClass = "block text-sm font-medium text-label-2";
+const card = "hig-card p-5";
 
 // B5: 自己紹介作成・志望動機整理。穴埋め → 下書き生成 → コピー。保存は自動（localStorage）。
 export function PrepView() {
@@ -52,7 +52,7 @@ export function PrepView() {
       </div>
 
       <div className={`${card} flex flex-col gap-3`}>
-        <p className="text-sm text-slate-600 dark:text-slate-300">
+        <p className="text-sm text-label-2">
           項目を埋めると下書きが組み上がります。入力は自動保存されます。
         </p>
         {tab === "selfIntro" ? (
@@ -75,17 +75,17 @@ export function PrepView() {
 
       <div className={card}>
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">下書き</h2>
+          <h2 className="text-sm font-semibold text-label">下書き</h2>
           <button
             type="button"
             onClick={copy}
             disabled={!generated}
-            className="rounded-lg px-3 py-1 text-sm font-medium text-sky-700 ring-1 ring-sky-200 transition hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-400 disabled:text-slate-400 disabled:ring-slate-200 dark:text-sky-300 dark:ring-sky-800 dark:hover:bg-slate-700"
+            className="rounded-control px-3 py-1 text-sm font-medium text-accent ring-1 ring-separator transition hover:bg-fill-quaternary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:text-label-3"
           >
             {copied ? "コピーしました" : "コピー"}
           </button>
         </div>
-        <p className="mt-2 min-h-[3rem] whitespace-pre-wrap text-sm leading-relaxed text-slate-800 dark:text-slate-100">
+        <p className="mt-2 min-h-[3rem] whitespace-pre-wrap text-sm leading-relaxed text-label">
           {generated || "上の項目を入力すると、ここに下書きが表示されます。"}
         </p>
       </div>
@@ -121,8 +121,8 @@ function SubTab({ active, onClick, children }: { active: boolean; onClick: () =>
       role="tab"
       aria-selected={active}
       onClick={onClick}
-      className={`rounded-lg px-3 py-1.5 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-sky-400 ${
-        active ? "bg-sky-700 text-white" : "bg-white text-slate-600 ring-1 ring-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-600"
+      className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+        active ? "bg-accent-fill text-white" : "bg-surface text-label-2 ring-1 ring-separator hover:text-label"
       }`}
     >
       {children}
