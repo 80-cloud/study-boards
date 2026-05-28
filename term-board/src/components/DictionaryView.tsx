@@ -18,7 +18,17 @@ export function DictionaryView({ bookmarks }: Props) {
   const [category, setCategory] = useState("");
   const [onlyBookmarked, setOnlyBookmarked] = useState(false);
   const [sort, setSort] = useState<"default" | "asc" | "desc">("default");
-  const [openId, setOpenId] = useState<string | null>(null);
+  // #397: 複数項目を同時に展開できるよう Set で管理する（旧来の単一 openId からの拡張）。
+  const [openIds, setOpenIds] = useState<Set<string>>(new Set());
+  const isOpen = (id: string) => openIds.has(id);
+  const toggleOpen = (id: string) => {
+    setOpenIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   useEffect(() => {
     let active = true;
@@ -102,17 +112,37 @@ export function DictionaryView({ bookmarks }: Props) {
         </div>
       </div>
 
-      <p className="text-sm text-label-2">{filtered.length} 件</p>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm text-label-2">{filtered.length} 件</p>
+        {filtered.length > 0 && (
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setOpenIds(new Set(filtered.map((t) => t.id)))}
+              className="rounded-control px-2 py-1 text-xs font-medium text-accent ring-1 ring-separator transition hover:bg-fill-quaternary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              すべて開く
+            </button>
+            <button
+              type="button"
+              onClick={() => setOpenIds(new Set())}
+              className="rounded-control px-2 py-1 text-xs font-medium text-label-2 ring-1 ring-separator transition hover:bg-fill-quaternary hover:text-label focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              すべて閉じる
+            </button>
+          </div>
+        )}
+      </div>
 
       <ul className="flex flex-col gap-2">
         {filtered.map((t) => {
-          const open = openId === t.id;
+          const open = isOpen(t.id);
           return (
             <li key={t.id} className="hig-card">
               <div className="flex items-center gap-2 p-3">
                 <button
                   type="button"
-                  onClick={() => setOpenId(open ? null : t.id)}
+                  onClick={() => toggleOpen(t.id)}
                   aria-expanded={open}
                   className="flex min-w-0 flex-1 items-center gap-2 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 >
