@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
-import { repository } from "../api";
+import { useState } from "react";
+import type { UseUserContent } from "../hooks/useUserContent";
 
 // F-INTV-07: 逆質問ストック。面接終盤の「最後に何か質問は？」に備えて貯める。
-// プリセット候補からの追加・自由入力・削除に対応し、localStorage に保存する。
+// データは UserContent の reverseQuestions に統合済み（#425）。マイ問題（共有可能）と一体運用。
 
 const PRESETS = [
   "入社後、最初の3か月で期待される役割は何ですか？",
@@ -12,35 +12,17 @@ const PRESETS = [
   "評価制度やキャリアの伸ばし方について教えてください。",
 ];
 
-export function ReverseQuestionStock() {
-  const [items, setItems] = useState<string[]>([]);
+type Props = { user: UseUserContent };
+
+export function ReverseQuestionStock({ user }: Props) {
+  const items = user.content.reverseQuestions ?? [];
   const [draft, setDraft] = useState("");
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    repository.getReverseQuestions().then((qs) => {
-      if (!active) return;
-      setItems(qs);
-      setLoaded(true);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const persist = (next: string[]) => {
-    setItems(next);
-    void repository.saveReverseQuestions(next);
-  };
 
   const add = (q: string) => {
-    const v = q.trim();
-    if (!v || items.includes(v)) return;
-    persist([...items, v]);
+    user.addReverseQuestion(q);
   };
 
-  const remove = (q: string) => persist(items.filter((x) => x !== q));
+  const remove = (q: string) => user.removeReverseQuestion(q);
 
   const availablePresets = PRESETS.filter((p) => !items.includes(p));
 
@@ -77,7 +59,7 @@ export function ReverseQuestionStock() {
       </form>
 
       {/* ストック一覧 */}
-      {loaded && items.length === 0 ? (
+      {items.length === 0 ? (
         <p className="mt-3 text-sm text-label-2">まだありません。下の候補や自由入力から追加できます。</p>
       ) : (
         <ul className="mt-3 flex flex-col gap-2">

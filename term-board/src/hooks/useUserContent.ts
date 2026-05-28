@@ -19,12 +19,16 @@ export type UseUserContent = {
   updateInterviewQuestion: (id: string, q: NewInterviewQuestion) => void;
   removeQuizTerm: (id: string) => void;
   removeInterviewQuestion: (id: string) => void;
+  /** 逆質問を追加（重複は無視）。#425 */
+  addReverseQuestion: (q: string) => void;
+  /** 逆質問を削除。#425 */
+  removeReverseQuestion: (q: string) => void;
   exportCode: () => string;
   /** 共有コードを取り込み、追加件数を返す。失敗時は例外を投げる。 */
-  importCode: (code: string) => { quiz: number; interview: number };
+  importCode: (code: string) => { quiz: number; interview: number; reverse: number };
 };
 
-const EMPTY: UserContent = { quizTerms: [], interviewQuestions: [] };
+const EMPTY: UserContent = { quizTerms: [], interviewQuestions: [], reverseQuestions: [] };
 
 export function useUserContent(): UseUserContent {
   const [content, setContent] = useState<UserContent>(EMPTY);
@@ -112,10 +116,32 @@ export function useUserContent(): UseUserContent {
     });
   }, []);
 
+  const addReverseQuestion = useCallback((q: string) => {
+    const v = q.trim();
+    if (!v) return;
+    setContent((prev) => {
+      const current = prev.reverseQuestions ?? [];
+      if (current.includes(v)) return prev; // 重複は追加しない
+      const next: UserContent = { ...prev, reverseQuestions: [...current, v] };
+      void repository.saveUserContent(next);
+      return next;
+    });
+  }, []);
+
+  const removeReverseQuestion = useCallback((q: string) => {
+    setContent((prev) => {
+      const current = prev.reverseQuestions ?? [];
+      const next: UserContent = { ...prev, reverseQuestions: current.filter((x) => x !== q) };
+      void repository.saveUserContent(next);
+      return next;
+    });
+  }, []);
+
   const exportCode = useCallback(() => encodeShareCode(content), [content]);
 
   // 取り込み時はIDを振り直して衝突を避け、既存に追記する。
   // 取り込んだ問題は他者作なので source="shared" を付与（自作 user と区別。#385）。
+  // 逆質問は文字列なのでIDなし、重複は無視（#425）。
   const importCode = useCallback(
     (code: string) => {
       const incoming = decodeShareCode(code);
@@ -125,15 +151,26 @@ export function useUserContent(): UseUserContent {
         id: newId(),
         source: "shared" as const,
       }));
+      const incomingReverse = incoming.reverseQuestions ?? [];
+      let addedReverse = 0;
       setContent((prev) => {
+        const prevReverse = prev.reverseQuestions ?? [];
+        const mergedReverse = [...prevReverse];
+        for (const q of incomingReverse) {
+          if (!mergedReverse.includes(q)) {
+            mergedReverse.push(q);
+            addedReverse++;
+          }
+        }
         const next: UserContent = {
           quizTerms: [...prev.quizTerms, ...quiz],
           interviewQuestions: [...prev.interviewQuestions, ...interview],
+          reverseQuestions: mergedReverse,
         };
         void repository.saveUserContent(next);
         return next;
       });
-      return { quiz: quiz.length, interview: interview.length };
+      return { quiz: quiz.length, interview: interview.length, reverse: addedReverse };
     },
     [],
   );
@@ -146,6 +183,8 @@ export function useUserContent(): UseUserContent {
     updateInterviewQuestion,
     removeQuizTerm,
     removeInterviewQuestion,
+    addReverseQuestion,
+    removeReverseQuestion,
     exportCode,
     importCode,
   };

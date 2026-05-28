@@ -145,7 +145,7 @@ export default function App() {
       {view === "mock" && <MockInterviewView />}
       {view === "guide" && <GuideView userQuestions={user.content.interviewQuestions} />}
       {view === "author" && <AuthorView user={user} />}
-      {view === "reverseq" && <ReverseQuestionStock />}
+      {view === "reverseq" && <ReverseQuestionStock user={user} />}
     </>
   );
 

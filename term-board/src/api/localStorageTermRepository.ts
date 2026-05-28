@@ -58,18 +58,33 @@ function readProgressFrom(key: string): Progress {
 function readUserContent(): UserContent {
   try {
     const raw = localStorage.getItem(USER_CONTENT_KEY);
-    if (!raw) return EMPTY_USER_CONTENT;
-    const parsed: unknown = JSON.parse(raw);
-    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-      return EMPTY_USER_CONTENT;
-    }
-    const obj = parsed as Partial<UserContent>;
-    return {
-      quizTerms: Array.isArray(obj.quizTerms) ? obj.quizTerms : [],
-      interviewQuestions: Array.isArray(obj.interviewQuestions) ? obj.interviewQuestions : [],
-    };
+    const parsed: unknown = raw ? JSON.parse(raw) : null;
+    const obj =
+      typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)
+        ? (parsed as Partial<UserContent>)
+        : {};
+    const quizTerms = Array.isArray(obj.quizTerms) ? obj.quizTerms : [];
+    const interviewQuestions = Array.isArray(obj.interviewQuestions) ? obj.interviewQuestions : [];
+    // #425: 逆質問が UserContent 側に未設定なら、旧キーから取り込んで一段化する
+    // （次回 saveUserContent で UserContent 側に永続化される）。
+    const fromUserContent = Array.isArray(obj.reverseQuestions) ? obj.reverseQuestions : null;
+    const reverseQuestions = fromUserContent ?? readLegacyReverseQuestions();
+    return { quizTerms, interviewQuestions, reverseQuestions };
   } catch {
     return EMPTY_USER_CONTENT;
+  }
+}
+
+// 旧 reverseQuestions:v1（#425 統合前の独立キー）の読み込み。
+// 破損時は空配列。
+function readLegacyReverseQuestions(): string[] {
+  try {
+    const raw = localStorage.getItem(REVERSE_Q_KEY);
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === "string") : [];
+  } catch {
+    return [];
   }
 }
 
@@ -237,26 +252,6 @@ export const localStorageTermRepository: TermRepository = {
       localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
     } catch {
       console.warn("[term-board] 学習メモの保存に失敗しました。");
-    }
-  },
-
-  async getReverseQuestions(): Promise<string[]> {
-    try {
-      const raw = localStorage.getItem(REVERSE_Q_KEY);
-      if (!raw) return [];
-      const parsed: unknown = JSON.parse(raw);
-      if (!Array.isArray(parsed)) return [];
-      return parsed.filter((q): q is string => typeof q === "string");
-    } catch {
-      return [];
-    }
-  },
-
-  async saveReverseQuestions(questions: string[]): Promise<void> {
-    try {
-      localStorage.setItem(REVERSE_Q_KEY, JSON.stringify(questions));
-    } catch {
-      console.warn("[term-board] 逆質問の保存に失敗しました。");
     }
   },
 

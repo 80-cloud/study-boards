@@ -38,10 +38,6 @@ export interface TermRepository {
   getNotes(): Promise<Record<string, string>>;
   saveNote(day: string, text: string): Promise<void>;
 
-  // F-INTV-07: 逆質問ストック（面接終盤の「最後に質問は?」に備える）。
-  getReverseQuestions(): Promise<string[]>;
-  saveReverseQuestions(questions: string[]): Promise<void>;
-
   // F-QUIZ-06: 混同ペア分析。誤答時に選んだ誤答テキストを用語ごとに記録する。
   getMisses(): Promise<Record<string, string[]>>;
   recordMiss(termId: string, chosen: string): Promise<void>;

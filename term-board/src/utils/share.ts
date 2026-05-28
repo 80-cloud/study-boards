@@ -34,13 +34,17 @@ export function encodeShareCode(content: UserContent): string {
 export function decodeShareCode(code: string): UserContent {
   const obj: unknown = JSON.parse(base64ToUtf8(code));
   if (typeof obj !== "object" || obj === null) throw new Error("共有コードの形式が不正です。");
-  const o = obj as { quizTerms?: unknown; interviewQuestions?: unknown };
+  const o = obj as { quizTerms?: unknown; interviewQuestions?: unknown; reverseQuestions?: unknown };
   const quizTerms = Array.isArray(o.quizTerms) ? (o.quizTerms as Term[]) : [];
   const interviewQuestions = Array.isArray(o.interviewQuestions)
     ? (o.interviewQuestions as InterviewQuestion[])
     : [];
-  if (quizTerms.length === 0 && interviewQuestions.length === 0) {
+  // 逆質問は文字列配列。型不一致は黙って捨てる（落とすほうが安全）。
+  const reverseQuestions = Array.isArray(o.reverseQuestions)
+    ? (o.reverseQuestions.filter((x): x is string => typeof x === "string"))
+    : [];
+  if (quizTerms.length === 0 && interviewQuestions.length === 0 && reverseQuestions.length === 0) {
     throw new Error("取り込める問題が含まれていません。");
   }
-  return { quizTerms, interviewQuestions };
+  return { quizTerms, interviewQuestions, reverseQuestions };
 }

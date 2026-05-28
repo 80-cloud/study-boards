@@ -50,6 +50,7 @@ export type InterviewQuestion = {
 export type UserContent = {
   quizTerms: Term[]; // ユーザー作問の4択用語
   interviewQuestions: InterviewQuestion[]; // ユーザー作問の面接Q&A
+  reverseQuestions?: string[]; // 逆質問（#425・任意フィールドで後方互換）
 };
 
 // B5: 自己紹介・志望動機の下書き素材（穴埋め式・localStorage保存）。
