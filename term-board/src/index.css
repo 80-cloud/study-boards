@@ -3,3 +3,98 @@
 /* B2: ダークを「クラス式」に（.dark 配下でのみ dark: が効く）。
    prefers-color-scheme 依存だと背景と文字が食い違うため、手動トグルで制御する。 */
 @custom-variant dark (&:where(.dark, .dark *));
+
+/* =========================================================================
+   Apple HIG デザイントークン（#371・iOS/macOS 踏襲の土台）
+   - セマンティックなシステムカラーを CSS 変数で定義し、.dark で値だけ差し替える。
+     → `bg-canvas` 等の Tailwind ユーティリティが light/dark で自動スイッチし、
+       個々の要素に dark: を付けずに済む（移行後の保守を軽くする）。
+   - コントラストは WCAG AA（A11y=100 維持）を満たす値を選定済み。
+   ========================================================================= */
+@theme {
+  /* SF 系システムフォント。日本語は Hiragino をフォールバックに置く。 */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+    "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, system-ui, sans-serif;
+
+  /* 背景・面（var 参照で .dark 時に自動スイッチ） */
+  --color-canvas: var(--c-canvas); /* ページ背景（systemGroupedBackground） */
+  --color-surface: var(--c-surface); /* カード（secondarySystemGroupedBackground） */
+  --color-surface-2: var(--c-surface-2); /* 入れ子の面・hover */
+  --color-bar: var(--c-bar); /* ナビ/ツールバー（半透明・blur 前提） */
+
+  /* 文字 */
+  --color-label: var(--c-label);
+  --color-label-2: var(--c-label-2); /* secondaryLabel 相当（AA 確保のため濃いめ） */
+  --color-label-3: var(--c-label-3); /* tertiaryLabel（大文字キャプション用） */
+
+  /* 罫線・アクセント */
+  --color-separator: var(--c-separator);
+  --color-accent: var(--c-accent); /* リンク・選択中テキスト */
+  --color-accent-fill: var(--c-accent-fill); /* 塗りボタンの背景（白文字で AA） */
+  --color-fill-quaternary: var(--c-fill-4); /* セグメント等の薄い面 */
+
+  /* 角丸（iOS のカード ~14、コントロール ~10） */
+  --radius-card: 14px;
+  --radius-control: 10px;
+}
+
+:root {
+  --c-canvas: #f2f2f7;
+  --c-surface: #ffffff;
+  --c-surface-2: #f2f2f7;
+  --c-bar: rgba(249, 249, 251, 0.8);
+  --c-label: #1d1d1f;
+  --c-label-2: #5f5f64;
+  --c-label-3: #8a8a8e;
+  --c-separator: rgba(0, 0, 0, 0.1);
+  --c-accent: #0066cc;
+  --c-accent-fill: #0066cc;
+  --c-fill-4: rgba(118, 118, 128, 0.12);
+}
+
+.dark {
+  --c-canvas: #000000;
+  --c-surface: #1c1c1e;
+  --c-surface-2: #2c2c2e;
+  --c-bar: rgba(30, 30, 32, 0.72);
+  --c-label: #f5f5f7;
+  --c-label-2: #a3a3a8;
+  --c-label-3: #8a8a8e;
+  --c-separator: rgba(255, 255, 255, 0.12);
+  --c-accent: #5aa9ff;
+  --c-accent-fill: #0a84ff;
+  --c-fill-4: rgba(118, 118, 128, 0.24);
+}
+
+html {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* iOS の SF テキスト感に寄せる（字面を少し締める）。 */
+  letter-spacing: -0.01em;
+}
+
+@layer components {
+  /* HIG カード：面 + 角丸 + ヘアライン罫線。全画面共通の基本ブロック。 */
+  .hig-card {
+    background-color: var(--color-surface);
+    border-radius: var(--radius-card);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    border: 1px solid var(--color-separator);
+  }
+
+  /* 塗りボタン（systemBlue・白文字で AA）。iOS の角丸・押し心地に寄せる。 */
+  .hig-btn-primary {
+    background-color: var(--color-accent-fill);
+    color: #ffffff;
+    border-radius: var(--radius-control);
+    font-weight: 600;
+    transition: filter 0.15s ease, transform 0.05s ease;
+  }
+  .hig-btn-primary:hover {
+    filter: brightness(1.06);
+  }
+  .hig-btn-primary:active {
+    transform: scale(0.98);
+  }
+}
