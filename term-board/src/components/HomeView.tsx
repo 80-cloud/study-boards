@@ -4,10 +4,20 @@ type Props = { onNavigate: (view: Target) => void };
 
 type Mode = { key: Target; title: string; desc: string };
 
+// グループ別アクセント色（CSS 変数で light/dark を自動切替）。
+type GroupAccent = "memorize" | "interview" | "learn" | "author";
+const ACCENT_VAR: Record<GroupAccent, string> = {
+  memorize: "var(--color-accent-memorize)",
+  interview: "var(--color-accent-interview)",
+  learn: "var(--color-accent-learn)",
+  author: "var(--color-accent-author)",
+};
+
 // ナビ（App.tsx の NAV_GROUPS）と同じ4グループで整理し、一貫した導線にする。
-const MODE_GROUPS: { label: string; modes: Mode[] }[] = [
+const MODE_GROUPS: { label: string; accent: GroupAccent; modes: Mode[] }[] = [
   {
     label: "覚える",
+    accent: "memorize",
     modes: [
       { key: "quiz", title: "4択クイズ", desc: "用語の意味を4択で。即採点＋解説で定着させる。" },
       { key: "card", title: "暗記カード", desc: "表に用語、裏に意味。タップで裏返してサクッと暗記。" },
@@ -16,6 +26,7 @@ const MODE_GROUPS: { label: string; modes: Mode[] }[] = [
   },
   {
     label: "面接対策",
+    accent: "interview",
     modes: [
       { key: "interview", title: "面接練習", desc: "面接の質問（志望動機・技術など）に声で答え、模範回答・型・NG例で確認。" },
       { key: "mock", title: "模擬面接", desc: "用語の説明を30秒で。模範解答と並べて3観点で自己採点。" },
@@ -25,6 +36,7 @@ const MODE_GROUPS: { label: string; modes: Mode[] }[] = [
   },
   {
     label: "学ぶ・記録",
+    accent: "learn",
     modes: [
       { key: "learn", title: "学ぶ", desc: "学習ロードマップ・職種解説・図解で全体像をつかむ。" },
       { key: "dashboard", title: "ダッシュボード", desc: "正答率・苦手・連続学習を可視化。次の一手が分かる。" },
@@ -34,6 +46,7 @@ const MODE_GROUPS: { label: string; modes: Mode[] }[] = [
   },
   {
     label: "マイ問題",
+    accent: "author",
     modes: [
       { key: "author", title: "マイ問題", desc: "自分で問題を作り、共有コードで配布・取り込み。" },
     ],
@@ -91,26 +104,38 @@ export function HomeView({ onNavigate }: Props) {
           <p className="hig-kicker">MODES</p>
           <h2 className="hig-display mt-1 text-base font-semibold text-label">機能から選ぶ</h2>
         </div>
-        {MODE_GROUPS.map((group) => (
-          <div key={group.label}>
-            <h3 className="hig-kicker mb-3">
-              {group.label}
-            </h3>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {group.modes.map((m) => (
-                <button
-                  key={m.key}
-                  type="button"
-                  onClick={() => onNavigate(m.key)}
-                  className="hig-card p-4 text-left transition hover:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent active:scale-[0.99]"
-                >
-                  <p className="font-semibold text-label">{m.title}</p>
-                  <p className="mt-1 text-sm text-label-2">{m.desc}</p>
-                </button>
-              ))}
+        {MODE_GROUPS.map((group) => {
+          const accentVar = ACCENT_VAR[group.accent];
+          return (
+            <div key={group.label}>
+              <h3
+                className="hig-kicker mb-3 flex items-center gap-2"
+                style={{ color: accentVar }}
+              >
+                <span
+                  aria-hidden="true"
+                  className="inline-block h-1.5 w-1.5 rounded-full"
+                  style={{ backgroundColor: accentVar }}
+                />
+                {group.label}
+              </h3>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {group.modes.map((m) => (
+                  <button
+                    key={m.key}
+                    type="button"
+                    onClick={() => onNavigate(m.key)}
+                    className="hig-card hig-card-accent p-4 pl-5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent active:scale-[0.99]"
+                    style={{ ["--accent-color" as string]: accentVar }}
+                  >
+                    <p className="font-semibold text-label">{m.title}</p>
+                    <p className="mt-1 text-sm text-label-2">{m.desc}</p>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
