@@ -70,13 +70,17 @@ function SubTab({
   );
 }
 
-// --- 面接Q&A 作成フォーム（追加＋編集・#389） ---
+// --- 面接Q&A 作成フォーム（追加＋編集・#389／解説集トピック相当のリッチ入力・#429） ---
 function InterviewForm({ user }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [category, setCategory] = useState("");
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [memo, setMemo] = useState("");
+  // #429: 解説集（GuideView）でリッチ表示される任意フィールド。
+  const [template, setTemplate] = useState("");
+  const [ngExample, setNgExample] = useState("");
+  const [tagsInput, setTagsInput] = useState(""); // カンマ区切り入力
   const valid = category.trim() && question.trim() && answer.trim();
   const isEditing = editingId !== null;
 
@@ -86,6 +90,9 @@ function InterviewForm({ user }: Props) {
     setQuestion("");
     setAnswer("");
     setMemo("");
+    setTemplate("");
+    setNgExample("");
+    setTagsInput("");
   };
 
   const startEdit = (id: string) => {
@@ -96,6 +103,9 @@ function InterviewForm({ user }: Props) {
     setQuestion(item.question);
     setAnswer(item.answer);
     setMemo(item.memo ?? "");
+    setTemplate(item.template ?? "");
+    setNgExample(item.ngExample ?? "");
+    setTagsInput((item.tags ?? []).join(", "));
   };
 
   // #397: 既に同じ質問が登録済みかどうか（編集中は自分自身を除外）。
@@ -106,6 +116,16 @@ function InterviewForm({ user }: Props) {
       (q) => q.question.trim() === trimmedQ && q.id !== editingId,
     );
 
+  // カンマ区切りの入力をタグ配列に正規化（trim・空除去・重複除去）。
+  const parseTags = (s: string): string[] | undefined => {
+    const list = s
+      .split(",")
+      .map((x) => x.trim())
+      .filter((x) => x.length > 0);
+    const uniq = [...new Set(list)];
+    return uniq.length > 0 ? uniq : undefined;
+  };
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!valid || isDuplicate) return;
@@ -114,6 +134,9 @@ function InterviewForm({ user }: Props) {
       question: question.trim(),
       answer: answer.trim(),
       memo: memo.trim() || undefined,
+      template: template.trim() || undefined,
+      ngExample: ngExample.trim() || undefined,
+      tags: parseTags(tagsInput),
     };
     if (editingId) {
       user.updateInterviewQuestion(editingId, data);
@@ -155,6 +178,46 @@ function InterviewForm({ user }: Props) {
           <label htmlFor="iv-memo" className={labelClass}>メモ（任意）</label>
           <input id="iv-memo" className={inputClass} value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="聞かれた状況・コツなど" />
         </div>
+        {/* 解説集トピック相当のリッチフィールド（#429）。すべて任意。 */}
+        <details className="rounded-control border border-separator p-3 open:bg-fill-quaternary">
+          <summary className="cursor-pointer text-sm font-medium text-label-2">
+            解説集向け（任意）：回答の型・NG例・タグ
+          </summary>
+          <div className="mt-3 flex flex-col gap-3">
+            <div>
+              <label htmlFor="iv-template" className={labelClass}>回答の型（PREP / STAR など）</label>
+              <textarea
+                id="iv-template"
+                className={inputClass}
+                rows={2}
+                value={template}
+                onChange={(e) => setTemplate(e.target.value)}
+                placeholder="例：PREP（要点→理由→具体例→要点）"
+              />
+            </div>
+            <div>
+              <label htmlFor="iv-ng" className={labelClass}>NG例と改善</label>
+              <textarea
+                id="iv-ng"
+                className={inputClass}
+                rows={2}
+                value={ngExample}
+                onChange={(e) => setNgExample(e.target.value)}
+                placeholder="例：NG「特になし」→ 改善「『3か月後の役割』を聞く」"
+              />
+            </div>
+            <div>
+              <label htmlFor="iv-tags" className={labelClass}>頻出タグ（カンマ区切り）</label>
+              <input
+                id="iv-tags"
+                className={inputClass}
+                value={tagsInput}
+                onChange={(e) => setTagsInput(e.target.value)}
+                placeholder="例：頻出, 未経験定番, STAR"
+              />
+            </div>
+          </div>
+        </details>
         <div className="flex flex-wrap gap-2">
           <button type="submit" disabled={!valid || isDuplicate} className={primaryBtn}>
             {isEditing ? "更新する" : "追加する"}
