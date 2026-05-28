@@ -178,7 +178,7 @@ export default function App() {
                     onNext={quiz.next}
                   />
                 ) : (
-                  <p className="text-center text-slate-500 dark:text-slate-400">この分野には出題できる用語がありません。</p>
+                  <p className="text-center text-label-2">この分野には出題できる用語がありません。</p>
                 )}
               </>
             )}

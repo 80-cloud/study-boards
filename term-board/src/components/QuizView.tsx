@@ -27,7 +27,7 @@ function optionClass(args: {
   if (args.isThisSelected) {
     return `${base} border-rose-500 bg-rose-50 text-rose-900 dark:bg-rose-950 dark:text-rose-200`;
   }
-  return `${base} border-slate-200 bg-white text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500`;
+  return `${base} border-separator bg-surface text-label-3`;
 }
 
 // F-INTV-03: 深掘り「なぜ?」チェーン。追い質問を段階的に開示する（§4-5）。
@@ -43,9 +43,9 @@ function FollowUpChain({ items }: { items: { q: string; a: string }[] }) {
       <ol className="mt-2 flex flex-col gap-3">
         {items.slice(0, visible).map((it, i) => (
           <li key={i}>
-            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Q. {it.q}</p>
+            <p className="text-sm font-semibold text-label">Q. {it.q}</p>
             {i < step && (
-              <p className="mt-1 text-sm leading-relaxed text-slate-700 dark:text-slate-300">A. {it.a}</p>
+              <p className="mt-1 text-sm leading-relaxed text-label-2">A. {it.a}</p>
             )}
           </li>
         ))}
@@ -110,23 +110,23 @@ export function QuizView({ question, selected, isCorrect, onAnswer, onNext }: Pr
           </p>
           {question.term.plainMeaning && (
             <div className="mt-3 rounded-xl bg-sky-50 p-3 ring-1 ring-sky-100 dark:bg-sky-950 dark:ring-sky-900">
-              <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-200">
-                <span className="font-semibold text-sky-800 dark:text-sky-300">かんたんに言うと：</span>
+              <p className="text-sm leading-relaxed text-label">
+                <span className="font-semibold text-accent">かんたんに言うと：</span>
                 {question.term.plainMeaning}
               </p>
             </div>
           )}
-          <p className="mt-2 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
-            <span className="font-semibold text-slate-900 dark:text-slate-100">正しい意味：</span>
+          <p className="mt-2 text-sm leading-relaxed text-label-2">
+            <span className="font-semibold text-label">正しい意味：</span>
             {question.answer}
           </p>
-          <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-            <span className="font-semibold text-slate-800 dark:text-slate-200">面接での言い方：</span>
+          <p className="mt-2 text-sm leading-relaxed text-label-2">
+            <span className="font-semibold text-label">面接での言い方：</span>
             {question.term.interview}
           </p>
           {question.term.scene && (
-            <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-              <span className="font-semibold text-slate-800 dark:text-slate-200">現場では：</span>
+            <p className="mt-2 text-sm leading-relaxed text-label-2">
+              <span className="font-semibold text-label">現場では：</span>
               {question.term.scene}
             </p>
           )}
