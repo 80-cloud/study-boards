@@ -108,7 +108,7 @@ export function MockInterviewView() {
 
   if (terms.length === 0 || !current) {
     return (
-      <p className="text-center text-slate-500 dark:text-slate-400">
+      <p className="text-center text-label-2">
         模擬面接に使える用語がありません。
       </p>
     );
@@ -117,20 +117,20 @@ export function MockInterviewView() {
   return (
     <section className="flex flex-col gap-5" aria-live="polite">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-slate-500 dark:text-slate-400">
+        <p className="text-sm text-label-2">
           面接官になったつもりで、結論から声に出して説明しましょう。
         </p>
         {sessionAsked > 0 && (
-          <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
+          <p className="text-sm font-medium text-label-2">
             この模擬面接：言えた {sessionSaid} ／ {sessionAsked}
           </p>
         )}
       </div>
 
       {/* 質問 */}
-      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
-        <p className="text-sm font-medium text-sky-700 dark:text-sky-400">{current.category}</p>
-        <h2 className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
+      <div className="hig-card p-6">
+        <p className="text-sm font-medium text-accent">{current.category}</p>
+        <h2 className="mt-1 text-2xl font-bold text-label">
           「{current.term}」について、面接官に説明してください。
         </h2>
       </div>
@@ -140,14 +140,14 @@ export function MockInterviewView() {
         <button
           type="button"
           onClick={startTimer}
-          className="rounded-xl bg-slate-200 px-4 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"
+          className="rounded-control bg-fill-quaternary px-4 py-2 text-sm font-semibold text-label transition hover:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           ⏱ 30秒で結論（タイマー開始）
         </button>
         {timerLabel && (
           <span
             className={`text-sm font-bold ${
-              remaining === 0 ? "text-rose-700 dark:text-rose-400" : "text-slate-700 dark:text-slate-200"
+              remaining === 0 ? "text-rose-700 dark:text-rose-400" : "text-label"
             }`}
             role="status"
           >
@@ -158,7 +158,7 @@ export function MockInterviewView() {
 
       {/* 任意入力（声に出す代わりにメモしてもよい） */}
       <div>
-        <label htmlFor="mock-answer" className="text-sm font-medium text-slate-600 dark:text-slate-300">
+        <label htmlFor="mock-answer" className="text-sm font-medium text-label-2">
           自分の答え（任意・声に出す代わりにメモしても）
         </label>
         <textarea
@@ -167,7 +167,7 @@ export function MockInterviewView() {
           onChange={(e) => setInput(e.target.value)}
           rows={3}
           placeholder="結論 →（理由・具体）の順で…"
-          className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-400 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+          className="mt-1 w-full rounded-control border border-separator bg-surface px-3 py-2 text-sm text-label focus:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         />
       </div>
 
@@ -175,24 +175,24 @@ export function MockInterviewView() {
         <button
           type="button"
           onClick={reveal}
-          className="rounded-xl bg-sky-700 px-5 py-3 font-semibold text-white transition hover:bg-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-400"
+          className="hig-btn-primary px-5 py-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           模範解答と比べる
         </button>
       ) : (
-        <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
-          <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
-            <span className="font-semibold text-slate-900 dark:text-slate-100">模範解答：</span>
+        <div className="hig-card p-6">
+          <p className="text-sm leading-relaxed text-label-2">
+            <span className="font-semibold text-label">模範解答：</span>
             {current.interview}
           </p>
-          <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-            <span className="font-semibold text-slate-800 dark:text-slate-200">正しい意味：</span>
+          <p className="mt-2 text-sm leading-relaxed text-label-2">
+            <span className="font-semibold text-label">正しい意味：</span>
             {current.meaning}
           </p>
           {input.trim() && (
-            <div className="mt-3 rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-700">
-              <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-200">
-                <span className="font-semibold text-slate-800 dark:text-slate-100">あなたの答え：</span>
+            <div className="mt-3 rounded-control bg-surface-2 p-3">
+              <p className="text-sm leading-relaxed text-label">
+                <span className="font-semibold text-label">あなたの答え：</span>
                 {input}
               </p>
             </div>
@@ -202,8 +202,8 @@ export function MockInterviewView() {
               <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">深掘りも想定しておきましょう</p>
               <ul className="mt-1 flex flex-col gap-2">
                 {current.followUps.map((f, i) => (
-                  <li key={i} className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
-                    <span className="font-semibold text-slate-800 dark:text-slate-100">Q. {f.q}</span>
+                  <li key={i} className="text-sm leading-relaxed text-label-2">
+                    <span className="font-semibold text-label">Q. {f.q}</span>
                     <br />
                     A. {f.a}
                   </li>
@@ -213,8 +213,8 @@ export function MockInterviewView() {
           )}
 
           <div className="mt-4 flex flex-col gap-2">
-            <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
-              自己採点（3観点）<span className="ml-2 font-bold text-sky-700 dark:text-sky-400">{rubricScore} / 3</span>
+            <p className="text-sm font-medium text-label-2">
+              自己採点（3観点）<span className="ml-2 font-bold text-accent">{rubricScore} / 3</span>
             </p>
             <fieldset className="flex flex-col gap-1.5">
               <legend className="sr-only">構造採点ルーブリック</legend>
@@ -223,12 +223,12 @@ export function MockInterviewView() {
                 ["reason", "理由を説明した"],
                 ["concrete", "具体例・現場のイメージを出した"],
               ] as const).map(([key, label]) => (
-                <label key={key} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+                <label key={key} className="flex items-center gap-2 text-sm text-label">
                   <input
                     type="checkbox"
                     checked={rubric[key]}
                     onChange={(e) => setRubric((r) => ({ ...r, [key]: e.target.checked }))}
-                    className="h-4 w-4 rounded border-slate-400 text-sky-700 focus:ring-2 focus:ring-sky-400 dark:border-slate-500"
+                    className="h-4 w-4 rounded border-separator text-accent focus-visible:ring-2 focus-visible:ring-accent"
                   />
                   {label}
                 </label>
@@ -238,7 +238,7 @@ export function MockInterviewView() {
               type="button"
               onClick={submitAssessment}
               autoFocus
-              className="mt-1 self-start rounded-xl bg-sky-700 px-5 py-2.5 font-semibold text-white transition hover:bg-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-400"
+              className="hig-btn-primary mt-1 self-start px-5 py-2.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
               記録して次へ →
             </button>
