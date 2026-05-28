@@ -73,37 +73,37 @@ export function ReviewView() {
     return [...map.values()].sort((a, b) => (a.date < b.date ? 1 : -1));
   }, [log, studyDays, notes]);
 
-  const card = "rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700";
+  const card = "hig-card p-5";
 
   return (
     <section className="flex flex-col gap-4">
       {/* 今日のメモ（F-LOG-03） */}
       <div className={card}>
-        <label htmlFor="today-note" className="text-sm font-semibold text-sky-700 dark:text-sky-400">
+        <label htmlFor="today-note" className="text-sm font-semibold text-accent">
           今日の学習メモ
         </label>
-        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">気づき・覚えにくい用語・面接で詰まった点など（自動保存）</p>
+        <p className="mt-0.5 text-xs text-label-2">気づき・覚えにくい用語・面接で詰まった点など（自動保存）</p>
         <textarea
           id="today-note"
           value={draft}
           onChange={(e) => onChangeDraft(e.target.value)}
           rows={3}
           placeholder="例：TCP/UDPの違いが曖昧。明日もう一度。"
-          className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-400 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+          className="mt-2 w-full rounded-control border border-separator bg-surface px-3 py-2 text-sm text-label focus:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         />
       </div>
 
       {/* 振り返り一覧（F-LOG-04） */}
       <div className={card}>
-        <h2 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">これまでの振り返り</h2>
+        <h2 className="mb-2 text-sm font-semibold text-label">これまでの振り返り</h2>
         {rows.length === 0 ? (
-          <p className="text-sm text-slate-500 dark:text-slate-400">まだ記録がありません。学習するとここに日々の記録が並びます。</p>
+          <p className="text-sm text-label-2">まだ記録がありません。学習するとここに日々の記録が並びます。</p>
         ) : (
           <ul className="flex flex-col gap-3">
             {rows.map((r) => (
-              <li key={r.date} className="border-l-2 border-sky-200 pl-3 dark:border-sky-800">
-                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{r.date}</p>
-                <div className="mt-0.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-slate-600 dark:text-slate-400">
+              <li key={r.date} className="border-l-2 border-accent pl-3">
+                <p className="text-sm font-semibold text-label">{r.date}</p>
+                <div className="mt-0.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-label-2">
                   {r.interview.asked > 0 && (
                     <span>面接練習 {r.interview.asked}回・言えた {r.interview.said}</span>
                   )}
@@ -111,7 +111,7 @@ export function ReviewView() {
                   {r.interview.asked === 0 && r.card.asked === 0 && <span>4択クイズで学習</span>}
                 </div>
                 {r.note && (
-                  <p className="mt-1 whitespace-pre-wrap rounded-lg bg-slate-50 p-2 text-sm text-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                  <p className="mt-1 whitespace-pre-wrap rounded-control bg-surface-2 p-2 text-sm text-label">
                     {r.note}
                   </p>
                 )}
