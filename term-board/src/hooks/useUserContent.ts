@@ -85,14 +85,15 @@ export function useUserContent(): UseUserContent {
   const exportCode = useCallback(() => encodeShareCode(content), [content]);
 
   // 取り込み時はIDを振り直して衝突を避け、既存に追記する。
+  // 取り込んだ問題は他者作なので source="shared" を付与（自作 user と区別。#385）。
   const importCode = useCallback(
     (code: string) => {
       const incoming = decodeShareCode(code);
-      const quiz = incoming.quizTerms.map((t) => ({ ...t, id: newId(), source: "user" as const }));
+      const quiz = incoming.quizTerms.map((t) => ({ ...t, id: newId(), source: "shared" as const }));
       const interview = incoming.interviewQuestions.map((q) => ({
         ...q,
         id: newId(),
-        source: "user" as const,
+        source: "shared" as const,
       }));
       setContent((prev) => {
         const next: UserContent = {

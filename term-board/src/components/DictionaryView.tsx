@@ -122,6 +122,16 @@ export function DictionaryView({ bookmarks }: Props) {
                       {t.level}
                     </span>
                   )}
+                  {t.source === "shared" && (
+                    <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                      もらった
+                    </span>
+                  )}
+                  {t.source === "user" && (
+                    <span className="shrink-0 rounded-full bg-fill-quaternary px-2 py-0.5 text-xs font-medium text-label-2">
+                      自作
+                    </span>
+                  )}
                   <span className="shrink-0 text-xs text-label-2">{t.category}</span>
                 </button>
                 <button

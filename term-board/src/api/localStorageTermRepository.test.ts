@@ -62,6 +62,20 @@ describe("getTerms（builtin＋user統合）", () => {
     expect(mine?.source).toBe("user");
   });
 
+  it("source=shared を持つユーザー作問は shared のまま保持される（#385）", async () => {
+    localStorage.setItem(
+      USER_CONTENT_KEY,
+      JSON.stringify({
+        quizTerms: [
+          { id: "s1", category: "テスト", term: "もらった用語", meaning: "m", distractors: ["a", "b", "c"], interview: "i", source: "shared" },
+        ],
+        interviewQuestions: [],
+      }),
+    );
+    const terms = await repo.getTerms();
+    expect(terms.find((t) => t.id === "s1")?.source).toBe("shared");
+  });
+
   it("作問データが壊れていても builtin の出題は継続する", async () => {
     localStorage.setItem(USER_CONTENT_KEY, "{壊れた");
     const terms = await repo.getTerms();

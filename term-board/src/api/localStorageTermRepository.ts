@@ -75,9 +75,10 @@ function readUserContent(): UserContent {
 
 export const localStorageTermRepository: TermRepository = {
   async getTerms(): Promise<Term[]> {
-    // 同梱（builtin）＋ ユーザー作問（user）を統合して出題対象にする。
+    // 同梱（builtin）＋ ユーザー作問（user / shared）を統合して出題対象にする。
+    // 既存の source を尊重し、未指定なら user とみなす（shared は importCode で付与済み）。
     const builtin = (termsData as Term[]).map((t) => ({ ...t, source: "builtin" as const }));
-    const user = readUserContent().quizTerms.map((t) => ({ ...t, source: "user" as const }));
+    const user = readUserContent().quizTerms.map((t) => ({ ...t, source: t.source ?? "user" }));
     return [...builtin, ...user];
   },
 

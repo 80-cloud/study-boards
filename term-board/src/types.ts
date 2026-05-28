@@ -17,9 +17,9 @@ export type Term = {
   // イメージを与え、面接で「使ったことは?」に最低限答えられる素地を作る（§13-1）。
   scene?: string;
 
-  // F-USER-01: 出所。同梱データは "builtin"、ユーザー作問は "user"。
-  // 未指定は builtin 相当（既存12件は無改修）。
-  source?: "builtin" | "user";
+  // F-USER-01 / #385: 出所。同梱=builtin / 自作=user / 共有コードで取り込んだ他者作=shared。
+  // 未指定は builtin 相当（既存データは無改修）。
+  source?: "builtin" | "user" | "shared";
 
   // B1: 難易度レベル（辞典でのバッジ表示・用語レベル表示）。
   level?: "初級" | "中級" | "上級";
@@ -38,7 +38,7 @@ export type InterviewQuestion = {
   question: string; // 実際に聞かれた質問（例「アジャイルとは？」「なぜIT業界？」）
   answer: string; // 模範回答／自分の答え
   memo?: string; // 補足（聞かれた状況・コツなど）
-  source?: "builtin" | "user";
+  source?: "builtin" | "user" | "shared";
 
   // B4: 面接コンテンツの強化（任意）。
   tags?: string[]; // 例 ["頻出", "未経験定番"]。面接練習でフィルタに使う
