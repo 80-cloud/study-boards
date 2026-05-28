@@ -32,6 +32,25 @@ test.describe('smoke @smoke', () => {
     await expect(page.getByRole('heading', { name: /面接で言える/ })).toBeVisible();
   });
 
+  test('ブラウザの戻るボタンでアプリ内の前のビューに戻る（#387）', async ({ page }) => {
+    await page.goto('/');
+    // 初回ロードで #home が付くこと（基準点）。
+    await expect.poll(() => page.url()).toContain('#home');
+    // ホーム→4択クイズ→用語辞典 と遷移し、hashが順に変わる。
+    await page.getByRole('button', { name: '覚える', exact: true }).click();
+    await expect.poll(() => page.url()).toContain('#quiz');
+    await page.getByRole('button', { name: '用語辞典', exact: true }).click();
+    await expect.poll(() => page.url()).toContain('#dictionary');
+    // 戻るで quiz へ。
+    await page.goBack();
+    await expect.poll(() => page.url()).toContain('#quiz');
+    await expect(page.getByRole('heading', { name: /の意味は/ })).toBeVisible();
+    // さらに戻ると home。アプリ外には出ない（真っ暗にならない）。
+    await page.goBack();
+    await expect.poll(() => page.url()).toContain('#home');
+    await expect(page.getByRole('heading', { name: /面接で言える/ })).toBeVisible();
+  });
+
   test('PCナビをサイドバーに切替でき、サイドバーから遷移できる', async ({ page }) => {
     await page.goto('/');
     // desktop の様式トグルでサイドバーへ。
