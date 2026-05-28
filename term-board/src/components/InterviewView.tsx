@@ -122,9 +122,14 @@ export function InterviewView({ userQuestions }: Props) {
       <div className="hig-card p-6">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium text-accent">{current.category}</span>
-          {current.source === "user" && (
+          {current.source === "shared" && (
             <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900 dark:text-amber-200">
-              みんなの問題
+              もらった問題
+            </span>
+          )}
+          {current.source === "user" && (
+            <span className="rounded-full bg-fill-quaternary px-2 py-0.5 text-xs font-medium text-label-2">
+              自作
             </span>
           )}
           {current.tags?.map((tg) => (
