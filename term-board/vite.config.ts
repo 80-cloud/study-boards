@@ -1,4 +1,5 @@
-import { defineConfig } from "vite";
+/// <reference types="vitest/config" />
+import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
@@ -15,5 +16,12 @@ export default defineConfig({
   server: {
     port: 5176,
     strictPort: true,
+  },
+  // 単体テスト（引き継ぎ書 §6-7 ③-a）。localStorage を使う repository テストのため jsdom 環境。
+  // 各テストは vitest を明示 import するため globals は無効。
+  test: {
+    environment: "jsdom",
+    globals: false,
+    include: ["src/**/*.test.ts"],
   },
 });
