@@ -89,9 +89,17 @@ function InterviewForm({ user }: Props) {
     setMemo(item.memo ?? "");
   };
 
+  // #397: 既に同じ質問が登録済みかどうか（編集中は自分自身を除外）。
+  const trimmedQ = question.trim();
+  const isDuplicate =
+    !!trimmedQ &&
+    user.content.interviewQuestions.some(
+      (q) => q.question.trim() === trimmedQ && q.id !== editingId,
+    );
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!valid) return;
+    if (!valid || isDuplicate) return;
     const data = {
       category: category.trim(),
       question: question.trim(),
@@ -114,6 +122,11 @@ function InterviewForm({ user }: Props) {
             編集中：{question || "（タイトル未入力）"}
           </p>
         )}
+        {isDuplicate && (
+          <p role="alert" className="rounded-control bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 ring-1 ring-rose-200 dark:bg-rose-950 dark:text-rose-300 dark:ring-rose-900">
+            同じ質問が既に登録されています。重複登録は抑止しました。
+          </p>
+        )}
         <p className="text-sm text-label-2">
           実際に聞かれた面接の質問と、自分の答え（模範回答）を登録できます。
         </p>
@@ -134,7 +147,7 @@ function InterviewForm({ user }: Props) {
           <input id="iv-memo" className={inputClass} value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="聞かれた状況・コツなど" />
         </div>
         <div className="flex flex-wrap gap-2">
-          <button type="submit" disabled={!valid} className={primaryBtn}>
+          <button type="submit" disabled={!valid || isDuplicate} className={primaryBtn}>
             {isEditing ? "更新する" : "追加する"}
           </button>
           {isEditing && (
@@ -198,9 +211,17 @@ function QuizForm({ user }: Props) {
     setPlainMeaning(item.plainMeaning ?? "");
   };
 
+  // #397: 既に同じ用語名（自作分）が登録済みかどうか（編集中は自分自身を除外）。
+  const trimmedT = term.trim();
+  const isDuplicate =
+    !!trimmedT &&
+    user.content.quizTerms.some(
+      (t) => t.term.trim() === trimmedT && t.id !== editingId,
+    );
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!valid) return;
+    if (!valid || isDuplicate) return;
     const data = {
       term: term.trim(),
       category: category.trim(),
@@ -223,6 +244,11 @@ function QuizForm({ user }: Props) {
         {isEditing && (
           <p className="rounded-control bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 ring-1 ring-amber-200 dark:bg-amber-950 dark:text-amber-200 dark:ring-amber-900">
             編集中：{term || "（用語未入力）"}
+          </p>
+        )}
+        {isDuplicate && (
+          <p role="alert" className="rounded-control bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 ring-1 ring-rose-200 dark:bg-rose-950 dark:text-rose-300 dark:ring-rose-900">
+            同じ用語が既に登録されています。重複登録は抑止しました。
           </p>
         )}
         <p className="text-sm text-label-2">
@@ -255,7 +281,7 @@ function QuizForm({ user }: Props) {
           <input id="q-plain" className={inputClass} value={plainMeaning} onChange={(e) => setPlainMeaning(e.target.value)} placeholder="中学生にも分かる言い方" />
         </div>
         <div className="flex flex-wrap gap-2">
-          <button type="submit" disabled={!valid} className={primaryBtn}>
+          <button type="submit" disabled={!valid || isDuplicate} className={primaryBtn}>
             {isEditing ? "更新する" : "追加する"}
           </button>
           {isEditing && (

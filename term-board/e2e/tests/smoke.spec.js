@@ -89,6 +89,44 @@ test.describe('smoke @smoke', () => {
     await page.getByRole('button', { name: /を削除/ }).click();
   });
 
+  test('用語辞典で複数項目を同時に展開できる（#397）', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: '覚える', exact: true }).click();
+    await page.getByRole('button', { name: '用語辞典', exact: true }).click();
+    // 検索で件数を絞ってから2件開く
+    await page.getByPlaceholder('用語・意味で検索').fill('TCP');
+    const items = page.locator('ul li button[aria-expanded]');
+    await items.nth(0).click();
+    await items.nth(1).click();
+    // 両方が展開されている（aria-expanded=true が2件以上）
+    await expect(items.nth(0)).toHaveAttribute('aria-expanded', 'true');
+    await expect(items.nth(1)).toHaveAttribute('aria-expanded', 'true');
+    // 「すべて閉じる」で一括クローズ
+    await page.getByRole('button', { name: 'すべて閉じる' }).click();
+    await expect(items.nth(0)).toHaveAttribute('aria-expanded', 'false');
+    await expect(items.nth(1)).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('マイ問題：同じ質問の重複登録は抑止される（#397）', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'マイ問題', exact: true }).click();
+    // 1件登録
+    await page.getByLabel('分野・場面 *').fill('技術');
+    await page.getByLabel('質問 *').fill('REST API とは？');
+    await page.getByLabel('模範回答 *').fill('URL とメソッドで操作する設計。');
+    await page.getByRole('button', { name: '追加する' }).click();
+    // 同じ質問でもう一度入力 → 警告が出て「追加する」が無効化される
+    await page.getByLabel('分野・場面 *').fill('技術');
+    await page.getByLabel('質問 *').fill('REST API とは？');
+    await page.getByLabel('模範回答 *').fill('別の回答。');
+    await expect(page.getByText('同じ質問が既に登録されています')).toBeVisible();
+    await expect(page.getByRole('button', { name: '追加する' })).toBeDisabled();
+    // 件数は1件のまま
+    await expect(page.getByText(/登録した面接Q&A（1件）/)).toBeVisible();
+    // 後始末
+    await page.getByRole('button', { name: /を削除/ }).click();
+  });
+
   test('4択クイズを1問解ける（採点と解説が出る）', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: '覚える', exact: true }).click();
