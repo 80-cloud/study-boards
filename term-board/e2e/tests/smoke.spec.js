@@ -65,6 +65,30 @@ test.describe('smoke @smoke', () => {
     await expect(side).toBeHidden();
   });
 
+  test('マイ問題：面接Q&Aを登録→編集して保存できる（#389）', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'マイ問題', exact: true }).click();
+    // 1件登録
+    await page.getByLabel('分野・場面 *').fill('志望動機');
+    await page.getByLabel('質問 *').fill('なぜITを志望？');
+    await page.getByLabel('模範回答 *').fill('前職の効率化体験から');
+    await page.getByRole('button', { name: '追加する' }).click();
+    // 登録された項目の編集ボタンを押す
+    await page.getByRole('button', { name: /「なぜITを志望？」を編集/ }).click();
+    // 編集中バナーが出てフィールドが prefill されている
+    await expect(page.getByText(/編集中：なぜITを志望/)).toBeVisible();
+    await expect(page.getByLabel('質問 *')).toHaveValue('なぜITを志望？');
+    // 質問を更新して保存
+    await page.getByLabel('質問 *').fill('なぜIT業界を志望されたのですか？');
+    await page.getByRole('button', { name: '更新する' }).click();
+    // 一覧に更新後の値が出ている
+    await expect(page.getByText('なぜIT業界を志望されたのですか？')).toBeVisible();
+    // 登録件数は1件のまま（編集は新規追加にならない）
+    await expect(page.getByText(/登録した面接Q&A（1件）/)).toBeVisible();
+    // 後始末：削除しておく
+    await page.getByRole('button', { name: /を削除/ }).click();
+  });
+
   test('4択クイズを1問解ける（採点と解説が出る）', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: '覚える', exact: true }).click();
