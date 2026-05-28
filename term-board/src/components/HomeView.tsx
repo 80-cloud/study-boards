@@ -1,4 +1,4 @@
-type Target = "quiz" | "card" | "dictionary" | "learn" | "interview" | "mock" | "guide" | "dashboard" | "review" | "prep" | "author";
+type Target = "quiz" | "card" | "dictionary" | "learn" | "interview" | "mock" | "guide" | "dashboard" | "review" | "prep" | "author" | "reverseq";
 
 type Props = { onNavigate: (view: Target) => void };
 
@@ -14,6 +14,7 @@ const MODES: { key: Target; title: string; desc: string }[] = [
   { key: "review", title: "振り返り", desc: "今日のメモと、日々の学習を時系列で振り返る。" },
   { key: "prep", title: "自己PR", desc: "自己紹介・志望動機を穴埋めで下書き作成。" },
   { key: "author", title: "マイ問題", desc: "自分で問題を作り、共有コードで配布・取り込み。" },
+  { key: "reverseq", title: "逆質問", desc: "「最後に質問は？」に備えて逆質問を貯める。いつでも編集。" },
 ];
 
 // B7: トップページ（アプリ紹介・各モードへの入口）。
