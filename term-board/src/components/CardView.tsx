@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Term, Progress, LearningSession } from "../types";
+import type { LevelFilter } from "../hooks/useLevel";
 import { repository } from "../api";
 import { pickWeighted } from "../utils/shuffle";
 import { srsWeight } from "../utils/srs";
@@ -10,7 +11,9 @@ import { newId } from "../utils/share";
 // 「覚えた/まだ」をカード専用の習熟度に記録し、SRS(srsWeight)で苦手・未学習カードを
 // 優先出題する。4択(再認)・辞典(参照)と差別化した「思い出して答える」学習。
 
-export function CardView() {
+type Props = { level: LevelFilter };
+
+export function CardView({ level }: Props) {
   const [terms, setTerms] = useState<Term[]>([]);
   const [cardProgress, setCardProgress] = useState<Progress>({});
   const [current, setCurrent] = useState<Term | null>(null);
@@ -49,10 +52,11 @@ export function CardView() {
     () =>
       terms.filter((t) => {
         if (category && t.category !== category) return false;
+        if (level !== "all" && t.level !== level) return false; // #437
         if (onlyWeak && !isWeak(t.id)) return false;
         return true;
       }),
-    [terms, category, onlyWeak, cardProgress],
+    [terms, category, level, onlyWeak, cardProgress],
   );
 
   // SRS 重み付きで次のカードを選ぶ（直前と同じは避ける）。

@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import type { Term } from "../types";
 import { repository } from "../api";
 import type { UseBookmarks } from "../hooks/useBookmarks";
+import type { LevelFilter } from "../hooks/useLevel";
 
-type Props = { bookmarks: UseBookmarks };
+type Props = { bookmarks: UseBookmarks; level: LevelFilter };
 
 const levelClass: Record<string, string> = {
   初級: "bg-emerald-100 text-emerald-800",
@@ -11,8 +12,8 @@ const levelClass: Record<string, string> = {
   上級: "bg-rose-100 text-rose-800",
 };
 
-// B1: 用語辞典（IT用語辞典・カテゴリ別・検索・ブックマーク・レベル表示）。
-export function DictionaryView({ bookmarks }: Props) {
+// B1: 用語辞典（IT用語辞典・カテゴリ別・検索・ブックマーク・レベル表示／レベル絞り#437）。
+export function DictionaryView({ bookmarks, level }: Props) {
   const [terms, setTerms] = useState<Term[]>([]);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
@@ -49,6 +50,7 @@ export function DictionaryView({ bookmarks }: Props) {
     const q = query.trim().toLowerCase();
     const list = terms.filter((t) => {
       if (category && t.category !== category) return false;
+      if (level !== "all" && t.level !== level) return false; // #437
       if (onlyBookmarked && !bookmarks.isBookmarked(t.id)) return false;
       if (q && !`${t.term} ${t.meaning} ${t.plainMeaning ?? ""}`.toLowerCase().includes(q)) {
         return false;
@@ -61,7 +63,7 @@ export function DictionaryView({ bookmarks }: Props) {
       return sort === "desc" ? sorted.reverse() : sorted;
     }
     return list;
-  }, [terms, query, category, onlyBookmarked, bookmarks, sort]);
+  }, [terms, query, category, level, onlyBookmarked, bookmarks, sort]);
 
   return (
     <section className="flex flex-col gap-4">
