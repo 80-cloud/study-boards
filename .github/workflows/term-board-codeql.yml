@@ -1,0 +1,52 @@
+name: term-board CodeQL (SAST)
+
+# ============================================================
+# CodeQL による静的アプリケーションセキュリティテスト（SAST）。
+# term-board は JavaScript/TypeScript のみ（Javaなし）なので 1 言語で解析する。
+# 公開リポジトリのため CodeQL は無料。paths は term-board に限定し、
+# monorepo の他アプリ（review-board / task-board 等）には走らせない。
+# review-board-codeql.yml を雛形に backend(Java) を削除したもの。
+# ============================================================
+
+on:
+  pull_request:
+    paths:
+      - 'term-board/src/**'
+      - '.github/workflows/term-board-codeql.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'term-board/src/**'
+      - '.github/workflows/term-board-codeql.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: tb-codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze (javascript-typescript)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write   # CodeQL の結果を Security タブに上げる
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          build-mode: none
+          # 解析対象を term-board のソースに限定（他アプリ・テストを取り込まない）。
+          config: |
+            paths:
+              - term-board/src
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript-typescript"
