@@ -2758,5 +2758,230 @@
       "データを保存する倉庫。"
     ],
     "interview": "用意された部品やクラスでCSSを効率よく書くための枠組みで、Tailwindが代表です。"
+  },
+  {
+    "id": "github",
+    "category": "開発手法",
+    "level": "中級",
+    "term": "GitHub",
+    "meaning": "Git のリモートリポジトリをホストする最大手の開発者向けプラットフォーム。コード共有・プルリクエスト・Issue・GitHub Actions による CI/CD まで統合する。",
+    "plainMeaning": "ソースコードをみんなで共有・レビューする世界共通のサイト。求人で「GitHub 必須」と書かれることも多い。",
+    "scene": "ほぼ全ての開発現場で日常的に使う。ポートフォリオを公開してアピールに使えるし、社外との共同作業の標準。",
+    "distractors": [
+      "クラウド上で動く仮想サーバーを提供するサービス。",
+      "デザイン素材を販売するストック画像サービス。",
+      "チームのチャット・通話を担うコミュニケーションツール。"
+    ],
+    "interview": "Git のリモートリポジトリをホストする世界最大の開発者向けプラットフォームで、PR・Issue・CI/CD まで統合します。"
+  },
+  {
+    "id": "github-actions",
+    "category": "開発手法",
+    "level": "中級",
+    "term": "GitHub Actions",
+    "meaning": "GitHub に組み込まれた CI/CD サービス。YAML で書いたワークフローを push / PR などのイベントで自動実行し、ビルド・テスト・デプロイを回す。",
+    "plainMeaning": "GitHub に置く「自動化レシピ」。コードを上げると自動でテストや公開が走る。",
+    "scene": "本リポジトリの term-board-ci.yml / e2e / gitleaks / codeql のように、PR ごとに品質チェックを走らせるのが定番。",
+    "distractors": [
+      "GitHub の課題管理ボード（カンバン）機能。",
+      "GitHub 上で動くコード補完用の AI 支援機能。",
+      "GitHub に画像を貼るためのアップロード機能。"
+    ],
+    "interview": "GitHub に組み込まれた CI/CD サービスで、push や PR をトリガに自動でビルド・テスト・デプロイを回せます。"
+  },
+  {
+    "id": "aws-cloudfront",
+    "category": "インフラ",
+    "level": "中級",
+    "term": "CloudFront",
+    "meaning": "AWS の CDN サービス。世界中のエッジロケーションからコンテンツを配信し、レイテンシ低減と元サーバーの負荷軽減を実現する。",
+    "plainMeaning": "AWS が世界中に持つ「最寄りの配信所」からファイルを届けて速くする仕組み。",
+    "scene": "S3 や ALB の前段に置いて静的ファイル・SPA・API を高速配信する。HTTPS 終端の役も担う。",
+    "distractors": [
+      "AWS の仮想サーバーを提供するコンピューティングサービス。",
+      "AWS のマネージドリレーショナルデータベース。",
+      "コンテナイメージを保管する AWS のレジストリ。"
+    ],
+    "interview": "AWS の CDN サービスで、世界中のエッジから配信して低遅延と元サーバー負荷の軽減を両立します。"
+  },
+  {
+    "id": "aws-cloudwatch",
+    "category": "インフラ",
+    "level": "中級",
+    "term": "CloudWatch",
+    "meaning": "AWS の監視サービス。ログ・メトリクス・アラームを統合し、リソースの稼働状況や異常を可視化・通知する。",
+    "plainMeaning": "AWS 上の「ログと数字（CPU・メモリ等）」を集めて見守る監視ダッシュボード。",
+    "scene": "ECS/EC2 のメトリクス監視、アプリログの集約、しきい値超過時の SNS/Slack 通知などで使う。",
+    "distractors": [
+      "コンテナイメージを保管する AWS のレジストリ。",
+      "AWS の CDN サービス。",
+      "AWS の TLS 証明書発行サービス。"
+    ],
+    "interview": "AWS の監視サービスで、ログ・メトリクス・アラームを統合して稼働状況や異常を可視化します。"
+  },
+  {
+    "id": "aws-ecr",
+    "category": "インフラ",
+    "level": "中級",
+    "term": "ECR",
+    "meaning": "AWS が提供する Docker イメージのプライベートレジストリ。CI でビルドしたイメージを push し、ECS/EKS で pull して実行する。",
+    "plainMeaning": "AWS 専用の「Docker イメージ置き場」。ビルド済みコンテナをここに置いて使う。",
+    "scene": "GitHub Actions でビルドしたアプリのイメージを ECR に push し、ECS Service が pull して稼働させる流れが定番。",
+    "distractors": [
+      "AWS の監視・ログサービス。",
+      "AWS の TLS 証明書発行サービス。",
+      "AWS のオブジェクトストレージ。"
+    ],
+    "interview": "AWS の Docker イメージ用プライベートレジストリで、CI でビルドしたイメージを ECS から参照して使います。"
+  },
+  {
+    "id": "aws-ecs",
+    "category": "インフラ",
+    "level": "中級",
+    "term": "Amazon ECS",
+    "meaning": "AWS のマネージドコンテナオーケストレーションサービス。Fargate と組み合わせるとサーバー管理なしで Docker コンテナを実行できる。",
+    "plainMeaning": "AWS が用意した「Docker コンテナを動かす場所」。Fargate を使えばサーバー管理不要。",
+    "scene": "本リポジトリの姉妹アプリ（sns-board/slack-board）の本番実行基盤として ECS+Fargate を利用。",
+    "distractors": [
+      "AWS のオブジェクトストレージサービス。",
+      "AWS のリレーショナルデータベースサービス。",
+      "AWS の TLS 証明書発行サービス。"
+    ],
+    "interview": "AWS のマネージドコンテナオーケストレーションで、Fargate と組み合わせるとサーバー管理なしで Docker を運用できます。"
+  },
+  {
+    "id": "aws-acm",
+    "category": "インフラ",
+    "level": "中級",
+    "term": "ACM（AWS Certificate Manager）",
+    "meaning": "AWS の TLS/SSL 証明書を無料で発行・自動更新するサービス。ALB・CloudFront に紐付けて HTTPS 配信に使う。",
+    "plainMeaning": "Web サイトを HTTPS にするための証明書を、無料で発行・自動更新してくれるサービス。",
+    "scene": "ALB や CloudFront に証明書を紐付けて HTTPS 配信。期限切れ事故を防ぐため自動更新が標準。",
+    "distractors": [
+      "AWS の監視・ログサービス。",
+      "AWS の仮想サーバーサービス。",
+      "AWS のコンテナレジストリ。"
+    ],
+    "interview": "AWS の TLS 証明書を無料で発行・自動更新するサービスで、ALB や CloudFront に紐付けて HTTPS 配信に使います。"
+  },
+  {
+    "id": "aws-budgets",
+    "category": "インフラ",
+    "level": "中級",
+    "term": "AWS Budgets",
+    "meaning": "AWS の利用料金に予算を設定し、しきい値を超えそうな時に通知する予算管理サービス。コスト暴走を早期に検知できる。",
+    "plainMeaning": "AWS で使いすぎる前に「予算オーバー」を教えてくれるアラート。",
+    "scene": "個人開発・学習用アカウントで「無料枠超え」を防ぐため、月額しきい値で警告を仕込む。",
+    "distractors": [
+      "AWS の権限管理サービス。",
+      "AWS の TLS 証明書発行サービス。",
+      "AWS の仮想ネットワーク。"
+    ],
+    "interview": "AWS の予算管理サービスで、利用料金がしきい値を超えそうな時に通知してコスト暴走を防ぎます。"
+  },
+  {
+    "id": "aws-ssm-parameter-store",
+    "category": "インフラ",
+    "level": "中級",
+    "term": "SSM Parameter Store",
+    "meaning": "AWS Systems Manager の設定値・シークレット保管サービス。アプリの環境変数や API キーを暗号化して安全に保存し、IAM で読取り権限を絞る。",
+    "plainMeaning": "AWS の「鍵束・設定保管庫」。パスワードや API キーをコードに書かず安全に取り出す。",
+    "scene": "ECS タスクや EC2 のアプリが起動時に DB パスワード・JWT 秘密鍵などを Parameter Store から取得する。",
+    "distractors": [
+      "AWS のリレーショナルデータベース。",
+      "AWS のオブジェクトストレージ。",
+      "AWS の CDN サービス。"
+    ],
+    "interview": "AWS の設定値・シークレット保管サービスで、API キーや DB パスワードを暗号化保管し IAM で取得権限を絞れます。"
+  },
+  {
+    "id": "websocket",
+    "category": "Web基礎",
+    "level": "中級",
+    "term": "WebSocket",
+    "meaning": "サーバーとブラウザの間で常時接続を張り、双方向にリアルタイムでメッセージをやりとりするプロトコル。チャットや通知に使う。",
+    "plainMeaning": "サーバーとブラウザがずっとつながって、どちらからでもメッセージを送れる仕組み。",
+    "scene": "Slack のようなチャットアプリの常時接続部分（slack-board の /ws）。HTTP のような都度リクエストではなくプッシュ通知が可能になる。",
+    "distractors": [
+      "ブラウザが定期的にサーバーへ問い合わせる仕組み。",
+      "サーバーが定期実行するバッチ処理。",
+      "通信を暗号化するためのプロトコル。"
+    ],
+    "interview": "ブラウザとサーバーで常時接続を張って双方向にメッセージできるプロトコルで、チャットや通知に向きます。"
+  },
+  {
+    "id": "stomp",
+    "category": "Web基礎",
+    "level": "上級",
+    "term": "STOMP",
+    "meaning": "WebSocket 上で動くシンプルなメッセージプロトコル。送信先（destination）と購読モデルで、チャットやリアルタイム通知の実装を整理する。",
+    "plainMeaning": "WebSocket の上で「どこ宛か」を書いてメッセージを送る、整理された約束ごと。",
+    "scene": "Spring の WebSocket+STOMP で「チャンネル/購読」モデルを実装。slack-board がこの形式を採用。",
+    "distractors": [
+      "ブラウザのキャッシュを管理する仕組み。",
+      "サーバー間で並列処理を行うフレームワーク。",
+      "データを圧縮するアルゴリズム。"
+    ],
+    "interview": "WebSocket 上で動くシンプルなメッセージプロトコルで、送信先と購読モデルでチャット等を整理します。"
+  },
+  {
+    "id": "sockjs",
+    "category": "Web基礎",
+    "level": "上級",
+    "term": "SockJS",
+    "meaning": "WebSocket が使えない環境でも疑似的に双方向通信を実現するフォールバックライブラリ。WebSocket と同じインタフェースで透過的に切替わる。",
+    "plainMeaning": "古いブラウザやプロキシで WebSocket が通らない時に、代わりの通信方法に自動で切替えてくれる。",
+    "scene": "企業内ネットワーク等で WebSocket が遮断される環境向け。slack-board のフロントで安全策として利用。",
+    "distractors": [
+      "Web ページの見た目を装飾するライブラリ。",
+      "状態を管理する React のライブラリ。",
+      "サーバーで定期実行を行う仕組み。"
+    ],
+    "interview": "WebSocket が使えない環境でも疑似的に双方向通信を実現するフォールバックライブラリです。"
+  },
+  {
+    "id": "axios",
+    "category": "フロントエンド",
+    "level": "初級",
+    "term": "Axios",
+    "meaning": "ブラウザ・Node.js で動く Promise ベースの HTTP クライアントライブラリ。リクエスト/レスポンスのインターセプタや JSON 自動変換が便利。",
+    "plainMeaning": "Web の通信を JavaScript から呼び出すための便利な道具。`fetch` の高機能版。",
+    "scene": "フロントから REST API を呼ぶ標準。トークン付与やエラー処理を interceptor で一元化する（既存「Axiosインターセプター」と対）。",
+    "distractors": [
+      "状態を管理する React のライブラリ。",
+      "コードを自動整形するツール。",
+      "テストを書くためのフレームワーク。"
+    ],
+    "interview": "Promise ベースの HTTP クライアントで、インターセプタや JSON 自動変換が便利でフロントから API を呼ぶ標準です。"
+  },
+  {
+    "id": "react-router",
+    "category": "フロントエンド",
+    "level": "中級",
+    "term": "React Router",
+    "meaning": "React アプリで URL に応じて画面を切り替える、SPA ルーティングの定番ライブラリ。`<Route>` や `useNavigate` で宣言的に経路を組む。",
+    "plainMeaning": "React の SPA で「ページ移動」を実現する代表的なライブラリ。",
+    "scene": "sns-board / slack-board のフロントで `/login` `/posts/:id` 等のページ切替に利用。SPA ルーティングの実装の中心。",
+    "distractors": [
+      "サーバーが各 URL に HTML を返す方式。",
+      "状態を管理するための React の標準フック。",
+      "ブラウザの戻る/進むを記録するブラウザ機能そのもの。"
+    ],
+    "interview": "React で URL に応じて画面を切り替える SPA ルーティングの定番ライブラリです。"
+  },
+  {
+    "id": "dompurify",
+    "category": "フロントエンド",
+    "level": "上級",
+    "term": "DOMPurify",
+    "meaning": "Markdown や HTML を画面に表示する前に、悪意あるスクリプトを除去する JavaScript の HTML サニタイザ。XSS 対策の定番。",
+    "plainMeaning": "ユーザーが書いた HTML から「危ない部分」を取り除いてから表示するための安全フィルター。",
+    "scene": "slack-board のメッセージ表示（marked で Markdown→HTML 変換した結果）を表示する前に通し XSS を防ぐ。",
+    "distractors": [
+      "通信を暗号化するライブラリ。",
+      "コードのスタイルを自動整形するツール。",
+      "状態を管理する React のライブラリ。"
+    ],
+    "interview": "HTML を画面表示する前に危険なスクリプトを除去するサニタイザで、XSS 対策の定番ライブラリです。"
   }
 ]
