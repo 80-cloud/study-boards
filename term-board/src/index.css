@@ -36,6 +36,12 @@
   /* 角丸（iOS のカード ~14、コントロール ~10） */
   --radius-card: 14px;
   --radius-control: 10px;
+
+  /* グループアクセント（彩度を抑え、毎日使いに合う範囲） */
+  --color-accent-memorize: var(--c-cat-memorize);
+  --color-accent-interview: var(--c-cat-interview);
+  --color-accent-learn: var(--c-cat-learn);
+  --color-accent-author: var(--c-cat-author);
 }
 
 :root {
@@ -50,6 +56,10 @@
   --c-accent: #0066cc;
   --c-accent-fill: #0066cc;
   --c-fill-4: rgba(118, 118, 128, 0.12);
+  --c-cat-memorize: #5b6cf0;
+  --c-cat-interview: #14a39a;
+  --c-cat-learn: #c9892b;
+  --c-cat-author: #d6529e;
 }
 
 .dark {
@@ -64,6 +74,10 @@
   --c-accent: #5aa9ff;
   --c-accent-fill: #0a84ff;
   --c-fill-4: rgba(118, 118, 128, 0.24);
+  --c-cat-memorize: #8a96ff;
+  --c-cat-interview: #45c8be;
+  --c-cat-learn: #e9b557;
+  --c-cat-author: #ee7fbf;
 }
 
 html {
@@ -96,6 +110,27 @@ html {
     border-radius: var(--radius-card);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
     border: 1px solid var(--color-separator);
+  }
+
+  /* グループ別アクセント付きカード：左 3px のバー＋ホバーで弱い tint。
+     使い方: <button class="hig-card hig-card-accent" style="--accent-color: var(--color-accent-memorize)"> */
+  .hig-card-accent {
+    position: relative;
+    overflow: hidden;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+  }
+  .hig-card-accent::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--accent-color, var(--color-accent));
+  }
+  .hig-card-accent:hover {
+    background-color: color-mix(in oklab, var(--color-surface) 94%, var(--accent-color, var(--color-accent)));
+    border-color: color-mix(in oklab, var(--color-separator) 60%, var(--accent-color, var(--color-accent)));
   }
 
   /* 塗りボタン（systemBlue・白文字で AA）。iOS の角丸・押し心地に寄せる。 */
