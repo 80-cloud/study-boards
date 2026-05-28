@@ -5,7 +5,7 @@ IT業界への就職・転職を目指す**未経験者**向けの、IT用語学
 
 ## 🌐 公開URL（誰でも使えます・ログイン不要）
 
-**https://80-cloud.github.io/hideharu-AI/term-board/**
+**https://80-cloud.github.io/study-boards/term-board/**
 
 - **ログイン不要。** URLを開けばすぐに学習を始められます。
 - **進捗はお使いのブラウザに保存されます**（localStorage）。アカウントもサーバーもありません。
@@ -19,7 +19,7 @@ URLを貼ると **タイトル・説明つきのリンクプレビュー**（OGP
 
 ```
 IT用語ボードで面接対策しよう（ログイン不要・無料）
-https://80-cloud.github.io/hideharu-AI/term-board/
+https://80-cloud.github.io/study-boards/term-board/
 ```
 
 > 補足：プレビューに画像サムネイルも出したい場合は、`og:image`（絶対URLのPNG/JPG）を
@@ -47,7 +47,7 @@ nvm use            # .nvmrc により 24 LTS
 npm install
 npm run dev        # http://localhost:5176/ で起動
 npm run build      # 本番ビルド（dist/）
-npm run preview    # 本番ビルドをローカル確認（base付き = /hideharu-AI/term-board/）
+npm run preview    # 本番ビルドをローカル確認（base付き = /study-boards/term-board/）
 ```
 
 > ポートは **5176 固定**（他アプリと分離・[../CLAUDE.md](../CLAUDE.md) §10）。
