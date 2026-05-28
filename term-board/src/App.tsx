@@ -123,6 +123,10 @@ export default function App() {
           )}
           {quiz.status === "ready" && (
             <>
+              {/* #437: 学習レベル選択（解答数バーの上に配置）。 */}
+              <div className="mb-3">
+                <LevelSelector value={levelState.level} onChange={levelState.setLevel} />
+              </div>
               <div className="hig-card mb-5 flex items-center justify-between px-4 py-3 text-sm">
                 <span className="text-label-2">解答数 <span className="font-bold text-label">{quiz.answeredCount}</span></span>
                 <span className="text-label-2">正答 <span className="font-bold text-emerald-700 dark:text-emerald-400">{quiz.correctCount}</span></span>
@@ -144,8 +148,24 @@ export default function App() {
         </>
       )}
 
-      {view === "card" && <CardView level={levelState.level} />}
-      {view === "dictionary" && <DictionaryView bookmarks={bookmarks} level={levelState.level} />}
+      {view === "card" && (
+        <>
+          {/* #437: 学習レベル選択（カード上部に配置・分野フィルタの上で見つけやすく） */}
+          <div className="mb-3">
+            <LevelSelector value={levelState.level} onChange={levelState.setLevel} />
+          </div>
+          <CardView level={levelState.level} />
+        </>
+      )}
+      {view === "dictionary" && (
+        <>
+          {/* #437: 学習レベル選択（辞典上部に配置） */}
+          <div className="mb-3">
+            <LevelSelector value={levelState.level} onChange={levelState.setLevel} />
+          </div>
+          <DictionaryView bookmarks={bookmarks} level={levelState.level} />
+        </>
+      )}
       {view === "learn" && <LearnView />}
       {view === "dashboard" && <DashboardView bookmarks={bookmarks} />}
       {view === "review" && <ReviewView />}
@@ -196,10 +216,6 @@ export default function App() {
                   value={quiz.category}
                   onChange={quiz.setCategory}
                 />
-              )}
-              {/* #437: 覚える系3ビュー共通の学習レベル選択（4チップ） */}
-              {(view === "quiz" || view === "card" || view === "dictionary") && (
-                <LevelSelector value={levelState.level} onChange={levelState.setLevel} />
               )}
               {/* PCナビ様式トグル（desktop のみ・#381 の2案比較用）。 */}
               <LayoutToggle layout={nav.layout} onToggle={nav.toggle} className="hidden lg:flex" />
