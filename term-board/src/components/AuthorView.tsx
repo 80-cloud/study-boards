@@ -9,6 +9,8 @@ const inputClass =
 const labelClass = "block text-sm font-medium text-label-2";
 const primaryBtn =
   "hig-btn-primary px-5 py-2.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50";
+const secondaryBtn =
+  "rounded-control bg-fill-quaternary px-5 py-2.5 font-semibold text-label transition hover:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent";
 
 // F-USER-01/02: 自分で問題を書く（4択用語・面接Q&A）＋共有（エクスポート/インポート）。
 export function AuthorView({ user }: Props) {
@@ -59,32 +61,59 @@ function SubTab({
   );
 }
 
-// --- 面接Q&A 作成フォーム ---
+// --- 面接Q&A 作成フォーム（追加＋編集・#389） ---
 function InterviewForm({ user }: Props) {
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [category, setCategory] = useState("");
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [memo, setMemo] = useState("");
   const valid = category.trim() && question.trim() && answer.trim();
+  const isEditing = editingId !== null;
 
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!valid) return;
-    user.addInterviewQuestion({
-      category: category.trim(),
-      question: question.trim(),
-      answer: answer.trim(),
-      memo: memo.trim() || undefined,
-    });
+  const resetForm = () => {
+    setEditingId(null);
     setCategory("");
     setQuestion("");
     setAnswer("");
     setMemo("");
   };
 
+  const startEdit = (id: string) => {
+    const item = user.content.interviewQuestions.find((q) => q.id === id);
+    if (!item) return;
+    setEditingId(id);
+    setCategory(item.category);
+    setQuestion(item.question);
+    setAnswer(item.answer);
+    setMemo(item.memo ?? "");
+  };
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!valid) return;
+    const data = {
+      category: category.trim(),
+      question: question.trim(),
+      answer: answer.trim(),
+      memo: memo.trim() || undefined,
+    };
+    if (editingId) {
+      user.updateInterviewQuestion(editingId, data);
+    } else {
+      user.addInterviewQuestion(data);
+    }
+    resetForm();
+  };
+
   return (
     <div className="flex flex-col gap-5">
       <form onSubmit={submit} className="flex flex-col gap-3 hig-card p-5">
+        {isEditing && (
+          <p className="rounded-control bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 ring-1 ring-amber-200 dark:bg-amber-950 dark:text-amber-200 dark:ring-amber-900">
+            編集中：{question || "（タイトル未入力）"}
+          </p>
+        )}
         <p className="text-sm text-label-2">
           実際に聞かれた面接の質問と、自分の答え（模範回答）を登録できます。
         </p>
@@ -104,8 +133,15 @@ function InterviewForm({ user }: Props) {
           <label htmlFor="iv-memo" className={labelClass}>メモ（任意）</label>
           <input id="iv-memo" className={inputClass} value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="聞かれた状況・コツなど" />
         </div>
-        <div>
-          <button type="submit" disabled={!valid} className={primaryBtn}>追加する</button>
+        <div className="flex flex-wrap gap-2">
+          <button type="submit" disabled={!valid} className={primaryBtn}>
+            {isEditing ? "更新する" : "追加する"}
+          </button>
+          {isEditing && (
+            <button type="button" onClick={resetForm} className={secondaryBtn}>
+              キャンセル
+            </button>
+          )}
         </div>
       </form>
 
@@ -116,14 +152,19 @@ function InterviewForm({ user }: Props) {
           primary: q.question,
           secondary: `${q.category}｜${q.answer}`,
         }))}
-        onRemove={user.removeInterviewQuestion}
+        onEdit={startEdit}
+        onRemove={(id) => {
+          if (editingId === id) resetForm();
+          user.removeInterviewQuestion(id);
+        }}
       />
     </div>
   );
 }
 
-// --- 4択用語 作成フォーム ---
+// --- 4択用語 作成フォーム（追加＋編集・#389） ---
 function QuizForm({ user }: Props) {
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [term, setTerm] = useState("");
   const [category, setCategory] = useState("");
   const [meaning, setMeaning] = useState("");
@@ -135,25 +176,55 @@ function QuizForm({ user }: Props) {
   const valid =
     term.trim() && category.trim() && meaning.trim() && interview.trim() &&
     d0.trim() && d1.trim() && d2.trim();
+  const isEditing = editingId !== null;
+
+  const resetForm = () => {
+    setEditingId(null);
+    setTerm(""); setCategory(""); setMeaning(""); setD0(""); setD1(""); setD2("");
+    setInterview(""); setPlainMeaning("");
+  };
+
+  const startEdit = (id: string) => {
+    const item = user.content.quizTerms.find((t) => t.id === id);
+    if (!item) return;
+    setEditingId(id);
+    setTerm(item.term);
+    setCategory(item.category);
+    setMeaning(item.meaning);
+    setD0(item.distractors[0] ?? "");
+    setD1(item.distractors[1] ?? "");
+    setD2(item.distractors[2] ?? "");
+    setInterview(item.interview);
+    setPlainMeaning(item.plainMeaning ?? "");
+  };
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!valid) return;
-    user.addQuizTerm({
+    const data = {
       term: term.trim(),
       category: category.trim(),
       meaning: meaning.trim(),
       distractors: [d0.trim(), d1.trim(), d2.trim()],
       interview: interview.trim(),
       plainMeaning: plainMeaning.trim() || undefined,
-    });
-    setTerm(""); setCategory(""); setMeaning(""); setD0(""); setD1(""); setD2("");
-    setInterview(""); setPlainMeaning("");
+    };
+    if (editingId) {
+      user.updateQuizTerm(editingId, data);
+    } else {
+      user.addQuizTerm(data);
+    }
+    resetForm();
   };
 
   return (
     <div className="flex flex-col gap-5">
       <form onSubmit={submit} className="flex flex-col gap-3 hig-card p-5">
+        {isEditing && (
+          <p className="rounded-control bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 ring-1 ring-amber-200 dark:bg-amber-950 dark:text-amber-200 dark:ring-amber-900">
+            編集中：{term || "（用語未入力）"}
+          </p>
+        )}
         <p className="text-sm text-label-2">
           4択クイズに出る用語を作れます。誤答の選択肢を3つ用意してください。
         </p>
@@ -183,8 +254,15 @@ function QuizForm({ user }: Props) {
           <label htmlFor="q-plain" className={labelClass}>かんたんに言うと（任意）</label>
           <input id="q-plain" className={inputClass} value={plainMeaning} onChange={(e) => setPlainMeaning(e.target.value)} placeholder="中学生にも分かる言い方" />
         </div>
-        <div>
-          <button type="submit" disabled={!valid} className={primaryBtn}>追加する</button>
+        <div className="flex flex-wrap gap-2">
+          <button type="submit" disabled={!valid} className={primaryBtn}>
+            {isEditing ? "更新する" : "追加する"}
+          </button>
+          {isEditing && (
+            <button type="button" onClick={resetForm} className={secondaryBtn}>
+              キャンセル
+            </button>
+          )}
         </div>
       </form>
 
@@ -195,7 +273,11 @@ function QuizForm({ user }: Props) {
           primary: t.term,
           secondary: `${t.category}｜${t.meaning}`,
         }))}
-        onRemove={user.removeQuizTerm}
+        onEdit={startEdit}
+        onRemove={(id) => {
+          if (editingId === id) resetForm();
+          user.removeQuizTerm(id);
+        }}
       />
     </div>
   );
@@ -269,14 +351,16 @@ function SharePanel({ user }: Props) {
   );
 }
 
-// --- 共通：登録済み一覧（削除つき） ---
+// --- 共通：登録済み一覧（編集＋削除・#389） ---
 function ItemList({
   title,
   items,
+  onEdit,
   onRemove,
 }: {
   title: string;
   items: { id: string; primary: string; secondary: string }[];
+  onEdit?: (id: string) => void;
   onRemove: (id: string) => void;
 }) {
   if (items.length === 0) {
@@ -292,13 +376,26 @@ function ItemList({
               <p className="truncate font-medium text-label">{it.primary}</p>
               <p className="truncate text-xs text-label-2">{it.secondary}</p>
             </div>
-            <button
-              type="button"
-              onClick={() => onRemove(it.id)}
-              className="shrink-0 rounded-control px-2 py-1 text-sm text-rose-700 ring-1 ring-rose-200 transition hover:bg-rose-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 dark:text-rose-300 dark:ring-rose-800 dark:hover:bg-rose-950"
-            >
-              削除
-            </button>
+            <div className="flex shrink-0 gap-1">
+              {onEdit && (
+                <button
+                  type="button"
+                  onClick={() => onEdit(it.id)}
+                  aria-label={`「${it.primary}」を編集`}
+                  className="rounded-control px-2 py-1 text-sm font-medium text-accent ring-1 ring-separator transition hover:bg-fill-quaternary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                >
+                  編集
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => onRemove(it.id)}
+                aria-label={`「${it.primary}」を削除`}
+                className="rounded-control px-2 py-1 text-sm text-rose-700 ring-1 ring-rose-200 transition hover:bg-rose-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 dark:text-rose-300 dark:ring-rose-800 dark:hover:bg-rose-950"
+              >
+                削除
+              </button>
+            </div>
           </li>
         ))}
       </ul>

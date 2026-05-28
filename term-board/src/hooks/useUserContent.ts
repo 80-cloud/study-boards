@@ -13,6 +13,10 @@ export type UseUserContent = {
   content: UserContent;
   addQuizTerm: (t: NewQuizTerm) => void;
   addInterviewQuestion: (q: NewInterviewQuestion) => void;
+  /** 既存4択用語を更新（id・source は保持）。#389 */
+  updateQuizTerm: (id: string, t: NewQuizTerm) => void;
+  /** 既存面接Q&Aを更新（id・source は保持）。#389 */
+  updateInterviewQuestion: (id: string, q: NewInterviewQuestion) => void;
   removeQuizTerm: (id: string) => void;
   removeInterviewQuestion: (id: string) => void;
   exportCode: () => string;
@@ -57,6 +61,32 @@ export function useUserContent(): UseUserContent {
           ...prev.interviewQuestions,
           { ...q, id: newId(), source: "user" },
         ],
+      };
+      void repository.saveUserContent(next);
+      return next;
+    });
+  }, []);
+
+  // 既存4択用語の更新（id・source を保持）。#389
+  const updateQuizTerm = useCallback((id: string, t: NewQuizTerm) => {
+    setContent((prev) => {
+      const next: UserContent = {
+        ...prev,
+        quizTerms: prev.quizTerms.map((q) => (q.id === id ? { ...q, ...t } : q)),
+      };
+      void repository.saveUserContent(next);
+      return next;
+    });
+  }, []);
+
+  // 既存面接Q&Aの更新（id・source を保持）。#389
+  const updateInterviewQuestion = useCallback((id: string, q: NewInterviewQuestion) => {
+    setContent((prev) => {
+      const next: UserContent = {
+        ...prev,
+        interviewQuestions: prev.interviewQuestions.map((iq) =>
+          iq.id === id ? { ...iq, ...q } : iq,
+        ),
       };
       void repository.saveUserContent(next);
       return next;
@@ -112,6 +142,8 @@ export function useUserContent(): UseUserContent {
     content,
     addQuizTerm,
     addInterviewQuestion,
+    updateQuizTerm,
+    updateInterviewQuestion,
     removeQuizTerm,
     removeInterviewQuestion,
     exportCode,
