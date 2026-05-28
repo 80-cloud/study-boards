@@ -1,8 +1,7 @@
 name: term-board CI
 
 # term-board の品質ゲート（要件定義書 §4-2・受入 A-6）。
-# 型チェック＋本番ビルドの成功と、依存脆弱性 High/Critical 0件を常設で担保する。
-# lint/test は設定・テスト未整備のため現状は対象外（整備後に追加予定）。
+# 型チェック＋本番ビルドの成功、単体テスト（Vitest）、依存脆弱性 High/Critical 0件を常設で担保する。
 
 on:
   pull_request:
@@ -39,6 +38,9 @@ jobs:
 
       - name: Type check & build
         run: npm run build
+
+      - name: Unit tests (Vitest)
+        run: npm run test
 
       - name: Dependency vulnerability scan (fail on High/Critical)
         run: npm audit --audit-level=high
