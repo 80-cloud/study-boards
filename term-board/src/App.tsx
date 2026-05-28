@@ -181,10 +181,11 @@ export default function App() {
 
       {sidebar ? (
         <div className="mx-auto flex w-full max-w-5xl gap-6 px-4 py-6">
-          <SideNav view={view} setView={setView} className="hidden w-56 shrink-0 lg:block" />
           <main className="min-w-0 flex-1">
             <div className="mx-auto max-w-2xl">{viewContent}</div>
           </main>
+          {/* サイドバーは右側に配置（#383）。 */}
+          <SideNav view={view} setView={setView} className="hidden w-56 shrink-0 lg:block" />
         </div>
       ) : (
         <main className="mx-auto max-w-2xl px-4 py-6">{viewContent}</main>
