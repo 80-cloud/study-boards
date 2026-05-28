@@ -114,20 +114,20 @@ export function CardView() {
   };
 
   if (terms.length === 0) {
-    return <p className="text-center text-slate-500 dark:text-slate-400">カードに使える用語がありません。</p>;
+    return <p className="text-center text-label-2">カードに使える用語がありません。</p>;
   }
 
   return (
     <section className="flex flex-col gap-4" aria-live="polite">
       {/* フィルタ */}
-      <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
+      <div className="hig-card flex flex-wrap items-center gap-3 p-3">
         <div className="flex items-center gap-2">
-          <label htmlFor="card-cat" className="text-sm font-medium text-slate-600 dark:text-slate-300">分野</label>
+          <label htmlFor="card-cat" className="text-sm font-medium text-label-2">分野</label>
           <select
             id="card-cat"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-800 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-400 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+            className="rounded-control border border-separator bg-surface px-2 py-1.5 text-sm text-label focus:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             <option value="">全分野</option>
             {categories.map((c) => (
@@ -135,24 +135,24 @@ export function CardView() {
             ))}
           </select>
         </div>
-        <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+        <label className="flex items-center gap-2 text-sm text-label-2">
           <input type="checkbox" checked={onlyWeak} onChange={(e) => setOnlyWeak(e.target.checked)} className="h-4 w-4" />
           苦手だけ（{weakCount}）
         </label>
         {sessionDone > 0 && (
-          <p className="ml-auto text-sm font-medium text-slate-600 dark:text-slate-300">
+          <p className="ml-auto text-sm font-medium text-label-2">
             このセット：覚えた {sessionKnown} ／ {sessionDone}
           </p>
         )}
       </div>
 
       {pool.length === 0 ? (
-        <p className="text-center text-sm text-slate-500 dark:text-slate-400">
+        <p className="text-center text-sm text-label-2">
           {onlyWeak ? "苦手なカードはありません。よくできています！" : "このカードがありません。"}
         </p>
       ) : current ? (
         <>
-          <p className="text-center text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-center text-sm text-label-2">
             思い出してから裏返しましょう（苦手なカードほど多く出ます）
           </p>
 
@@ -161,34 +161,34 @@ export function CardView() {
             type="button"
             onClick={() => setFlipped((f) => !f)}
             aria-pressed={flipped}
-            className="min-h-56 w-full rounded-2xl bg-white p-6 text-left shadow-sm ring-1 ring-slate-200 transition hover:ring-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-400 dark:bg-slate-800 dark:ring-slate-700 dark:hover:ring-sky-500"
+            className="hig-card min-h-56 w-full p-6 text-left transition hover:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-sky-700 dark:text-sky-400">{current.category}</span>
+              <span className="text-sm font-medium text-accent">{current.category}</span>
               {isWeak(current.id) && (
                 <span className="rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-800 dark:bg-rose-900 dark:text-rose-200">復習</span>
               )}
             </div>
             {!flipped ? (
               <div className="mt-6 flex flex-col items-center justify-center gap-2 text-center">
-                <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{current.term}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">タップで意味を見る</p>
+                <p className="text-3xl font-bold text-label">{current.term}</p>
+                <p className="text-xs text-label-2">タップで意味を見る</p>
               </div>
             ) : (
               <div className="mt-3 flex flex-col gap-2">
-                <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{current.term}</p>
+                <p className="text-lg font-bold text-label">{current.term}</p>
                 {current.plainMeaning && (
-                  <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-200">
-                    <span className="font-semibold text-sky-800 dark:text-sky-300">かんたんに：</span>
+                  <p className="text-sm leading-relaxed text-label">
+                    <span className="font-semibold text-accent">かんたんに：</span>
                     {current.plainMeaning}
                   </p>
                 )}
-                <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
-                  <span className="font-semibold text-slate-900 dark:text-slate-100">意味：</span>
+                <p className="text-sm leading-relaxed text-label-2">
+                  <span className="font-semibold text-label">意味：</span>
                   {current.meaning}
                 </p>
-                <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">面接での言い方：</span>
+                <p className="text-sm leading-relaxed text-label-2">
+                  <span className="font-semibold text-label">面接での言い方：</span>
                   {current.interview}
                 </p>
               </div>
@@ -201,14 +201,14 @@ export function CardView() {
               <button
                 type="button"
                 onClick={() => assess(true)}
-                className="rounded-xl bg-emerald-700 px-5 py-2.5 font-semibold text-white transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                className="rounded-control bg-emerald-700 px-5 py-2.5 font-semibold text-white transition hover:bg-emerald-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 active:scale-[0.98]"
               >
                 ◯ 覚えた
               </button>
               <button
                 type="button"
                 onClick={() => assess(false)}
-                className="rounded-xl bg-slate-200 px-5 py-2.5 font-semibold text-slate-800 transition hover:bg-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"
+                className="rounded-control bg-fill-quaternary px-5 py-2.5 font-semibold text-label transition hover:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent active:scale-[0.98]"
               >
                 △ まだ
               </button>
@@ -217,7 +217,7 @@ export function CardView() {
             <button
               type="button"
               onClick={() => setFlipped(true)}
-              className="rounded-xl bg-sky-700 px-5 py-3 font-semibold text-white transition hover:bg-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-400"
+              className="hig-btn-primary px-5 py-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
               意味を見る
             </button>

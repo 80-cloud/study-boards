@@ -3,3 +3,5 @@ playwright-report/
 test-results/
 /blob-report/
 .playwright/
+# ローカルの a11y デバッグ用スクリプト（コミット対象外）
+axe-debug.mjs
