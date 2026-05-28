@@ -5,10 +5,10 @@ type Props = { user: UseUserContent };
 type Tab = "quiz" | "interview" | "share";
 
 const inputClass =
-  "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-400 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100";
-const labelClass = "block text-sm font-medium text-slate-700 dark:text-slate-300";
+  "w-full rounded-control border border-separator bg-surface px-3 py-2 text-sm text-label focus:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent";
+const labelClass = "block text-sm font-medium text-label-2";
 const primaryBtn =
-  "rounded-xl bg-sky-700 px-5 py-2.5 font-semibold text-white transition hover:bg-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-400 disabled:bg-slate-300";
+  "hig-btn-primary px-5 py-2.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50";
 
 // F-USER-01/02: 自分で問題を書く（4択用語・面接Q&A）＋共有（エクスポート/インポート）。
 export function AuthorView({ user }: Props) {
@@ -50,8 +50,8 @@ function SubTab({
       role="tab"
       aria-selected={active}
       onClick={onClick}
-      className={`rounded-lg px-3 py-1.5 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-sky-400 ${
-        active ? "bg-sky-700 text-white" : "bg-white text-slate-600 ring-1 ring-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-600"
+      className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+        active ? "bg-accent-fill text-white" : "bg-surface text-label-2 ring-1 ring-separator hover:text-label"
       }`}
     >
       {children}
@@ -84,8 +84,8 @@ function InterviewForm({ user }: Props) {
 
   return (
     <div className="flex flex-col gap-5">
-      <form onSubmit={submit} className="flex flex-col gap-3 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
-        <p className="text-sm text-slate-600 dark:text-slate-300">
+      <form onSubmit={submit} className="flex flex-col gap-3 hig-card p-5">
+        <p className="text-sm text-label-2">
           実際に聞かれた面接の質問と、自分の答え（模範回答）を登録できます。
         </p>
         <div>
@@ -153,8 +153,8 @@ function QuizForm({ user }: Props) {
 
   return (
     <div className="flex flex-col gap-5">
-      <form onSubmit={submit} className="flex flex-col gap-3 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
-        <p className="text-sm text-slate-600 dark:text-slate-300">
+      <form onSubmit={submit} className="flex flex-col gap-3 hig-card p-5">
+        <p className="text-sm text-label-2">
           4択クイズに出る用語を作れます。誤答の選択肢を3つ用意してください。
         </p>
         <div>
@@ -231,9 +231,9 @@ function SharePanel({ user }: Props) {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
-        <h2 className="font-bold text-slate-900 dark:text-slate-100">書き出す（共有する）</h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+      <div className="hig-card p-5">
+        <h2 className="font-bold text-label">書き出す（共有する）</h2>
+        <p className="mt-1 text-sm text-label-2">
           自分が作った問題（4択 {user.content.quizTerms.length}件・面接 {user.content.interviewQuestions.length}件）を
           共有コードにして、Discordなどに貼って渡せます。
         </p>
@@ -243,9 +243,9 @@ function SharePanel({ user }: Props) {
         )}
       </div>
 
-      <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
-        <h2 className="font-bold text-slate-900 dark:text-slate-100">取り込む（受け取る）</h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+      <div className="hig-card p-5">
+        <h2 className="font-bold text-label">取り込む（受け取る）</h2>
+        <p className="mt-1 text-sm text-label-2">
           もらった共有コードを貼り付けて取り込むと、自分の問題に追加されます。
         </p>
         <label htmlFor="import-code" className="sr-only">共有コードを貼り付け</label>
@@ -280,22 +280,22 @@ function ItemList({
   onRemove: (id: string) => void;
 }) {
   if (items.length === 0) {
-    return <p className="text-center text-sm text-slate-500 dark:text-slate-400">まだ登録がありません。</p>;
+    return <p className="text-center text-sm text-label-2">まだ登録がありません。</p>;
   }
   return (
     <div>
-      <h2 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">{title}</h2>
+      <h2 className="mb-2 text-sm font-semibold text-label">{title}</h2>
       <ul className="flex flex-col gap-2">
         {items.map((it) => (
-          <li key={it.id} className="flex items-start justify-between gap-3 rounded-xl bg-white p-3 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
+          <li key={it.id} className="hig-card flex items-start justify-between gap-3 p-3">
             <div className="min-w-0">
-              <p className="truncate font-medium text-slate-900 dark:text-slate-100">{it.primary}</p>
-              <p className="truncate text-xs text-slate-500 dark:text-slate-400">{it.secondary}</p>
+              <p className="truncate font-medium text-label">{it.primary}</p>
+              <p className="truncate text-xs text-label-2">{it.secondary}</p>
             </div>
             <button
               type="button"
               onClick={() => onRemove(it.id)}
-              className="shrink-0 rounded-lg px-2 py-1 text-sm text-rose-700 ring-1 ring-rose-200 transition hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-400"
+              className="shrink-0 rounded-control px-2 py-1 text-sm text-rose-700 ring-1 ring-rose-200 transition hover:bg-rose-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 dark:text-rose-300 dark:ring-rose-800 dark:hover:bg-rose-950"
             >
               削除
             </button>
