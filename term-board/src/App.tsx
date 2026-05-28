@@ -150,12 +150,18 @@ export default function App() {
   );
 
   const sidebar = nav.layout === "sidebar";
+  // ホームのみ PC で広いコンテンツ幅にして、4列カンバンの横レイアウトを活かす。
+  // 他ビュー（辞典・面接練習など）は本文の可読幅を優先して従来の max-w-2xl を維持。
+  const wideHome = view === "home";
+  const mainWidth = wideHome ? "max-w-6xl" : "max-w-2xl";
+  // ヘッダーはビュー切替で幅が動くと違和感が出るため、常に広い幅で固定。
+  const headerWidth = sidebar ? "max-w-5xl" : "max-w-6xl";
 
   return (
     <div className="min-h-screen bg-canvas text-label">
       {/* iOS/macOS のナビバー風：上部固定・半透明 + backdrop blur（素材感）。 */}
       <header className="sticky top-0 z-20 border-b border-separator bg-bar backdrop-blur-xl backdrop-saturate-150">
-        <div className={`mx-auto flex flex-col gap-3 px-4 py-3 ${sidebar ? "max-w-5xl" : "max-w-2xl"}`}>
+        <div className={`mx-auto flex flex-col gap-3 px-4 py-3 ${headerWidth}`}>
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start justify-between gap-2">
               <div>
@@ -198,13 +204,13 @@ export default function App() {
       {sidebar ? (
         <div className="mx-auto flex w-full max-w-5xl gap-6 px-4 py-6">
           <main className="min-w-0 flex-1">
-            <div className="mx-auto max-w-2xl">{viewContent}</div>
+            <div className={`mx-auto ${mainWidth}`}>{viewContent}</div>
           </main>
           {/* サイドバーは右側に配置（#383）。 */}
           <SideNav view={view} setView={setView} className="hidden w-56 shrink-0 lg:block" />
         </div>
       ) : (
-        <main className="mx-auto max-w-2xl px-4 py-6">{viewContent}</main>
+        <main className={`mx-auto ${mainWidth} px-4 py-6`}>{viewContent}</main>
       )}
     </div>
   );
