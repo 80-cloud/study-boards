@@ -7,7 +7,7 @@
 
 > 本ドキュメントは [要件定義書](./要件定義書.md) §3-2（RBAC）・[機能一覧.md](./機能一覧.md) の F-ID を
 > データモデルに落としたもの。slack-board / sns-board の ER図.md を雛形に、review-board 特化
-> （**S軸＝認可・cohort 境界・成長記録が主役**）で設計する。
+> （**重点軸＝認可・cohort 境界・成長記録が主役**）で設計する。
 
 ---
 
@@ -21,19 +21,19 @@
 
 ## 関連ドキュメント
 
-- [要件定義書](./要件定義書.md) — §3-2 RBAC・§4 非機能（S軸・S-3 整合性）
+- [要件定義書](./要件定義書.md) — §3-2 RBAC・§4 非機能（重点軸・S-3 整合性）
 - [機能一覧.md](./機能一覧.md) — F-ID の入出力（本書のテーブルと対応）
 - [技術スタック.md](./技術スタック.md) — PostgreSQL / Flyway / S3
-- 母要件定義書（リポジトリ外で管理） — SEC / S-3 / S-4 / P-2 / P-3 の原典
+- 共通の設計方針（リポジトリ外で管理） — SEC / S-3 / S-4 / P-2 / P-3 の原典
 
 ---
 
 ## 1. 設計方針
 
-- **cohort を全認可境界の根に置く**：users・posts は `cohort_id` を持ち、参照系は必ず cohort で絞る（IDOR を SQL レベルで遮断、母 SEC-2/3）
+- **cohort を全認可境界の根に置く**：users・posts は `cohort_id` を持ち、参照系は必ず cohort で絞る（IDOR を SQL レベルで遮断、SEC-2/3）
 - **role を最初から持つ**：`users.role`（STUDENT / TEACHER）。後付け回避（R-04）
-- **論理削除**（`deleted_at`）で成長記録の参照整合性・履歴を保つ（母 S-4）
-- **非正規化カウンタ + 定期再計算**：成長記録の集計（受/送レビュー数・ありがとう数）はカウンタ列に持ち、ズレは定期バッチで補正（母 S-3）
+- **論理削除**（`deleted_at`）で成長記録の参照整合性・履歴を保つ（S-4）
+- **非正規化カウンタ + 定期再計算**：成長記録の集計（受/送レビュー数・ありがとう数）はカウンタ列に持ち、ズレは定期バッチで補正（S-3）
 - **作品メタは `post_meta` に集約**：制作時間・学習期間・苦戦点等を個別カラム化せず key-value で受ける（スキーマ肥大回避・PR#78 方針）
 - 命名は `snake_case`、PK は `BIGSERIAL id`、時刻は `TIMESTAMPTZ`、マイグレーションは **Flyway**
 
@@ -193,7 +193,7 @@ erDiagram
 
 ### 3-2. posts
 - `cohort_id` は author の cohort を**冗長コピー**。一覧（F-POST-03）を `WHERE cohort_id=:authCohort` だけで安全に絞るため
-- `screenshot_key` は S3（ローカル MinIO）オブジェクトキー。本体は DB に置かない（母 P-10）
+- `screenshot_key` は S3（ローカル MinIO）オブジェクトキー。本体は DB に置かない（P-10）
 - `recruit_status` で「レビュー募集中」を表現（F-FILTER-01 の絞り込み起点）
 
 ### 3-3. reviews / review_axis_comments / thanks
@@ -202,10 +202,10 @@ erDiagram
 - 自己レビュー禁止（`reviews.reviewer_user_id != posts.author_user_id`）はアプリ層で検証
 
 ### 3-4. evaluations（講師評価）
-- 1 投稿に複数行を積み、最新だけ `is_latest=true`（差し戻し→再評価の履歴を残す・母 S-4）
+- 1 投稿に複数行を積み、最新だけ `is_latest=true`（差し戻し→再評価の履歴を残す・S-4）
 - `result=APPROVED` が成長記録の合格バッジ（F-PROF-04）の根拠
 
-### 3-5. audit_logs（★S軸）
+### 3-5. audit_logs（★重点軸）
 - 認可境界をまたぐ操作（投稿・レビュー・評価・ログイン）を記録。S基準「誰が・いつ・誰の資源に・何を」を満たす
 
 ---
@@ -215,7 +215,7 @@ erDiagram
 | テーブル | インデックス | 目的 |
 |---|---|---|
 | users | `UNIQUE(email)` / `(cohort_id)` | ログイン / cohort 絞り |
-| posts | `(cohort_id, created_at DESC, id DESC)` | 一覧のカーソル pagination + cohort 境界（母 P-2、IDOR） |
+| posts | `(cohort_id, created_at DESC, id DESC)` | 一覧のカーソル pagination + cohort 境界（P-2、IDOR） |
 | posts | `(author_user_id)` | 成長記録の投稿履歴 |
 | reviews | `(post_id)` / `(reviewer_user_id)` | 投稿のレビュー一覧 / したレビュー実績 |
 | review_axis_comments | `UNIQUE(review_id, axis)` | 1 軸 1 コメント |
@@ -231,14 +231,14 @@ erDiagram
 
 ### 5-1. なぜ非正規化するか
 成長記録ページ（F-PROF）は「もらった/したレビュー数・ありがとう数・投稿のレビュー数」を高頻度で表示する。
-毎回 COUNT すると N+1・遅延の温床（母 P-3）。カウンタ列で O(1) 取得する。
+毎回 COUNT すると N+1・遅延の温床（P-3）。カウンタ列で O(1) 取得する。
 
 ### 5-2. 同期方法
 - 書き込み（レビュー作成/削除・ありがとう付与/取消）と同一トランザクションでカウンタを増減（サービス層）
 - 論理削除（`deleted_at`）時もカウンタを減算
 
 ### 5-3. 整合性が崩れた場合の修復
-- **定期再計算バッチ**（日次）で実測 COUNT とカウンタを突合・補正（母 S-3）。ズレ検出はログに出す
+- **定期再計算バッチ**（日次）で実測 COUNT とカウンタを突合・補正（S-3）。ズレ検出はログに出す
 
 ---
 
@@ -265,7 +265,7 @@ erDiagram
 
 ---
 
-## 9. セキュリティ（★S軸）
+## 9. セキュリティ（★重点軸）
 
 - **cohort 境界**：posts/reviews/profile の参照は必ず `cohort_id=:authCohort` を条件に含める。不一致は **404**（存在を漏らさない、IDOR）
 - **所有者検証**：投稿/レビューの編集・削除は `author/reviewer == 認証ユーザー` を検証。不一致は 403/404
@@ -292,7 +292,7 @@ backend/src/main/resources/db/migration/
 ## 11. シードデータ（開発環境のみ）
 
 - cohort 1 件、講師 1 名 + 受講生 3 名、サンプル投稿数件 + レビュー数件
-- パスワードは bcrypt ハッシュをシードに直書きしない（環境変数 or 起動時生成）。**平文機密のコミット禁止**（母 SEC-9）
+- パスワードは bcrypt ハッシュをシードに直書きしない（環境変数 or 起動時生成）。**平文機密のコミット禁止**（SEC-9）
 
 ---
 
@@ -303,7 +303,7 @@ backend/src/main/resources/db/migration/
 | cohort | 期・コース・クラス。全認可境界の単位 |
 | 成長記録 | ユーザーごとの投稿・レビュー・合格バッジの集積ページ（本アプリの主役） |
 | 合格バッジ | 講師が `APPROVED` した成果物の証跡（F-PROF-04） |
-| 観点別コメント | 品質4軸（動作・可読性・セキュリティ・性能）に沿ったレビュー（任意） |
+| 観点別コメント | 品質指標（動作・可読性・セキュリティ・性能）に沿ったレビュー（任意） |
 
 ---
 
