@@ -45,9 +45,9 @@ export function ReverseQuestionStock() {
   const availablePresets = PRESETS.filter((p) => !items.includes(p));
 
   return (
-    <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
-      <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">逆質問ストック</h2>
-      <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+    <section className="hig-card p-5">
+      <h2 className="text-sm font-semibold text-label">逆質問ストック</h2>
+      <p className="mt-0.5 text-xs text-label-2">
         「最後に何か質問は？」に備えて、聞きたいことを貯めておきましょう。
       </p>
 
@@ -66,11 +66,11 @@ export function ReverseQuestionStock() {
           onChange={(e) => setDraft(e.target.value)}
           placeholder="自分の逆質問を追加…"
           aria-label="逆質問を入力"
-          className="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-400 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+          className="flex-1 rounded-control border border-separator bg-surface px-3 py-2 text-sm text-label focus:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         />
         <button
           type="submit"
-          className="rounded-lg bg-sky-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-400"
+          className="hig-btn-primary px-4 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           追加
         </button>
@@ -78,12 +78,12 @@ export function ReverseQuestionStock() {
 
       {/* ストック一覧 */}
       {loaded && items.length === 0 ? (
-        <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">まだありません。下の候補や自由入力から追加できます。</p>
+        <p className="mt-3 text-sm text-label-2">まだありません。下の候補や自由入力から追加できます。</p>
       ) : (
         <ul className="mt-3 flex flex-col gap-2">
           {items.map((q) => (
-            <li key={q} className="flex items-start justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-900">
-              <span className="text-sm text-slate-800 dark:text-slate-200">{q}</span>
+            <li key={q} className="flex items-start justify-between gap-3 rounded-control bg-surface-2 px-3 py-2">
+              <span className="text-sm text-label">{q}</span>
               <button
                 type="button"
                 onClick={() => remove(q)}
@@ -100,14 +100,14 @@ export function ReverseQuestionStock() {
       {/* プリセット候補 */}
       {availablePresets.length > 0 && (
         <div className="mt-4">
-          <p className="text-xs font-medium text-slate-600 dark:text-slate-300">候補から追加：</p>
+          <p className="text-xs font-medium text-label-2">候補から追加：</p>
           <div className="mt-2 flex flex-col gap-2">
             {availablePresets.map((p) => (
               <button
                 key={p}
                 type="button"
                 onClick={() => add(p)}
-                className="rounded-lg border border-dashed border-slate-300 px-3 py-2 text-left text-sm text-slate-700 transition hover:border-sky-400 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-400 dark:border-slate-600 dark:text-slate-300 dark:hover:border-sky-500 dark:hover:bg-slate-700"
+                className="rounded-control border border-dashed border-separator px-3 py-2 text-left text-sm text-label-2 transition hover:border-accent hover:text-label focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
                 ＋ {p}
               </button>
