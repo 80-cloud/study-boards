@@ -7,11 +7,11 @@ import tailwindcss from "@tailwindcss/vite";
 // 別ポートでの代替起動は禁止のため strictPort: true で競合時はエラーにする。
 //
 // base: GitHub Pages のサブパス配信用（Issue #285）。
-// 公開URL = https://80-cloud.github.io/hideharu-AI/term-board/ なので、
-// 本番ビルドのアセット参照を "/hideharu-AI/term-board/" 起点にする。
+// 公開URL = https://80-cloud.github.io/study-boards/term-board/ なので、
+// 本番ビルドのアセット参照を "/study-boards/term-board/" 起点にする（#435 でリネーム）。
 // dev（npm run dev）では base は "/" 相当で問題なく動く（プロダクションビルドのみ影響）。
 export default defineConfig({
-  base: "/hideharu-AI/term-board/",
+  base: "/study-boards/term-board/",
   plugins: [react(), tailwindcss()],
   server: {
     port: 5176,
