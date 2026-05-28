@@ -69,7 +69,8 @@ function readUserContent(): UserContent {
     // （次回 saveUserContent で UserContent 側に永続化される）。
     const fromUserContent = Array.isArray(obj.reverseQuestions) ? obj.reverseQuestions : null;
     const reverseQuestions = fromUserContent ?? readLegacyReverseQuestions();
-    return { quizTerms, interviewQuestions, reverseQuestions };
+    const flashcards = Array.isArray(obj.flashcards) ? obj.flashcards : [];
+    return { quizTerms, interviewQuestions, reverseQuestions, flashcards };
   } catch {
     return EMPTY_USER_CONTENT;
   }
@@ -92,9 +93,27 @@ export const localStorageTermRepository: TermRepository = {
   async getTerms(): Promise<Term[]> {
     // 同梱（builtin）＋ ユーザー作問（user / shared）を統合して出題対象にする。
     // 既存の source を尊重し、未指定なら user とみなす（shared は importCode で付与済み）。
+    // Flashcard は distractors を持たないので 4択/辞典では使わない（getCardItems で合流）。
     const builtin = (termsData as Term[]).map((t) => ({ ...t, source: "builtin" as const }));
     const user = readUserContent().quizTerms.map((t) => ({ ...t, source: t.source ?? "user" }));
     return [...builtin, ...user];
+  },
+
+  // #427: 暗記カードビュー用。4択用語＋Flashcard を Term 形に正規化して返す。
+  // Flashcard は distractors=[]・interview="" で埋め、CardView 側は空のとき非表示にする。
+  async getCardItems(): Promise<Term[]> {
+    const base = await this.getTerms();
+    const flashcards = readUserContent().flashcards ?? [];
+    const asTerms: Term[] = flashcards.map((f) => ({
+      id: f.id,
+      category: f.category && f.category.trim() !== "" ? f.category : "暗記カード",
+      term: f.front,
+      meaning: f.back,
+      distractors: [],
+      interview: "",
+      source: f.source ?? "user",
+    }));
+    return [...base, ...asTerms];
   },
 
   async getProgress(): Promise<Progress> {

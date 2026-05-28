@@ -38,6 +38,9 @@ export interface TermRepository {
   getNotes(): Promise<Record<string, string>>;
   saveNote(day: string, text: string): Promise<void>;
 
+  // F-CARD-01 拡張: 暗記カード用の出題対象（4択用語＋Flashcard を Term 形に正規化）。#427
+  getCardItems(): Promise<Term[]>;
+
   // F-QUIZ-06: 混同ペア分析。誤答時に選んだ誤答テキストを用語ごとに記録する。
   getMisses(): Promise<Record<string, string[]>>;
   recordMiss(termId: string, chosen: string): Promise<void>;
