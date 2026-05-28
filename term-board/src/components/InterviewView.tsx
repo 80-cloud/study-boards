@@ -15,9 +15,9 @@ type Props = {
 const bundled = bundledQuestions as InterviewQuestion[];
 
 // F-INTV-01（面接想定問答）＋ B4（想定質問集・頻出タグ・テンプレ・NG例）＋ F-USER。
-// 同梱用語の interview を「『term』とは？」として、頻出質問・ユーザー作問と混ぜて出す。
+// 面接の「問い」に答える練習。用語の口頭説明は「模擬面接」が担うため、ここでは
+// 用語からの自動導出（「◯◯とは？」）は行わない（役割分離）。
 export function InterviewView({ userQuestions }: Props) {
-  const [builtin, setBuiltin] = useState<InterviewQuestion[]>([]);
   const [current, setCurrent] = useState<InterviewQuestion | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [tag, setTag] = useState<string>(""); // "" = すべて
@@ -25,30 +25,9 @@ export function InterviewView({ userQuestions }: Props) {
   const [sessionAsked, setSessionAsked] = useState(0);
   const [sessionSaid, setSessionSaid] = useState(0);
 
-  useEffect(() => {
-    let active = true;
-    repository.getTerms().then((terms) => {
-      if (!active) return;
-      // 同梱用語（source !== "user"）から面接質問を導出。
-      const derived: InterviewQuestion[] = terms
-        .filter((t) => t.source !== "user")
-        .map((t) => ({
-          id: `builtin-${t.id}`,
-          category: t.category,
-          question: `「${t.term}」とは？`,
-          answer: t.interview,
-          source: "builtin" as const,
-        }));
-      setBuiltin(derived);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
-
   const allQuestions = useMemo(
-    () => [...bundled, ...builtin, ...userQuestions],
-    [builtin, userQuestions],
+    () => [...bundled, ...userQuestions],
+    [userQuestions],
   );
 
   const tags = useMemo(
