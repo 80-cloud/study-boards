@@ -44,10 +44,11 @@ const MODE_GROUPS: { label: string; modes: Mode[] }[] = [
 export function HomeView({ onNavigate }: Props) {
   return (
     <section className="flex flex-col gap-6">
-      {/* ヒーロー */}
-      <div className="rounded-card bg-gradient-to-br from-sky-700 to-sky-900 p-6 text-white shadow-sm">
-        <h2 className="text-2xl font-bold tracking-tight">IT用語を「面接で言える」まで。</h2>
-        <p className="mt-2 text-sm leading-relaxed text-sky-50">
+      {/* ヒーロー：Display 書体＋kicker で「華」を出す（#399） */}
+      <div className="rounded-card bg-gradient-to-br from-sky-700 to-sky-900 p-8 text-white shadow-sm">
+        <p className="hig-kicker text-sky-200/90">term-board</p>
+        <h2 className="hig-display mt-2 text-2xl text-white sm:text-3xl">IT用語を「面接で言える」まで。</h2>
+        <p className="mt-4 max-w-xl text-base leading-relaxed text-sky-50/95">
           IT業界へ初めて転職する人のための学習アプリ。4択で覚えて、面接で自分の言葉にする。
           ログイン不要・無料・ブラウザだけで今すぐ。
         </p>
@@ -70,9 +71,10 @@ export function HomeView({ onNavigate }: Props) {
       </div>
 
       {/* 使い方の流れ */}
-      <div className="hig-card p-5">
-        <h2 className="text-sm font-semibold text-label">おすすめの進め方</h2>
-        <ol className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-label">
+      <div className="hig-card p-6">
+        <p className="hig-kicker">FLOW</p>
+        <h2 className="hig-display mt-1 text-base font-semibold text-label">おすすめの進め方</h2>
+        <ol className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-label">
           <li className="font-medium">① 学ぶ（全体像）</li>
           <li aria-hidden="true" className="text-label-3">→</li>
           <li className="font-medium">② 4択で定着</li>
@@ -84,11 +86,14 @@ export function HomeView({ onNavigate }: Props) {
       </div>
 
       {/* モード一覧（ナビと同じ4グループで整理） */}
-      <div className="flex flex-col gap-5">
-        <h2 className="text-sm font-semibold text-label">機能から選ぶ</h2>
+      <div className="flex flex-col gap-6">
+        <div>
+          <p className="hig-kicker">MODES</p>
+          <h2 className="hig-display mt-1 text-base font-semibold text-label">機能から選ぶ</h2>
+        </div>
         {MODE_GROUPS.map((group) => (
           <div key={group.label}>
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-label-2">
+            <h3 className="hig-kicker mb-3">
               {group.label}
             </h3>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
