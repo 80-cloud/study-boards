@@ -1,0 +1,74 @@
+name: term-board E2E (Playwright)
+
+# term-board は「サーバー無しの静的SPA」。backend/DB/MinIO は不要で、
+# Playwright が Vite dev を起動して smoke + a11y を回すだけ（review-board-e2e を簡素化）。
+# PR では chromium-desktop で smoke と a11y の両方を自動実行する。
+
+on:
+  pull_request:
+    paths:
+      - 'term-board/**'
+      - '.github/workflows/term-board-e2e.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: tb-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: smoke + a11y
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node (use .nvmrc = 24 LTS)
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: term-board/.nvmrc
+          cache: npm
+          cache-dependency-path: term-board/package-lock.json
+
+      - name: Install app deps (Vite は Playwright が起動)
+        working-directory: term-board
+        run: npm ci
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: tb-playwright-${{ runner.os }}-${{ hashFiles('term-board/e2e/package.json') }}
+
+      - name: Install E2E deps + chromium
+        working-directory: term-board/e2e
+        run: |
+          npm install
+          npx playwright install --with-deps chromium
+
+      - name: Run E2E (smoke + a11y)
+        working-directory: term-board/e2e
+        env:
+          CI: 'true'
+        run: npm run e2e
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tb-playwright-report-${{ github.run_id }}
+          path: term-board/e2e/playwright-report/
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Upload traces (failures only)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tb-playwright-traces-${{ github.run_id }}
+          path: term-board/e2e/test-results/
+          retention-days: 14
+          if-no-files-found: ignore

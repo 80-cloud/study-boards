@@ -1,0 +1,18 @@
+{
+  "name": "term-board-e2e",
+  "version": "0.1.0",
+  "private": true,
+  "description": "term-board の E2E（Playwright）。サーバー無しの静的SPAなので Vite dev のみを起動し、smoke と a11y を PR で自動実行する。",
+  "scripts": {
+    "install:browsers": "playwright install --with-deps chromium",
+    "e2e": "playwright test --project=chromium-desktop",
+    "e2e:smoke": "playwright test --project=chromium-desktop --grep @smoke",
+    "e2e:a11y": "playwright test --project=chromium-desktop --grep @a11y",
+    "e2e:mobile": "playwright test --project=mobile-chrome",
+    "e2e:report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.10.0",
+    "@playwright/test": "^1.48.0"
+  }
+}
