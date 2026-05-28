@@ -128,7 +128,7 @@ export function InterviewView({ userQuestions }: Props) {
             </span>
           )}
           {current.source === "user" && (
-            <span className="rounded-full bg-fill-quaternary px-2 py-0.5 text-xs font-medium text-label-2">
+            <span className="rounded-full bg-fill-quaternary px-2 py-0.5 text-xs font-medium text-label">
               自作
             </span>
           )}

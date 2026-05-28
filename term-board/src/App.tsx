@@ -1,10 +1,10 @@
-import { useState } from "react";
 import { useQuiz } from "./hooks/useQuiz";
 import { useUserContent } from "./hooks/useUserContent";
 import { useBookmarks } from "./hooks/useBookmarks";
 import { useTheme } from "./hooks/useTheme";
 import { useNavLayout } from "./hooks/useNavLayout";
 import type { NavLayout } from "./hooks/useNavLayout";
+import { useViewHistory } from "./hooks/useViewHistory";
 import { CategoryFilter } from "./components/CategoryFilter";
 import { QuizView } from "./components/QuizView";
 import { InterviewView } from "./components/InterviewView";
@@ -20,7 +20,23 @@ import { PrepView } from "./components/PrepView";
 import { LearnView } from "./components/LearnView";
 import { HomeView } from "./components/HomeView";
 
-type View = "home" | "quiz" | "card" | "dictionary" | "interview" | "mock" | "guide" | "author" | "reverseq" | "dashboard" | "review" | "prep" | "learn";
+// 全ビューの列挙（useViewHistory に渡してURLハッシュで履歴同期する・#387）。
+const VIEWS = [
+  "home",
+  "quiz",
+  "card",
+  "dictionary",
+  "interview",
+  "mock",
+  "guide",
+  "author",
+  "reverseq",
+  "dashboard",
+  "review",
+  "prep",
+  "learn",
+] as const;
+type View = (typeof VIEWS)[number];
 
 // ナビのグループ定義（モバイルUX：13タブを4グループに集約）。
 // View ユニオンは維持し、ナビUIのみ2段構成にする。
@@ -68,7 +84,7 @@ const NAV_GROUPS: NavGroup[] = [
 ];
 
 export default function App() {
-  const [view, setView] = useState<View>("home");
+  const [view, setView] = useViewHistory(VIEWS, "home");
   const theme = useTheme();
   const nav = useNavLayout();
   const user = useUserContent();
