@@ -4,6 +4,7 @@ import termsData from "../data/terms.json";
 
 // MVP 実装: 用語は同梱 JSON、進捗・ユーザー作問は localStorage（要件定義書 §2 C-1/C-2・§8-4）。
 const PROGRESS_KEY = "term-board:progress:v1";
+const CARD_PROGRESS_KEY = "term-board:cardProgress:v1";
 const USER_CONTENT_KEY = "term-board:userContent:v1";
 const BOOKMARKS_KEY = "term-board:bookmarks:v1";
 const STUDY_DAYS_KEY = "term-board:studyDays:v1";
@@ -22,6 +23,7 @@ const LEARNING_LOG_MAX = 1000;
 // F-LOG-05: エクスポート/インポート対象のキー（テーマは UI 設定なので除外）。
 const EXPORT_KEYS = [
   PROGRESS_KEY,
+  CARD_PROGRESS_KEY,
   USER_CONTENT_KEY,
   BOOKMARKS_KEY,
   STUDY_DAYS_KEY,
@@ -36,9 +38,9 @@ const EMPTY_USER_CONTENT: UserContent = { quizTerms: [], interviewQuestions: [] 
 
 // 要件定義書 §4-1 / A-4: localStorage の破損・容量超過・未対応でも
 // 「進捗のみ初期化して用語出題は継続する」graceful degradation を守る。
-function readProgress(): Progress {
+function readProgressFrom(key: string): Progress {
   try {
-    const raw = localStorage.getItem(PROGRESS_KEY);
+    const raw = localStorage.getItem(key);
     if (!raw) return {};
     const parsed: unknown = JSON.parse(raw);
     // スキーマ不一致（配列・null・プリミティブ）は壊れているとみなして破棄する。
@@ -80,7 +82,7 @@ export const localStorageTermRepository: TermRepository = {
   },
 
   async getProgress(): Promise<Progress> {
-    return readProgress();
+    return readProgressFrom(PROGRESS_KEY);
   },
 
   async saveProgress(p: Progress): Promise<void> {
@@ -89,6 +91,18 @@ export const localStorageTermRepository: TermRepository = {
     } catch {
       // 容量超過・プライベートモード等で保存できなくても学習は継続させる（silent にはしない）。
       console.warn("[term-board] 進捗の保存に失敗しました。学習は継続します。");
+    }
+  },
+
+  async getCardProgress(): Promise<Progress> {
+    return readProgressFrom(CARD_PROGRESS_KEY);
+  },
+
+  async saveCardProgress(p: Progress): Promise<void> {
+    try {
+      localStorage.setItem(CARD_PROGRESS_KEY, JSON.stringify(p));
+    } catch {
+      console.warn("[term-board] 暗記カードの習熟度の保存に失敗しました。学習は継続します。");
     }
   },
 
