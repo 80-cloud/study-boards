@@ -2,11 +2,11 @@ import { defineConfig, devices } from '@playwright/test';
 
 // term-board E2E 設定。
 // - サーバー無しの静的SPA（React+Vite）。backend/DB は無く、Vite dev だけを起動する。
-// - dev は base パス（/hideharu-AI/term-board/）で配信され、root(/) は 302 で base へ誘導される。
+// - dev は base パス（/study-boards/term-board/）で配信され、root(/) は 302 で base へ誘導される。
 //   baseURL は origin のみとし、各テストは goto('/') でリダイレクトを追従する。
 // - smoke / a11y はどちらも chromium-desktop で PR 自動実行（外部依存が無く安定）。
 const ORIGIN = process.env.E2E_BASE_URL || 'http://localhost:5176';
-const APP_URL = `${ORIGIN}/hideharu-AI/term-board/`;
+const APP_URL = `${ORIGIN}/study-boards/term-board/`;
 
 export default defineConfig({
   testDir: './tests',
