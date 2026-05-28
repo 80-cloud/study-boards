@@ -1,5 +1,7 @@
 import { useQuiz } from "./hooks/useQuiz";
 import { useUserContent } from "./hooks/useUserContent";
+import { usePendingImport } from "./hooks/usePendingImport";
+import type { PendingImport } from "./hooks/usePendingImport";
 import { useBookmarks } from "./hooks/useBookmarks";
 import { useTheme } from "./hooks/useTheme";
 import { useNavLayout } from "./hooks/useNavLayout";
@@ -89,6 +91,8 @@ export default function App() {
   const nav = useNavLayout();
   const user = useUserContent();
   const bookmarks = useBookmarks();
+  // #431: ?import=... を踏んで開いた場合のプレビュー（受信側のワンクリック共有）
+  const pendingImport = usePendingImport();
   // ユーザー作問の件数を渡し、追加・取り込みで出題に即反映する（F-USER）。
   const quiz = useQuiz(user.content.quizTerms.length);
   const rate =
@@ -201,6 +205,21 @@ export default function App() {
         </div>
       </header>
 
+      {/* #431: URL 取り込みバナー（明示操作で取り込む・コンテンツの上に出す） */}
+      {pendingImport.pending && (
+        <div className={`mx-auto ${mainWidth} px-4 pt-4`}>
+          <PendingImportBanner
+            pending={pendingImport.pending}
+            onAccept={() => {
+              user.importCode(pendingImport.pending!.code);
+              pendingImport.clear();
+              setView("author");
+            }}
+            onDismiss={() => pendingImport.clear()}
+          />
+        </div>
+      )}
+
       {sidebar ? (
         <div className="mx-auto flex w-full max-w-5xl gap-6 px-4 py-6">
           <main className="min-w-0 flex-1">
@@ -212,6 +231,59 @@ export default function App() {
       ) : (
         <main className={`mx-auto ${mainWidth} px-4 py-6`}>{viewContent}</main>
       )}
+    </div>
+  );
+}
+
+// #431: 取り込み確認バナー。?import=... で開いた時だけ表示される。
+function PendingImportBanner({
+  pending,
+  onAccept,
+  onDismiss,
+}: {
+  pending: PendingImport;
+  onAccept: () => void;
+  onDismiss: () => void;
+}) {
+  const { quiz, interview, reverse, flashcard } = pending.preview;
+  const total = quiz + interview + reverse + flashcard;
+  const summary = [
+    quiz > 0 ? `4択用語 ${quiz}件` : "",
+    interview > 0 ? `面接Q&A ${interview}件` : "",
+    flashcard > 0 ? `暗記カード ${flashcard}件` : "",
+    reverse > 0 ? `逆質問 ${reverse}件` : "",
+  ]
+    .filter(Boolean)
+    .join("・");
+  return (
+    <div
+      role="dialog"
+      aria-label="共有コードの取り込み確認"
+      className="hig-card flex flex-col gap-3 p-4 ring-1 ring-accent/40 sm:flex-row sm:items-center"
+    >
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-label">共有コードが届いています</p>
+        <p className="mt-0.5 text-sm text-label-2">
+          {total > 0 ? summary : "内容を確認できませんでした"}
+          を取り込みます。既存の内容には影響しません（追記のみ）。
+        </p>
+      </div>
+      <div className="flex shrink-0 gap-2">
+        <button
+          type="button"
+          onClick={onAccept}
+          className="hig-btn-primary px-4 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          取り込む
+        </button>
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="rounded-control bg-fill-quaternary px-4 py-2 text-sm font-semibold text-label transition hover:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          キャンセル
+        </button>
+      </div>
     </div>
   );
 }
