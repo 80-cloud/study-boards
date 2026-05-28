@@ -1,8 +1,9 @@
 import { useState } from "react";
 import type { UseUserContent } from "../hooks/useUserContent";
+import { ReverseQuestionStock } from "./ReverseQuestionStock";
 
 type Props = { user: UseUserContent };
-type Tab = "quiz" | "interview" | "share";
+type Tab = "quiz" | "interview" | "reverse" | "share";
 
 const inputClass =
   "w-full rounded-control border border-separator bg-surface px-3 py-2 text-sm text-label focus:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent";
@@ -25,6 +26,9 @@ export function AuthorView({ user }: Props) {
         <SubTab active={tab === "quiz"} onClick={() => setTab("quiz")}>
           4択用語
         </SubTab>
+        <SubTab active={tab === "reverse"} onClick={() => setTab("reverse")}>
+          逆質問
+        </SubTab>
         <SubTab active={tab === "share"} onClick={() => setTab("share")}>
           共有
         </SubTab>
@@ -32,6 +36,7 @@ export function AuthorView({ user }: Props) {
 
       {tab === "interview" && <InterviewForm user={user} />}
       {tab === "quiz" && <QuizForm user={user} />}
+      {tab === "reverse" && <ReverseQuestionStock user={user} />}
       {tab === "share" && <SharePanel user={user} />}
     </section>
   );
@@ -314,7 +319,8 @@ function SharePanel({ user }: Props) {
   const [exported, setExported] = useState("");
   const [importText, setImportText] = useState("");
   const [message, setMessage] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
-  const total = user.content.quizTerms.length + user.content.interviewQuestions.length;
+  const reverseCount = user.content.reverseQuestions?.length ?? 0;
+  const total = user.content.quizTerms.length + user.content.interviewQuestions.length + reverseCount;
 
   const doExport = () => {
     if (total === 0) {
@@ -329,9 +335,9 @@ function SharePanel({ user }: Props) {
 
   const doImport = () => {
     try {
-      const { quiz, interview } = user.importCode(importText);
+      const { quiz, interview, reverse } = user.importCode(importText);
       setImportText("");
-      setMessage({ kind: "ok", text: `取り込みました：4択用語 ${quiz}件／面接Q&A ${interview}件。` });
+      setMessage({ kind: "ok", text: `取り込みました：4択用語 ${quiz}件／面接Q&A ${interview}件／逆質問 ${reverse}件。` });
     } catch {
       setMessage({ kind: "err", text: "共有コードを読み取れませんでした。コードが正しいか確認してください。" });
     }
@@ -342,7 +348,7 @@ function SharePanel({ user }: Props) {
       <div className="hig-card p-5">
         <h2 className="font-bold text-label">書き出す（共有する）</h2>
         <p className="mt-1 text-sm text-label-2">
-          自分が作った問題（4択 {user.content.quizTerms.length}件・面接 {user.content.interviewQuestions.length}件）を
+          自分が作った問題（4択 {user.content.quizTerms.length}件・面接 {user.content.interviewQuestions.length}件・逆質問 {reverseCount}件）を
           共有コードにして、Discordなどに貼って渡せます。
         </p>
         <button type="button" onClick={doExport} className={`mt-3 ${primaryBtn}`}>共有コードを作る</button>
