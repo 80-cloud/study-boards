@@ -3,6 +3,8 @@ import { useQuiz } from "./hooks/useQuiz";
 import { useUserContent } from "./hooks/useUserContent";
 import { useBookmarks } from "./hooks/useBookmarks";
 import { useTheme } from "./hooks/useTheme";
+import { useNavLayout } from "./hooks/useNavLayout";
+import type { NavLayout } from "./hooks/useNavLayout";
 import { CategoryFilter } from "./components/CategoryFilter";
 import { QuizView } from "./components/QuizView";
 import { InterviewView } from "./components/InterviewView";
@@ -68,6 +70,7 @@ const NAV_GROUPS: NavGroup[] = [
 export default function App() {
   const [view, setView] = useState<View>("home");
   const theme = useTheme();
+  const nav = useNavLayout();
   const user = useUserContent();
   const bookmarks = useBookmarks();
   // ユーザー作問の件数を渡し、追加・取り込みで出題に即反映する（F-USER）。
@@ -80,11 +83,63 @@ export default function App() {
   // 現在のビューが属するグループ（home のときは未選択）。
   const activeGroup = NAV_GROUPS.find((g) => g.views.some((v) => v.view === view));
 
+  // ビュー本体（レイアウトに依存しないので切り出して両レイアウトで共有する）。
+  const viewContent = (
+    <>
+      {view === "home" && <HomeView onNavigate={(v) => setView(v)} />}
+
+      {view === "quiz" && (
+        <>
+          {quiz.status === "loading" && <p className="text-center text-label-2">読み込み中…</p>}
+          {quiz.status === "error" && (
+            <p className="rounded-control bg-rose-50 p-4 text-center text-rose-700 ring-1 ring-rose-200 dark:bg-rose-950 dark:text-rose-300 dark:ring-rose-900">
+              用語データを読み込めませんでした。
+            </p>
+          )}
+          {quiz.status === "ready" && (
+            <>
+              <div className="hig-card mb-5 flex items-center justify-between px-4 py-3 text-sm">
+                <span className="text-label-2">解答数 <span className="font-bold text-label">{quiz.answeredCount}</span></span>
+                <span className="text-label-2">正答 <span className="font-bold text-emerald-700 dark:text-emerald-400">{quiz.correctCount}</span></span>
+                <span className="text-label-2">正答率 <span className="font-bold text-accent">{rate}%</span></span>
+              </div>
+              {quiz.question ? (
+                <QuizView
+                  question={quiz.question}
+                  selected={quiz.selected}
+                  isCorrect={quiz.isCorrect}
+                  onAnswer={quiz.answer}
+                  onNext={quiz.next}
+                />
+              ) : (
+                <p className="text-center text-label-2">この分野には出題できる用語がありません。</p>
+              )}
+            </>
+          )}
+        </>
+      )}
+
+      {view === "card" && <CardView />}
+      {view === "dictionary" && <DictionaryView bookmarks={bookmarks} />}
+      {view === "learn" && <LearnView />}
+      {view === "dashboard" && <DashboardView bookmarks={bookmarks} />}
+      {view === "review" && <ReviewView />}
+      {view === "prep" && <PrepView />}
+      {view === "interview" && <InterviewView userQuestions={user.content.interviewQuestions} />}
+      {view === "mock" && <MockInterviewView />}
+      {view === "guide" && <GuideView userQuestions={user.content.interviewQuestions} />}
+      {view === "author" && <AuthorView user={user} />}
+      {view === "reverseq" && <ReverseQuestionStock />}
+    </>
+  );
+
+  const sidebar = nav.layout === "sidebar";
+
   return (
     <div className="min-h-screen bg-canvas text-label">
       {/* iOS/macOS のナビバー風：上部固定・半透明 + backdrop blur（素材感）。 */}
       <header className="sticky top-0 z-20 border-b border-separator bg-bar backdrop-blur-xl backdrop-saturate-150">
-        <div className="mx-auto flex max-w-2xl flex-col gap-3 px-4 py-3">
+        <div className={`mx-auto flex flex-col gap-3 px-4 py-3 ${sidebar ? "max-w-5xl" : "max-w-2xl"}`}>
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start justify-between gap-2">
               <div>
@@ -111,105 +166,136 @@ export default function App() {
                   onChange={quiz.setCategory}
                 />
               )}
+              {/* PCナビ様式トグル（desktop のみ・#381 の2案比較用）。 */}
+              <LayoutToggle layout={nav.layout} onToggle={nav.toggle} className="hidden lg:flex" />
               <ThemeToggle theme={theme.theme} onToggle={theme.toggle} className="hidden sm:flex" />
             </div>
           </div>
 
-          {/* 第1段：グループ。iOS のセグメントコントロール（薄い面に白ピルが滑る）。 */}
-          <nav
-            className="flex gap-1 rounded-control bg-fill-quaternary p-1"
-            aria-label="カテゴリ切替"
-          >
-            {NAV_GROUPS.map((g) => (
-              <SegmentTab
-                key={g.key}
-                active={activeGroup?.key === g.key}
-                onClick={() => setView(g.views[0].view)}
-              >
-                {g.label}
-              </SegmentTab>
-            ))}
-          </nav>
-
-          {/* 第2段：選択中グループのモード（単独グループは第1段で完結するため省略）。ピル列。 */}
-          {activeGroup && activeGroup.views.length > 1 && (
-            <nav
-              className="flex flex-wrap gap-2"
-              aria-label={`${activeGroup.label}のモード切替`}
-            >
-              {activeGroup.views.map((v) => (
-                <PillTab
-                  key={v.view}
-                  active={view === v.view}
-                  onClick={() => setView(v.view)}
-                >
-                  {v.label}
-                </PillTab>
-              ))}
-            </nav>
-          )}
+          {/* 上部ナビ（セグメント＋ピル）。toolbar は常時／sidebar は desktop でサイドバーに譲りモバイルのみ表示。 */}
+          <div className={`flex flex-col gap-3 ${sidebar ? "lg:hidden" : ""}`}>
+            <TopNav view={view} activeGroup={activeGroup} setView={setView} />
+          </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl px-4 py-6">
-        {view === "home" && <HomeView onNavigate={(v) => setView(v)} />}
-
-        {view === "quiz" && (
-          <>
-            {quiz.status === "loading" && <p className="text-center text-label-2">読み込み中…</p>}
-            {quiz.status === "error" && (
-              <p className="rounded-control bg-rose-50 p-4 text-center text-rose-700 ring-1 ring-rose-200 dark:bg-rose-950 dark:text-rose-300 dark:ring-rose-900">
-                用語データを読み込めませんでした。
-              </p>
-            )}
-            {quiz.status === "ready" && (
-              <>
-                <div className="hig-card mb-5 flex items-center justify-between px-4 py-3 text-sm">
-                  <span className="text-label-2">解答数 <span className="font-bold text-label">{quiz.answeredCount}</span></span>
-                  <span className="text-label-2">正答 <span className="font-bold text-emerald-700 dark:text-emerald-400">{quiz.correctCount}</span></span>
-                  <span className="text-label-2">正答率 <span className="font-bold text-accent">{rate}%</span></span>
-                </div>
-                {quiz.question ? (
-                  <QuizView
-                    question={quiz.question}
-                    selected={quiz.selected}
-                    isCorrect={quiz.isCorrect}
-                    onAnswer={quiz.answer}
-                    onNext={quiz.next}
-                  />
-                ) : (
-                  <p className="text-center text-label-2">この分野には出題できる用語がありません。</p>
-                )}
-              </>
-            )}
-          </>
-        )}
-
-        {view === "card" && <CardView />}
-
-        {view === "dictionary" && <DictionaryView bookmarks={bookmarks} />}
-
-        {view === "learn" && <LearnView />}
-
-        {view === "dashboard" && <DashboardView bookmarks={bookmarks} />}
-
-        {view === "review" && <ReviewView />}
-
-        {view === "prep" && <PrepView />}
-
-        {view === "interview" && (
-          <InterviewView userQuestions={user.content.interviewQuestions} />
-        )}
-
-        {view === "mock" && <MockInterviewView />}
-
-        {view === "guide" && <GuideView userQuestions={user.content.interviewQuestions} />}
-
-        {view === "author" && <AuthorView user={user} />}
-
-        {view === "reverseq" && <ReverseQuestionStock />}
-      </main>
+      {sidebar ? (
+        <div className="mx-auto flex w-full max-w-5xl gap-6 px-4 py-6">
+          <SideNav view={view} setView={setView} className="hidden w-56 shrink-0 lg:block" />
+          <main className="min-w-0 flex-1">
+            <div className="mx-auto max-w-2xl">{viewContent}</div>
+          </main>
+        </div>
+      ) : (
+        <main className="mx-auto max-w-2xl px-4 py-6">{viewContent}</main>
+      )}
     </div>
+  );
+}
+
+// 上部ナビ：第1段＝iOS セグメント、第2段＝モードのピル列。
+function TopNav({
+  view,
+  activeGroup,
+  setView,
+}: {
+  view: View;
+  activeGroup: NavGroup | undefined;
+  setView: (v: View) => void;
+}) {
+  return (
+    <>
+      <nav className="flex gap-1 rounded-control bg-fill-quaternary p-1" aria-label="カテゴリ切替">
+        {NAV_GROUPS.map((g) => (
+          <SegmentTab key={g.key} active={activeGroup?.key === g.key} onClick={() => setView(g.views[0].view)}>
+            {g.label}
+          </SegmentTab>
+        ))}
+      </nav>
+      {activeGroup && activeGroup.views.length > 1 && (
+        <nav className="flex flex-wrap gap-2" aria-label={`${activeGroup.label}のモード切替`}>
+          {activeGroup.views.map((v) => (
+            <PillTab key={v.view} active={view === v.view} onClick={() => setView(v.view)}>
+              {v.label}
+            </PillTab>
+          ))}
+        </nav>
+      )}
+    </>
+  );
+}
+
+// 左サイドバー（macOS のソースリスト風）。グループ見出し＋モード行。desktop 専用。
+function SideNav({
+  view,
+  setView,
+  className = "",
+}: {
+  view: View;
+  setView: (v: View) => void;
+  className?: string;
+}) {
+  return (
+    <nav className={`flex flex-col gap-1 self-start ${className}`} aria-label="モード一覧">
+      <SideRow active={view === "home"} onClick={() => setView("home")}>ホーム</SideRow>
+      {NAV_GROUPS.map((g) => (
+        <div key={g.key} className="mt-3 first:mt-0">
+          <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-label-2">{g.label}</p>
+          {g.views.map((v) => (
+            <SideRow key={v.view} active={view === v.view} onClick={() => setView(v.view)}>
+              {v.label}
+            </SideRow>
+          ))}
+        </div>
+      ))}
+    </nav>
+  );
+}
+
+function SideRow({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-current={active ? "page" : undefined}
+      className={`w-full rounded-control px-3 py-1.5 text-left text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+        active ? "bg-accent-fill text-white" : "text-label hover:bg-fill-quaternary"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+// PCナビ様式の切替（上部ツールバー ⇄ サイドバー）。desktop のみ表示。
+function LayoutToggle({
+  layout,
+  onToggle,
+  className = "",
+}: {
+  layout: NavLayout;
+  onToggle: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={layout === "sidebar" ? "サイドバー表示中。クリックで上部ツールバーに切り替え" : "ツールバー表示中。クリックでサイドバーに切り替え"}
+      title={layout === "sidebar" ? "サイドバー表示中（クリックで上部ツールバー）" : "上部ツールバー表示中（クリックでサイドバー）"}
+      className={`h-8 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-label-2 ring-1 ring-separator transition hover:bg-fill-quaternary hover:text-label focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${className}`}
+    >
+      <span aria-hidden="true">{layout === "sidebar" ? "◧" : "▤"}</span>
+      {layout === "sidebar" ? "サイドバー" : "ツールバー"}
+    </button>
   );
 }
 
