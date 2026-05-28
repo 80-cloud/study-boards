@@ -75,6 +75,21 @@ html {
 }
 
 @layer components {
+  /* Display 見出し：SF Pro Display 風（大きく軽く、字間を締める）。 */
+  .hig-display {
+    font-weight: 500;
+    letter-spacing: -0.022em;
+    line-height: 1.1;
+  }
+  /* kicker：オールキャップスの小キャプション。Display 見出しの余韻を作る。 */
+  .hig-kicker {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-label-3);
+  }
+
   /* HIG カード：面 + 角丸 + ヘアライン罫線。全画面共通の基本ブロック。 */
   .hig-card {
     background-color: var(--color-surface);
