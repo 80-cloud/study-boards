@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Term, Progress } from "../types";
+import type { LevelFilter } from "./useLevel";
 import { repository } from "../api";
 import { shuffle, pickWeighted } from "../utils/shuffle";
 import { srsWeight } from "../utils/srs";
@@ -34,7 +35,8 @@ export type UseQuiz = {
 };
 
 // reloadKey: ユーザー作問の件数などを渡すと、変化時に用語を再読込して出題に反映する（F-USER）。
-export function useQuiz(reloadKey: number | string = 0): UseQuiz {
+// level: "all" 以外なら、その難易度の用語のみで出題プールを構成する（#437）。
+export function useQuiz(reloadKey: number | string = 0, level: LevelFilter = "all"): UseQuiz {
   const [terms, setTerms] = useState<Term[]>([]);
   // 進捗は SRS の出題優先度に使う。再レンダーを誘発せず常に最新を読むため ref で保持する。
   const progressRef = useRef<Progress>({});
@@ -74,10 +76,15 @@ export function useQuiz(reloadKey: number | string = 0): UseQuiz {
     [terms],
   );
 
-  // 現在の分野で出題可能な用語（F-QUIZ-04 分野別・全分野ランダム）。
+  // 現在の分野・レベルで出題可能な用語（F-QUIZ-04 分野別・全分野ランダム / #437 レベル絞り込み）。
   const pool = useMemo(
-    () => (category ? terms.filter((t) => t.category === category) : terms),
-    [terms, category],
+    () =>
+      terms.filter((t) => {
+        if (category && t.category !== category) return false;
+        if (level !== "all" && t.level !== level) return false;
+        return true;
+      }),
+    [terms, category, level],
   );
 
   // 次の問題を出す。SRS の重み付き選択で苦手・未出題を優先しつつ、

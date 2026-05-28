@@ -4,10 +4,12 @@ import { usePendingImport } from "./hooks/usePendingImport";
 import type { PendingImport } from "./hooks/usePendingImport";
 import { useBookmarks } from "./hooks/useBookmarks";
 import { useTheme } from "./hooks/useTheme";
+import { useLevel } from "./hooks/useLevel";
 import { useNavLayout } from "./hooks/useNavLayout";
 import type { NavLayout } from "./hooks/useNavLayout";
 import { useViewHistory } from "./hooks/useViewHistory";
 import { CategoryFilter } from "./components/CategoryFilter";
+import { LevelSelector } from "./components/LevelSelector";
 import { QuizView } from "./components/QuizView";
 import { InterviewView } from "./components/InterviewView";
 import { MockInterviewView } from "./components/MockInterviewView";
@@ -93,8 +95,11 @@ export default function App() {
   const bookmarks = useBookmarks();
   // #431: ?import=... を踏んで開いた場合のプレビュー（受信側のワンクリック共有）
   const pendingImport = usePendingImport();
+  // #437: 覚える系3ビュー共通の学習レベルフィルタ
+  const levelState = useLevel();
   // ユーザー作問の件数を渡し、追加・取り込みで出題に即反映する（F-USER）。
-  const quiz = useQuiz(user.content.quizTerms.length);
+  // #437: 学習レベルでも出題プールを絞れるよう level を引き渡す。
+  const quiz = useQuiz(user.content.quizTerms.length, levelState.level);
   const rate =
     quiz.answeredCount > 0
       ? Math.round((quiz.correctCount / quiz.answeredCount) * 100)
@@ -118,6 +123,10 @@ export default function App() {
           )}
           {quiz.status === "ready" && (
             <>
+              {/* #437: 学習レベル選択（解答数バーの上に配置）。 */}
+              <div className="mb-3">
+                <LevelSelector value={levelState.level} onChange={levelState.setLevel} />
+              </div>
               <div className="hig-card mb-5 flex items-center justify-between px-4 py-3 text-sm">
                 <span className="text-label-2">解答数 <span className="font-bold text-label">{quiz.answeredCount}</span></span>
                 <span className="text-label-2">正答 <span className="font-bold text-emerald-700 dark:text-emerald-400">{quiz.correctCount}</span></span>
@@ -139,8 +148,24 @@ export default function App() {
         </>
       )}
 
-      {view === "card" && <CardView />}
-      {view === "dictionary" && <DictionaryView bookmarks={bookmarks} />}
+      {view === "card" && (
+        <>
+          {/* #437: 学習レベル選択（カード上部に配置・分野フィルタの上で見つけやすく） */}
+          <div className="mb-3">
+            <LevelSelector value={levelState.level} onChange={levelState.setLevel} />
+          </div>
+          <CardView level={levelState.level} />
+        </>
+      )}
+      {view === "dictionary" && (
+        <>
+          {/* #437: 学習レベル選択（辞典上部に配置） */}
+          <div className="mb-3">
+            <LevelSelector value={levelState.level} onChange={levelState.setLevel} />
+          </div>
+          <DictionaryView bookmarks={bookmarks} level={levelState.level} />
+        </>
+      )}
       {view === "learn" && <LearnView />}
       {view === "dashboard" && <DashboardView bookmarks={bookmarks} />}
       {view === "review" && <ReviewView />}
@@ -184,7 +209,7 @@ export default function App() {
               </div>
               <ThemeToggle theme={theme.theme} onToggle={theme.toggle} className="flex sm:hidden" />
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {view === "quiz" && quiz.status === "ready" && (
                 <CategoryFilter
                   categories={quiz.categories}
