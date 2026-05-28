@@ -199,7 +199,8 @@ export function InterviewView({ userQuestions }: Props) {
         </div>
       )}
     </section>
-      <ReverseQuestionStock />
+      {/* 逆質問ストックは練習の邪魔にならないよう、模範回答を見た後にだけ表示する。 */}
+      {revealed && <ReverseQuestionStock />}
     </div>
   );
 }
