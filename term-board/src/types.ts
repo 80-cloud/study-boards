@@ -51,6 +51,17 @@ export type UserContent = {
   quizTerms: Term[]; // ユーザー作問の4択用語
   interviewQuestions: InterviewQuestion[]; // ユーザー作問の面接Q&A
   reverseQuestions?: string[]; // 逆質問（#425・任意フィールドで後方互換）
+  flashcards?: Flashcard[]; // 暗記カード（#427・任意フィールドで後方互換）
+};
+
+// F-CARD-01 拡張: ユーザー作問の軽量カード（distractors なし）。
+// 4択用語より自由度が高く、略語・コマンド・予約語の暗記に向く。
+export type Flashcard = {
+  id: string;
+  front: string; // 表（用語・問題）
+  back: string; // 裏（意味・回答）
+  category?: string; // 分野（任意）
+  source?: "user" | "shared";
 };
 
 // B5: 自己紹介・志望動機の下書き素材（穴埋め式・localStorage保存）。

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { Term, InterviewQuestion, UserContent } from "../types";
+import type { Term, InterviewQuestion, UserContent, Flashcard } from "../types";
 import { repository } from "../api";
 import { newId, encodeShareCode, decodeShareCode } from "../utils/share";
 
@@ -8,6 +8,7 @@ import { newId, encodeShareCode, decodeShareCode } from "../utils/share";
 
 export type NewQuizTerm = Omit<Term, "id" | "source">;
 export type NewInterviewQuestion = Omit<InterviewQuestion, "id" | "source">;
+export type NewFlashcard = Omit<Flashcard, "id" | "source">;
 
 export type UseUserContent = {
   content: UserContent;
@@ -23,12 +24,23 @@ export type UseUserContent = {
   addReverseQuestion: (q: string) => void;
   /** 逆質問を削除。#425 */
   removeReverseQuestion: (q: string) => void;
+  /** 暗記カードを追加。#427 */
+  addFlashcard: (c: NewFlashcard) => void;
+  /** 暗記カードを更新（id・source は保持）。#427 */
+  updateFlashcard: (id: string, c: NewFlashcard) => void;
+  /** 暗記カードを削除。#427 */
+  removeFlashcard: (id: string) => void;
   exportCode: () => string;
   /** 共有コードを取り込み、追加件数を返す。失敗時は例外を投げる。 */
-  importCode: (code: string) => { quiz: number; interview: number; reverse: number };
+  importCode: (code: string) => { quiz: number; interview: number; reverse: number; flashcard: number };
 };
 
-const EMPTY: UserContent = { quizTerms: [], interviewQuestions: [], reverseQuestions: [] };
+const EMPTY: UserContent = {
+  quizTerms: [],
+  interviewQuestions: [],
+  reverseQuestions: [],
+  flashcards: [],
+};
 
 export function useUserContent(): UseUserContent {
   const [content, setContent] = useState<UserContent>(EMPTY);
@@ -137,6 +149,39 @@ export function useUserContent(): UseUserContent {
     });
   }, []);
 
+  const addFlashcard = useCallback((c: NewFlashcard) => {
+    setContent((prev) => {
+      const list = prev.flashcards ?? [];
+      const next: UserContent = {
+        ...prev,
+        flashcards: [...list, { ...c, id: newId(), source: "user" }],
+      };
+      void repository.saveUserContent(next);
+      return next;
+    });
+  }, []);
+
+  const updateFlashcard = useCallback((id: string, c: NewFlashcard) => {
+    setContent((prev) => {
+      const list = prev.flashcards ?? [];
+      const next: UserContent = {
+        ...prev,
+        flashcards: list.map((f) => (f.id === id ? { ...f, ...c } : f)),
+      };
+      void repository.saveUserContent(next);
+      return next;
+    });
+  }, []);
+
+  const removeFlashcard = useCallback((id: string) => {
+    setContent((prev) => {
+      const list = prev.flashcards ?? [];
+      const next: UserContent = { ...prev, flashcards: list.filter((f) => f.id !== id) };
+      void repository.saveUserContent(next);
+      return next;
+    });
+  }, []);
+
   const exportCode = useCallback(() => encodeShareCode(content), [content]);
 
   // 取り込み時はIDを振り直して衝突を避け、既存に追記する。
@@ -152,6 +197,11 @@ export function useUserContent(): UseUserContent {
         source: "shared" as const,
       }));
       const incomingReverse = incoming.reverseQuestions ?? [];
+      const incomingFlash = (incoming.flashcards ?? []).map((f) => ({
+        ...f,
+        id: newId(),
+        source: "shared" as const,
+      }));
       let addedReverse = 0;
       setContent((prev) => {
         const prevReverse = prev.reverseQuestions ?? [];
@@ -166,11 +216,17 @@ export function useUserContent(): UseUserContent {
           quizTerms: [...prev.quizTerms, ...quiz],
           interviewQuestions: [...prev.interviewQuestions, ...interview],
           reverseQuestions: mergedReverse,
+          flashcards: [...(prev.flashcards ?? []), ...incomingFlash],
         };
         void repository.saveUserContent(next);
         return next;
       });
-      return { quiz: quiz.length, interview: interview.length, reverse: addedReverse };
+      return {
+        quiz: quiz.length,
+        interview: interview.length,
+        reverse: addedReverse,
+        flashcard: incomingFlash.length,
+      };
     },
     [],
   );
@@ -185,6 +241,9 @@ export function useUserContent(): UseUserContent {
     removeInterviewQuestion,
     addReverseQuestion,
     removeReverseQuestion,
+    addFlashcard,
+    updateFlashcard,
+    removeFlashcard,
     exportCode,
     importCode,
   };

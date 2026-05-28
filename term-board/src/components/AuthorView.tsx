@@ -3,7 +3,7 @@ import type { UseUserContent } from "../hooks/useUserContent";
 import { ReverseQuestionStock } from "./ReverseQuestionStock";
 
 type Props = { user: UseUserContent };
-type Tab = "quiz" | "interview" | "reverse" | "share";
+type Tab = "quiz" | "interview" | "card" | "reverse" | "share";
 
 const inputClass =
   "w-full rounded-control border border-separator bg-surface px-3 py-2 text-sm text-label focus:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent";
@@ -26,6 +26,9 @@ export function AuthorView({ user }: Props) {
         <SubTab active={tab === "quiz"} onClick={() => setTab("quiz")}>
           4択用語
         </SubTab>
+        <SubTab active={tab === "card"} onClick={() => setTab("card")}>
+          暗記カード
+        </SubTab>
         <SubTab active={tab === "reverse"} onClick={() => setTab("reverse")}>
           逆質問
         </SubTab>
@@ -36,6 +39,7 @@ export function AuthorView({ user }: Props) {
 
       {tab === "interview" && <InterviewForm user={user} />}
       {tab === "quiz" && <QuizForm user={user} />}
+      {tab === "card" && <FlashcardForm user={user} />}
       {tab === "reverse" && <ReverseQuestionStock user={user} />}
       {tab === "share" && <SharePanel user={user} />}
     </section>
@@ -314,13 +318,122 @@ function QuizForm({ user }: Props) {
   );
 }
 
+// --- 暗記カード 作成フォーム（追加＋編集・#427） ---
+function FlashcardForm({ user }: Props) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [front, setFront] = useState("");
+  const [back, setBack] = useState("");
+  const [category, setCategory] = useState("");
+  const valid = front.trim() && back.trim();
+  const isEditing = editingId !== null;
+  const cards = user.content.flashcards ?? [];
+
+  const resetForm = () => {
+    setEditingId(null);
+    setFront("");
+    setBack("");
+    setCategory("");
+  };
+
+  const startEdit = (id: string) => {
+    const item = cards.find((c) => c.id === id);
+    if (!item) return;
+    setEditingId(id);
+    setFront(item.front);
+    setBack(item.back);
+    setCategory(item.category ?? "");
+  };
+
+  // 重複チェック（表が同じ・編集中は自分を除外）
+  const trimmedF = front.trim();
+  const isDuplicate =
+    !!trimmedF && cards.some((c) => c.front.trim() === trimmedF && c.id !== editingId);
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!valid || isDuplicate) return;
+    const data = {
+      front: front.trim(),
+      back: back.trim(),
+      category: category.trim() || undefined,
+    };
+    if (editingId) {
+      user.updateFlashcard(editingId, data);
+    } else {
+      user.addFlashcard(data);
+    }
+    resetForm();
+  };
+
+  return (
+    <div className="flex flex-col gap-5">
+      <form onSubmit={submit} className="flex flex-col gap-3 hig-card p-5">
+        {isEditing && (
+          <p className="rounded-control bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 ring-1 ring-amber-200 dark:bg-amber-950 dark:text-amber-200 dark:ring-amber-900">
+            編集中：{front || "（表未入力）"}
+          </p>
+        )}
+        {isDuplicate && (
+          <p role="alert" className="rounded-control bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 ring-1 ring-rose-200 dark:bg-rose-950 dark:text-rose-300 dark:ring-rose-900">
+            同じ表のカードが既に登録されています。重複登録は抑止しました。
+          </p>
+        )}
+        <p className="text-sm text-label-2">
+          表（用語など）と裏（意味・回答）だけの軽い暗記カードを作れます。略語・コマンド・予約語の暗記に向いています。
+        </p>
+        <div>
+          <label htmlFor="fc-front" className={labelClass}>表 <span className="text-rose-600">*</span></label>
+          <input id="fc-front" className={inputClass} value={front} onChange={(e) => setFront(e.target.value)} placeholder="例：DRY" />
+        </div>
+        <div>
+          <label htmlFor="fc-back" className={labelClass}>裏 <span className="text-rose-600">*</span></label>
+          <textarea id="fc-back" className={inputClass} rows={3} value={back} onChange={(e) => setBack(e.target.value)} placeholder="例：Don't Repeat Yourself（同じことを繰り返さない）" />
+        </div>
+        <div>
+          <label htmlFor="fc-cat" className={labelClass}>分野（任意）</label>
+          <input id="fc-cat" className={inputClass} value={category} onChange={(e) => setCategory(e.target.value)} placeholder="例：略語 / コマンド" />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button type="submit" disabled={!valid || isDuplicate} className={primaryBtn}>
+            {isEditing ? "更新する" : "追加する"}
+          </button>
+          {isEditing && (
+            <button type="button" onClick={resetForm} className={secondaryBtn}>
+              キャンセル
+            </button>
+          )}
+        </div>
+      </form>
+
+      <ItemList
+        title={`登録した暗記カード（${cards.length}件）`}
+        items={cards.map((c) => ({
+          id: c.id,
+          primary: c.front,
+          secondary: `${c.category ?? "暗記カード"}｜${c.back}`,
+        }))}
+        onEdit={startEdit}
+        onRemove={(id) => {
+          if (editingId === id) resetForm();
+          user.removeFlashcard(id);
+        }}
+      />
+    </div>
+  );
+}
+
 // --- 共有（エクスポート/インポート） ---
 function SharePanel({ user }: Props) {
   const [exported, setExported] = useState("");
   const [importText, setImportText] = useState("");
   const [message, setMessage] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const reverseCount = user.content.reverseQuestions?.length ?? 0;
-  const total = user.content.quizTerms.length + user.content.interviewQuestions.length + reverseCount;
+  const flashcardCount = user.content.flashcards?.length ?? 0;
+  const total =
+    user.content.quizTerms.length +
+    user.content.interviewQuestions.length +
+    reverseCount +
+    flashcardCount;
 
   const doExport = () => {
     if (total === 0) {
@@ -335,9 +448,12 @@ function SharePanel({ user }: Props) {
 
   const doImport = () => {
     try {
-      const { quiz, interview, reverse } = user.importCode(importText);
+      const { quiz, interview, reverse, flashcard } = user.importCode(importText);
       setImportText("");
-      setMessage({ kind: "ok", text: `取り込みました：4択用語 ${quiz}件／面接Q&A ${interview}件／逆質問 ${reverse}件。` });
+      setMessage({
+        kind: "ok",
+        text: `取り込みました：4択用語 ${quiz}件／面接Q&A ${interview}件／暗記カード ${flashcard}件／逆質問 ${reverse}件。`,
+      });
     } catch {
       setMessage({ kind: "err", text: "共有コードを読み取れませんでした。コードが正しいか確認してください。" });
     }
@@ -348,7 +464,7 @@ function SharePanel({ user }: Props) {
       <div className="hig-card p-5">
         <h2 className="font-bold text-label">書き出す（共有する）</h2>
         <p className="mt-1 text-sm text-label-2">
-          自分が作った問題（4択 {user.content.quizTerms.length}件・面接 {user.content.interviewQuestions.length}件・逆質問 {reverseCount}件）を
+          自分が作った問題（4択 {user.content.quizTerms.length}件・面接 {user.content.interviewQuestions.length}件・暗記カード {flashcardCount}件・逆質問 {reverseCount}件）を
           共有コードにして、Discordなどに貼って渡せます。
         </p>
         <button type="button" onClick={doExport} className={`mt-3 ${primaryBtn}`}>共有コードを作る</button>

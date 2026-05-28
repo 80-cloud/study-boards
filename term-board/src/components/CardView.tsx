@@ -22,7 +22,7 @@ export function CardView() {
 
   useEffect(() => {
     let active = true;
-    Promise.all([repository.getTerms(), repository.getCardProgress()]).then(([t, cp]) => {
+    Promise.all([repository.getCardItems(), repository.getCardProgress()]).then(([t, cp]) => {
       if (!active) return;
       setTerms(t);
       setCardProgress(cp);
@@ -187,10 +187,13 @@ export function CardView() {
                   <span className="font-semibold text-label">意味：</span>
                   {current.meaning}
                 </p>
-                <p className="text-sm leading-relaxed text-label-2">
-                  <span className="font-semibold text-label">面接での言い方：</span>
-                  {current.interview}
-                </p>
+                {/* Flashcard は interview を持たない（空文字）ため、ある時だけ表示。 */}
+                {current.interview && (
+                  <p className="text-sm leading-relaxed text-label-2">
+                    <span className="font-semibold text-label">面接での言い方：</span>
+                    {current.interview}
+                  </p>
+                )}
               </div>
             )}
           </button>
