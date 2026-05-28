@@ -9,6 +9,11 @@ export interface TermRepository {
   getProgress(): Promise<Progress>;
   saveProgress(p: Progress): Promise<void>;
 
+  // F-CARD-01: 暗記カード専用の習熟度（覚えた/まだ）。4択の Progress とは別管理で
+  // 正答率を汚さず、カードの SRS（間隔反復）出題に使う。
+  getCardProgress(): Promise<Progress>;
+  saveCardProgress(p: Progress): Promise<void>;
+
   // F-USER: ユーザー作問データ（4択用語・面接Q&A）。
   getUserContent(): Promise<UserContent>;
   saveUserContent(c: UserContent): Promise<void>;

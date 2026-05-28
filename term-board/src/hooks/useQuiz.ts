@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Term, Progress } from "../types";
 import { repository } from "../api";
 import { shuffle, pickWeighted } from "../utils/shuffle";
+import { srsWeight } from "../utils/srs";
 
 // 1問分の出題データ。options は正解 meaning と distractors を混ぜてシャッフル済み（F-QUIZ-03）。
 export type Question = {
@@ -16,16 +17,6 @@ export type QuizStatus = "loading" | "ready" | "error";
 function buildQuestion(term: Term): Question {
   const options = shuffle([term.meaning, ...term.distractors]);
   return { term, options, answer: term.meaning };
-}
-
-// F-QUIZ-05: SRS（間隔反復）の出題優先度。Leitner 方式の簡易版。
-// 未出題を最優先、誤答が多いほど高く、正答を積むほど低く（間隔が伸びる）。
-// 重みが大きいほど選ばれやすい（pickWeighted）。
-function srsWeight(p?: Progress[string]): number {
-  if (!p) return 6; // 未出題を最優先
-  const net = p.correct - p.wrong; // 定着度（正答超過＝定着）
-  // net 0 → 5、誤答超過で増、正答を積むほど減（下限1で必ず再登場の余地を残す）。
-  return Math.max(1, 5 - net);
 }
 
 export type UseQuiz = {
