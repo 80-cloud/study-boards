@@ -17,9 +17,9 @@ function optionClass(args: {
   isThisSelected: boolean;
 }): string {
   const base =
-    "flex w-full items-center gap-3 rounded-xl border-2 px-4 py-3 text-left text-base transition focus:outline-none focus:ring-2 focus:ring-sky-400";
+    "flex w-full items-center gap-3 rounded-control border px-4 py-3 text-left text-base transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent";
   if (!args.answered) {
-    return `${base} border-slate-200 bg-white hover:border-sky-400 hover:bg-sky-50 cursor-pointer dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:border-sky-500 dark:hover:bg-slate-700`;
+    return `${base} border-separator bg-surface text-label hover:border-accent cursor-pointer active:scale-[0.99]`;
   }
   if (args.isThisCorrect) {
     return `${base} border-emerald-500 bg-emerald-50 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200`;
@@ -68,9 +68,9 @@ export function QuizView({ question, selected, isCorrect, onAnswer, onNext }: Pr
 
   return (
     <section className="flex flex-col gap-5" aria-live="polite">
-      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
-        <p className="text-sm font-medium text-sky-700 dark:text-sky-400">{question.term.category}</p>
-        <h2 className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
+      <div className="hig-card p-6">
+        <p className="text-sm font-medium text-accent">{question.term.category}</p>
+        <h2 className="mt-1 text-2xl font-bold tracking-tight text-label">
           「{question.term.term}」の意味は？
         </h2>
       </div>
@@ -100,7 +100,7 @@ export function QuizView({ question, selected, isCorrect, onAnswer, onNext }: Pr
       </ul>
 
       {answered && (
-        <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
+        <div className="hig-card p-6">
           <p
             className={`text-lg font-bold ${
               isCorrect ? "text-emerald-700 dark:text-emerald-400" : "text-rose-700 dark:text-rose-400"
@@ -137,7 +137,7 @@ export function QuizView({ question, selected, isCorrect, onAnswer, onNext }: Pr
             type="button"
             onClick={onNext}
             autoFocus
-            className="mt-4 rounded-xl bg-sky-700 px-5 py-2.5 font-semibold text-white transition hover:bg-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-400"
+            className="hig-btn-primary mt-4 px-5 py-2.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             次の問題 →
           </button>

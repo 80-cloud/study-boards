@@ -81,33 +81,27 @@ export default function App() {
   const activeGroup = NAV_GROUPS.find((g) => g.views.some((v) => v.view === view));
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
-      <header className="border-b border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
-        <div className="mx-auto flex max-w-2xl flex-col gap-3 px-4 py-4">
+    <div className="min-h-screen bg-canvas text-label">
+      {/* iOS/macOS のナビバー風：上部固定・半透明 + backdrop blur（素材感）。 */}
+      <header className="sticky top-0 z-20 border-b border-separator bg-bar backdrop-blur-xl backdrop-saturate-150">
+        <div className="mx-auto flex max-w-2xl flex-col gap-3 px-4 py-3">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start justify-between gap-2">
               <div>
-                <h1 className="text-xl font-bold">
+                <h1 className="text-[17px] font-semibold tracking-tight">
                   <button
                     type="button"
                     onClick={() => setView("home")}
                     aria-label="IT用語ボード（ホームへ戻る）"
                     title="ホームへ戻る"
-                    className="rounded transition hover:text-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-400 dark:hover:text-sky-400"
+                    className="rounded transition hover:text-accent focus:outline-none focus:ring-2 focus:ring-accent"
                   >
                     IT用語ボード
                   </button>
                 </h1>
-                <p className="text-xs text-slate-500 dark:text-slate-400">面接で言えるまで、4択で定着させる</p>
+                <p className="text-xs text-label-2">面接で言えるまで、4択で定着させる</p>
               </div>
-              <button
-                type="button"
-                onClick={theme.toggle}
-                aria-label={theme.theme === "dark" ? "ライトモードに切り替え" : "ダークモードに切り替え"}
-                className="rounded-lg px-2 py-1 text-lg ring-1 ring-slate-300 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400 dark:ring-slate-600 dark:hover:bg-slate-700 sm:hidden"
-              >
-                {theme.theme === "dark" ? "☀️" : "🌙"}
-              </button>
+              <ThemeToggle theme={theme.theme} onToggle={theme.toggle} className="flex sm:hidden" />
             </div>
             <div className="flex items-center gap-2">
               {view === "quiz" && quiz.status === "ready" && (
@@ -117,44 +111,40 @@ export default function App() {
                   onChange={quiz.setCategory}
                 />
               )}
-              <button
-                type="button"
-                onClick={theme.toggle}
-                aria-label={theme.theme === "dark" ? "ライトモードに切り替え" : "ダークモードに切り替え"}
-                className="hidden rounded-lg px-2 py-1 text-lg ring-1 ring-slate-300 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-400 dark:ring-slate-600 dark:hover:bg-slate-700 sm:block"
-              >
-                {theme.theme === "dark" ? "☀️" : "🌙"}
-              </button>
+              <ThemeToggle theme={theme.theme} onToggle={theme.toggle} className="hidden sm:flex" />
             </div>
           </div>
 
-          {/* 第1段：グループ（13タブを4グループに集約してモバイルでも2段以内に収める） */}
-          <nav className="flex flex-wrap gap-2" aria-label="カテゴリ切替">
+          {/* 第1段：グループ。iOS のセグメントコントロール（薄い面に白ピルが滑る）。 */}
+          <nav
+            className="flex gap-1 rounded-control bg-fill-quaternary p-1"
+            aria-label="カテゴリ切替"
+          >
             {NAV_GROUPS.map((g) => (
-              <NavTab
+              <SegmentTab
                 key={g.key}
                 active={activeGroup?.key === g.key}
                 onClick={() => setView(g.views[0].view)}
               >
                 {g.label}
-              </NavTab>
+              </SegmentTab>
             ))}
           </nav>
 
-          {/* 第2段：選択中グループのモード（単独グループは第1段で完結するため省略） */}
+          {/* 第2段：選択中グループのモード（単独グループは第1段で完結するため省略）。ピル列。 */}
           {activeGroup && activeGroup.views.length > 1 && (
             <nav
-              className="flex flex-wrap gap-2 border-t border-slate-100 pt-3 dark:border-slate-700"
+              className="flex flex-wrap gap-2"
               aria-label={`${activeGroup.label}のモード切替`}
             >
               {activeGroup.views.map((v) => (
-                <NavTab
+                <PillTab
                   key={v.view}
                   active={view === v.view}
                   onClick={() => setView(v.view)}
                 >
                   {v.label}
-                </NavTab>
+                </PillTab>
               ))}
             </nav>
           )}
@@ -166,18 +156,18 @@ export default function App() {
 
         {view === "quiz" && (
           <>
-            {quiz.status === "loading" && <p className="text-center text-slate-500 dark:text-slate-400">読み込み中…</p>}
+            {quiz.status === "loading" && <p className="text-center text-label-2">読み込み中…</p>}
             {quiz.status === "error" && (
-              <p className="rounded-xl bg-rose-50 p-4 text-center text-rose-700 ring-1 ring-rose-200 dark:bg-rose-950 dark:text-rose-300 dark:ring-rose-900">
+              <p className="rounded-control bg-rose-50 p-4 text-center text-rose-700 ring-1 ring-rose-200 dark:bg-rose-950 dark:text-rose-300 dark:ring-rose-900">
                 用語データを読み込めませんでした。
               </p>
             )}
             {quiz.status === "ready" && (
               <>
-                <div className="mb-5 flex items-center justify-between rounded-xl bg-white px-4 py-3 text-sm shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
-                  <span className="text-slate-600 dark:text-slate-300">解答数 <span className="font-bold text-slate-900 dark:text-slate-100">{quiz.answeredCount}</span></span>
-                  <span className="text-slate-600 dark:text-slate-300">正答 <span className="font-bold text-emerald-700 dark:text-emerald-400">{quiz.correctCount}</span></span>
-                  <span className="text-slate-600 dark:text-slate-300">正答率 <span className="font-bold text-sky-700 dark:text-sky-400">{rate}%</span></span>
+                <div className="hig-card mb-5 flex items-center justify-between px-4 py-3 text-sm">
+                  <span className="text-label-2">解答数 <span className="font-bold text-label">{quiz.answeredCount}</span></span>
+                  <span className="text-label-2">正答 <span className="font-bold text-emerald-700 dark:text-emerald-400">{quiz.correctCount}</span></span>
+                  <span className="text-label-2">正答率 <span className="font-bold text-accent">{rate}%</span></span>
                 </div>
                 {quiz.question ? (
                   <QuizView
@@ -223,7 +213,8 @@ export default function App() {
   );
 }
 
-function NavTab({
+// iOS セグメントコントロールの 1 セグメント。選択中は白ピルが浮き上がる。
+function SegmentTab({
   active,
   onClick,
   children,
@@ -237,13 +228,59 @@ function NavTab({
       type="button"
       onClick={onClick}
       aria-current={active ? "page" : undefined}
-      className={`rounded-lg px-3 py-1.5 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-sky-400 ${
-        active
-          ? "bg-sky-700 text-white"
-          : "bg-white text-slate-600 ring-1 ring-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-600"
+      className={`flex-1 rounded-[7px] px-2 py-1.5 text-[13px] font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+        active ? "bg-surface text-label shadow-sm" : "text-label-2 hover:text-label"
       }`}
     >
       {children}
+    </button>
+  );
+}
+
+// 第2段のモード切替ピル。選択中は systemBlue 塗り。
+function PillTab({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-current={active ? "page" : undefined}
+      className={`rounded-full px-3.5 py-1.5 text-[13px] font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+        active
+          ? "bg-accent-fill text-white"
+          : "bg-surface text-label-2 ring-1 ring-separator hover:text-label"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+// テーマ切替（iOS/macOS のツールバーボタン風・丸角）。
+function ThemeToggle({
+  theme,
+  onToggle,
+  className = "",
+}: {
+  theme: "light" | "dark";
+  onToggle: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={theme === "dark" ? "ライトモードに切り替え" : "ダークモードに切り替え"}
+      className={`h-8 w-8 items-center justify-center rounded-full text-base ring-1 ring-separator transition hover:bg-fill-quaternary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${className}`}
+    >
+      {theme === "dark" ? "☀️" : "🌙"}
     </button>
   );
 }
