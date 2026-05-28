@@ -10,6 +10,7 @@ import { MockInterviewView } from "./components/MockInterviewView";
 import { CardView } from "./components/CardView";
 import { ReviewView } from "./components/ReviewView";
 import { GuideView } from "./components/GuideView";
+import { ReverseQuestionStock } from "./components/ReverseQuestionStock";
 import { AuthorView } from "./components/AuthorView";
 import { DictionaryView } from "./components/DictionaryView";
 import { DashboardView } from "./components/DashboardView";
@@ -17,7 +18,7 @@ import { PrepView } from "./components/PrepView";
 import { LearnView } from "./components/LearnView";
 import { HomeView } from "./components/HomeView";
 
-type View = "home" | "quiz" | "card" | "dictionary" | "interview" | "mock" | "guide" | "author" | "dashboard" | "review" | "prep" | "learn";
+type View = "home" | "quiz" | "card" | "dictionary" | "interview" | "mock" | "guide" | "author" | "reverseq" | "dashboard" | "review" | "prep" | "learn";
 
 export default function App() {
   const [view, setView] = useState<View>("home");
@@ -92,6 +93,7 @@ export default function App() {
             <NavTab active={view === "review"} onClick={() => setView("review")}>振り返り</NavTab>
             <NavTab active={view === "prep"} onClick={() => setView("prep")}>自己PR</NavTab>
             <NavTab active={view === "author"} onClick={() => setView("author")}>マイ問題</NavTab>
+            <NavTab active={view === "reverseq"} onClick={() => setView("reverseq")}>逆質問</NavTab>
           </nav>
         </div>
       </header>
@@ -151,6 +153,8 @@ export default function App() {
         {view === "guide" && <GuideView userQuestions={user.content.interviewQuestions} />}
 
         {view === "author" && <AuthorView user={user} />}
+
+        {view === "reverseq" && <ReverseQuestionStock />}
       </main>
     </div>
   );
