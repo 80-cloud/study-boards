@@ -52,7 +52,8 @@ export function CardView({ level }: Props) {
     () =>
       terms.filter((t) => {
         if (category && t.category !== category) return false;
-        if (level !== "all" && t.level !== level) return false; // #437
+        // #437 + #444: level 未設定（Flashcard 旧データ等）は全レベル該当として残す
+        if (level !== "all" && t.level && t.level !== level) return false;
         if (onlyWeak && !isWeak(t.id)) return false;
         return true;
       }),

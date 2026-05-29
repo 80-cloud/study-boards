@@ -61,6 +61,7 @@ export type Flashcard = {
   front: string; // 表（用語・問題）
   back: string; // 裏（意味・回答）
   category?: string; // 分野（任意）
+  level?: "初級" | "中級" | "上級"; // 学習レベル（#444・未設定はフィルタで全レベル該当）
   source?: "user" | "shared";
 };
 

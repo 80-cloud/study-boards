@@ -81,7 +81,8 @@ export function useQuiz(reloadKey: number | string = 0, level: LevelFilter = "al
     () =>
       terms.filter((t) => {
         if (category && t.category !== category) return false;
-        if (level !== "all" && t.level !== level) return false;
+        // level 未設定（ユーザー作問など）は全レベル該当として残す（#444）
+        if (level !== "all" && t.level && t.level !== level) return false;
         return true;
       }),
     [terms, category, level],

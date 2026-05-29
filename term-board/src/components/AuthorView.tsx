@@ -387,6 +387,7 @@ function FlashcardForm({ user }: Props) {
   const [front, setFront] = useState("");
   const [back, setBack] = useState("");
   const [category, setCategory] = useState("");
+  const [level, setLevel] = useState<"" | "初級" | "中級" | "上級">("");
   const valid = front.trim() && back.trim();
   const isEditing = editingId !== null;
   const cards = user.content.flashcards ?? [];
@@ -396,6 +397,7 @@ function FlashcardForm({ user }: Props) {
     setFront("");
     setBack("");
     setCategory("");
+    setLevel("");
   };
 
   const startEdit = (id: string) => {
@@ -405,6 +407,7 @@ function FlashcardForm({ user }: Props) {
     setFront(item.front);
     setBack(item.back);
     setCategory(item.category ?? "");
+    setLevel(item.level ?? "");
   };
 
   // 重複チェック（表が同じ・編集中は自分を除外）
@@ -419,6 +422,7 @@ function FlashcardForm({ user }: Props) {
       front: front.trim(),
       back: back.trim(),
       category: category.trim() || undefined,
+      level: level === "" ? undefined : level,
     };
     if (editingId) {
       user.updateFlashcard(editingId, data);
@@ -455,6 +459,20 @@ function FlashcardForm({ user }: Props) {
         <div>
           <label htmlFor="fc-cat" className={labelClass}>分野（任意）</label>
           <input id="fc-cat" className={inputClass} value={category} onChange={(e) => setCategory(e.target.value)} placeholder="例：略語 / コマンド" />
+        </div>
+        <div>
+          <label htmlFor="fc-level" className={labelClass}>レベル（任意）</label>
+          <select
+            id="fc-level"
+            className={inputClass}
+            value={level}
+            onChange={(e) => setLevel(e.target.value as "" | "初級" | "中級" | "上級")}
+          >
+            <option value="">未設定（どのレベルでも表示）</option>
+            <option value="初級">初級</option>
+            <option value="中級">中級</option>
+            <option value="上級">上級</option>
+          </select>
         </div>
         <div className="flex flex-wrap gap-2">
           <button type="submit" disabled={!valid || isDuplicate} className={primaryBtn}>
