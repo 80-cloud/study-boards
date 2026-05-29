@@ -28,6 +28,33 @@ function calcStreak(days: string[]): number {
   return streak;
 }
 
+// 達成バッジの定義（達成済みのみ表示・未達は影に隠す）。#464
+type BadgeDef = { id: string; label: string; check: (ctx: BadgeCtx) => boolean };
+type BadgeCtx = { streak: number; answered: number; categoriesTouched: number; allCategories: number };
+const BADGES: BadgeDef[] = [
+  { id: "streak-3", label: "3日連続", check: (c) => c.streak >= 3 },
+  { id: "streak-7", label: "7日連続", check: (c) => c.streak >= 7 },
+  { id: "streak-30", label: "30日連続", check: (c) => c.streak >= 30 },
+  { id: "answered-10", label: "10問達成", check: (c) => c.answered >= 10 },
+  { id: "answered-100", label: "100問達成", check: (c) => c.answered >= 100 },
+  { id: "answered-500", label: "500問達成", check: (c) => c.answered >= 500 },
+  { id: "categories-half", label: "半分のカテゴリに挑戦", check: (c) => c.categoriesTouched >= c.allCategories / 2 },
+  { id: "categories-all", label: "全カテゴリ制覇", check: (c) => c.allCategories > 0 && c.categoriesTouched === c.allCategories },
+];
+
+// 過去 12 週間（84日）分の日付一覧を最古順で返す。
+function pastDates(weeks: number): string[] {
+  const fmt = (d: Date) => d.toLocaleDateString("sv-SE");
+  const days: string[] = [];
+  const today = new Date();
+  for (let i = weeks * 7 - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    days.push(fmt(d));
+  }
+  return days;
+}
+
 // B3: ダッシュボード（分野別正答率・苦手用語・学習おすすめ・学習記録）。
 export function DashboardView({ bookmarks }: Props) {
   const [terms, setTerms] = useState<Term[]>([]);
@@ -105,6 +132,51 @@ export function DashboardView({ bookmarks }: Props) {
   );
 
   const streak = useMemo(() => calcStreak(studyDays), [studyDays]);
+
+  // #464: 学習カバレッジ（全用語のうち何件に触れたか）。
+  const coverage = useMemo(() => {
+    const touched = terms.filter((t) => progress[t.id]).length;
+    const total = terms.length;
+    const pct = total ? Math.round((touched / total) * 100) : 0;
+    return { touched, total, pct };
+  }, [terms, progress]);
+
+  // #464: モード別バランス（quiz / card / interview の累計セッション数）。
+  const modeBalance = useMemo(() => {
+    const counts = { quiz: 0, card: 0, interview: 0 };
+    for (const s of learningLog) {
+      if (s.mode === "quiz") counts.quiz++;
+      else if (s.mode === "card") counts.card++;
+      else if (s.mode === "interview") counts.interview++;
+    }
+    const total = counts.quiz + counts.card + counts.interview;
+    return { ...counts, total };
+  }, [learningLog]);
+
+  // #464: 過去 12 週間（84日）の学習日カレンダーヒートマップ。
+  const calendar = useMemo(() => {
+    const set = new Set(studyDays);
+    const days = pastDates(12).map((d) => ({ date: d, studied: set.has(d) }));
+    // 週単位（7日 × 12週）に分割。
+    const weeks: { date: string; studied: boolean }[][] = [];
+    for (let i = 0; i < 12; i++) weeks.push(days.slice(i * 7, (i + 1) * 7));
+    return { weeks, totalStudied: days.filter((d) => d.studied).length };
+  }, [studyDays]);
+
+  // #464: 達成バッジ（達成済みのみ表示）。
+  const earnedBadges = useMemo(() => {
+    const categoriesTouched = new Set(
+      terms.filter((t) => progress[t.id]).map((t) => t.category),
+    ).size;
+    const allCategories = new Set(terms.map((t) => t.category)).size;
+    const ctx: BadgeCtx = {
+      streak,
+      answered: totals.answered,
+      categoriesTouched,
+      allCategories,
+    };
+    return BADGES.filter((b) => b.check(ctx));
+  }, [streak, totals.answered, terms, progress]);
 
   // F-QUIZ-06: 混同ペア分析。誤答で選んだ選択肢と正しい意味を対比する。
   const confusions = useMemo(() => {
@@ -243,6 +315,77 @@ export function DashboardView({ bookmarks }: Props) {
         学習日数 {studyDays.length} 日 ／ 未学習 {unlearned} 件
       </p>
 
+      {/* === #464: 学習の歩み（純ローカル分析） === */}
+
+      {/* 学習カバレッジ */}
+      <div className={card}>
+        <h2 className="mb-2 text-sm font-semibold text-label-2">学習カバレッジ</h2>
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-label-2">触れた用語</span>
+          <span className="font-semibold text-label">
+            {coverage.pct}%<span className="ml-1 text-xs font-normal text-label-2">（{coverage.touched}/{coverage.total} 語）</span>
+          </span>
+        </div>
+        <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-fill-quaternary">
+          <div className="h-full rounded-full bg-emerald-500" style={{ width: `${coverage.pct}%` }} />
+        </div>
+        {coverage.touched === 0 && (
+          <p className="mt-2 text-xs text-label-2">まずは1問解いてみましょう。</p>
+        )}
+      </div>
+
+      {/* モード別バランス */}
+      <div className={card}>
+        <h2 className="mb-2 text-sm font-semibold text-label-2">モード別バランス</h2>
+        {modeBalance.total === 0 ? (
+          <p className="text-sm text-label-2">まだ学習記録がありません。</p>
+        ) : (
+          <div className="flex flex-col gap-2 text-sm">
+            <ModeBar label="4択クイズ" count={modeBalance.quiz} total={modeBalance.total} color="bg-sky-500" />
+            <ModeBar label="暗記カード" count={modeBalance.card} total={modeBalance.total} color="bg-emerald-500" />
+            <ModeBar label="面接練習" count={modeBalance.interview} total={modeBalance.total} color="bg-amber-500" />
+          </div>
+        )}
+      </div>
+
+      {/* 月別学習カレンダー（草風ヒートマップ） */}
+      <div className={card}>
+        <h2 className="mb-2 text-sm font-semibold text-label-2">学習カレンダー（過去12週）</h2>
+        <p className="mb-3 text-xs text-label-2">
+          学習した日に色が付きます（{calendar.totalStudied} / 84 日）。
+        </p>
+        <div className="flex gap-1 overflow-x-auto">
+          {calendar.weeks.map((week, wi) => (
+            <div key={wi} className="flex flex-col gap-1">
+              {week.map((day) => (
+                <div
+                  key={day.date}
+                  title={`${day.date}${day.studied ? "（学習）" : ""}`}
+                  className={`h-3 w-3 rounded-sm ${day.studied ? "bg-emerald-500" : "bg-fill-quaternary"}`}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 達成バッジ */}
+      {earnedBadges.length > 0 && (
+        <div className={card}>
+          <h2 className="mb-2 text-sm font-semibold text-label-2">達成バッジ</h2>
+          <div className="flex flex-wrap gap-2">
+            {earnedBadges.map((b) => (
+              <span
+                key={b.id}
+                className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900 ring-1 ring-amber-200 dark:bg-amber-950 dark:text-amber-200 dark:ring-amber-900"
+              >
+                ★ {b.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       <DataManager />
     </section>
   );
@@ -253,6 +396,24 @@ function Stat({ label, value }: { label: string; value: string }) {
     <div className="hig-card px-3 py-3 text-center">
       <p className="text-xs text-label-2">{label}</p>
       <p className="mt-0.5 text-lg font-bold text-label">{value}</p>
+    </div>
+  );
+}
+
+// #464: モード別バランスの 1 本のバー。
+function ModeBar({ label, count, total, color }: { label: string; count: number; total: number; color: string }) {
+  const pct = total ? Math.round((count / total) * 100) : 0;
+  return (
+    <div>
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-label-2">{label}</span>
+        <span className="font-semibold text-label">
+          {pct}%<span className="ml-1 text-xs font-normal text-label-2">（{count} 回）</span>
+        </span>
+      </div>
+      <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-fill-quaternary">
+        <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
+      </div>
     </div>
   );
 }
