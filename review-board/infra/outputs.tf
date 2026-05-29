@@ -54,3 +54,9 @@ output "cd_aws_secret_access_key" {
   value       = aws_iam_access_key.github_actions_cd.secret
   sensitive   = true
 }
+
+# --- CloudWatch アラート通知用 SNS トピック ARN（将来の Lambda / Slack 連携用・#480）---
+output "alerts_topic_arn" {
+  description = "CloudWatch アラート通知 SNS トピック ARN（Slack / PagerDuty 連携時の接続先）"
+  value       = aws_sns_topic.alerts.arn
+}
