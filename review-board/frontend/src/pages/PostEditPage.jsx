@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { fetchPost, updatePost } from '../api/posts';
 import ScreenshotUploader from '../components/ScreenshotUploader';
 import ReviewPrefFields from '../components/ReviewPrefFields';
+import { getErrorMessage } from '../lib/errorMessages';
 
 // F-POST-02 投稿の編集（所有者のみ。非所有者は backend が 404）。
 export default function PostEditPage() {
@@ -29,7 +30,9 @@ export default function PostEditPage() {
         });
         setScreenshotUrl(p.screenshotUrl ?? '');
       })
-      .catch((e) => setError(e.response?.status === 404 ? 'この投稿は編集できません' : '取得に失敗しました'));
+      .catch((e) => setError(e.response?.status === 404
+        ? 'この投稿は編集できません'
+        : getErrorMessage(e, '投稿を読み込めませんでした。少し待ってからもう一度お試しください')));
   }, [id]);
 
   const set = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
@@ -51,7 +54,9 @@ export default function PostEditPage() {
       });
       navigate(`/posts/${id}`, { replace: true });
     } catch (err) {
-      setError(err.response?.status === 404 ? '権限がありません' : '更新に失敗しました');
+      setError(err.response?.status === 404
+        ? 'この投稿を編集する権限がありません'
+        : getErrorMessage(err, '更新できませんでした。入力内容をご確認のうえ、もう一度お試しください'));
     } finally {
       setBusy(false);
     }

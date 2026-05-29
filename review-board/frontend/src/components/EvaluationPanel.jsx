@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { EVAL_LABEL } from '../constants';
 import { evaluate } from '../api/evaluations';
+import { getErrorMessage } from '../lib/errorMessages';
 
 // F-EVAL-01：講師の最終評価。受講生には現在の評価のみ表示、講師には評価フォームを出す。
 // 出し分けは UX 補助で、実際の権限は backend（受講生の送信は 403）。
@@ -19,7 +20,9 @@ export default function EvaluationPanel({ postId, evaluation, isTeacher, onEvalu
       setComment('');
       onEvaluated?.(ev);
     } catch (err) {
-      setError(err.response?.status === 403 ? '評価は講師のみ可能です' : '送信に失敗しました');
+      setError(err.response?.status === 403
+        ? '評価は講師のみ可能です'
+        : getErrorMessage(err, '評価を送信できませんでした。少し待ってからもう一度お試しください'));
     } finally {
       setBusy(false);
     }

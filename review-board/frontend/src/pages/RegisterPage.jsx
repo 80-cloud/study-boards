@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import DolphinIcon from '../components/DolphinIcon';
+import { getErrorMessage } from '../lib/errorMessages';
 
 // F-AUTH-02 招待コードによる受講生の自己登録（公開・Issue #165）。
 // 講師が配布した URL（/register?code=...）から開くとコードが自動入力される。
@@ -25,8 +26,8 @@ export default function RegisterPage() {
       await register({ code: code.trim(), email, displayName, password });
       navigate('/');
     } catch (err) {
-      const msg = err?.response?.data?.error?.message;
-      setError(msg || '登録に失敗しました。招待コードや入力内容をご確認ください。');
+      const nestedMsg = err?.response?.data?.error?.message;
+      setError(nestedMsg || getErrorMessage(err, '登録に失敗しました。招待コードや入力内容をご確認ください'));
     } finally {
       setSubmitting(false);
     }

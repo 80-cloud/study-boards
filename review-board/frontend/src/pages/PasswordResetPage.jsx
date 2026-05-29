@@ -3,6 +3,7 @@ import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import DolphinIcon from '../components/DolphinIcon';
 import { APP_NAME } from '../constants';
 import { requestPasswordReset, confirmPasswordReset } from '../api/auth';
+import { getErrorMessage } from '../lib/errorMessages';
 
 /**
  * B-4 パスワードリセット（#231）。
@@ -111,8 +112,8 @@ function ConfirmForm({ token }) {
     } catch (err) {
       setError(
         err.response?.status === 400
-          ? 'リンクが無効か、有効期限が切れています。お手数ですが再度リクエストしてください。'
-          : '通信に失敗しました',
+          ? 'リンクが無効か、有効期限が切れています。お手数ですが再度リクエストしてください'
+          : getErrorMessage(err, '通信に失敗しました。少し待ってからもう一度お試しください'),
       );
     } finally {
       setSubmitting(false);

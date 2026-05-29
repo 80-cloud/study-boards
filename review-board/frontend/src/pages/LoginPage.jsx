@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import DolphinIcon from '../components/DolphinIcon';
 import { APP_NAME, APP_TAGLINE } from '../constants';
+import { getErrorMessage } from '../lib/errorMessages';
 
 export default function LoginPage() {
   const { login, completeMfaLogin } = useAuth();
@@ -29,7 +30,9 @@ export default function LoginPage() {
       navigate('/', { replace: true });
     } catch (err) {
       // 認証失敗は存在を漏らさない汎用メッセージ（backend が 401 を返す）
-      setError(err.response?.status === 401 ? 'メールアドレスまたはパスワードが違います' : '通信に失敗しました');
+      setError(err.response?.status === 401
+        ? 'メールアドレスまたはパスワードが違います'
+        : getErrorMessage(err, '通信に失敗しました。少し待ってからもう一度お試しください'));
     } finally {
       setSubmitting(false);
     }
@@ -51,7 +54,7 @@ export default function LoginPage() {
       setError(
         err.response?.status === 401
           ? 'デモアカウントが利用できません（dev シード未投入の可能性）'
-          : '通信に失敗しました'
+          : getErrorMessage(err, '通信に失敗しました。少し待ってからもう一度お試しください')
       );
     } finally {
       setSubmitting(false);
@@ -66,7 +69,9 @@ export default function LoginPage() {
       await completeMfaLogin(code);
       navigate('/', { replace: true });
     } catch (err) {
-      setError(err.response?.status === 401 ? '認証コードが正しくありません' : '通信に失敗しました');
+      setError(err.response?.status === 401
+        ? '認証コードが正しくありません'
+        : getErrorMessage(err, '通信に失敗しました。少し待ってからもう一度お試しください'));
     } finally {
       setSubmitting(false);
     }
