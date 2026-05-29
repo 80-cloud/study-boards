@@ -169,10 +169,12 @@ export default function ReviewItem({ review, canThank, canManageGrowth, isOwner,
               <div className="mb-1 font-bold text-green-700">✅ 良かった点</div>
               <MarkdownText>{review.good}</MarkdownText>
             </div>
-            <div className="rounded-xl bg-gradient-to-br from-sky-50 to-indigo-50 p-4 text-sm leading-relaxed text-gray-700 ring-1 ring-sky-100">
-              <div className="mb-1 font-bold text-sky-700">💡 改善点</div>
-              <MarkdownText>{review.improvement}</MarkdownText>
-            </div>
+            {review.improvement?.trim() && (
+              <div className="rounded-xl bg-gradient-to-br from-sky-50 to-indigo-50 p-4 text-sm leading-relaxed text-gray-700 ring-1 ring-sky-100">
+                <div className="mb-1 font-bold text-sky-700">💡 改善点</div>
+                <MarkdownText>{review.improvement}</MarkdownText>
+              </div>
+            )}
             {review.axisComments?.length > 0 && (
               <ul className="space-y-1 rounded-xl bg-black/[0.02] p-3">
                 {review.axisComments.map((c) => (

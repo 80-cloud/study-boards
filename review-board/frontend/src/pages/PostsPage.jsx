@@ -161,7 +161,12 @@ export default function PostsPage() {
             <input
               type="search"
               value={q}
-              onChange={(e) => setQ(e.target.value)}
+              onChange={(e) => {
+                const v = e.target.value;
+                setQ(v);
+                // #503：input が空になった瞬間に絞り込みを解除して全件表示に戻す
+                if (v === '') setApplied((p) => ({ ...p, q: '' }));
+              }}
               placeholder="作品・技術・観点で探す（例：React, API 設計）"
               style={{ outline: 'none' }}
               className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm text-gray-800 outline-none"
