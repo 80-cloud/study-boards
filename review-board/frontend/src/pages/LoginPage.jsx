@@ -35,6 +35,29 @@ export default function LoginPage() {
     }
   };
 
+  // 「デモで試す」ボタン：触って 30 秒で動かすために demo シードアカウントで即ログインする。
+  // dev seed の SEED_PASSWORD と同一のパスワードを使う（README に同期掲載）。
+  const onSubmitDemo = async () => {
+    setError('');
+    setSubmitting(true);
+    try {
+      const result = await login('demo@example.com', 'devpass12345');
+      if (result?.mfaRequired) {
+        setMfaStep(true);
+        return;
+      }
+      navigate('/', { replace: true });
+    } catch (err) {
+      setError(
+        err.response?.status === 401
+          ? 'デモアカウントが利用できません（dev シード未投入の可能性）'
+          : '通信に失敗しました'
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const onSubmitMfa = async (e) => {
     e.preventDefault();
     setError('');
@@ -145,6 +168,22 @@ export default function LoginPage() {
 
           <button type="submit" disabled={submitting} className="mac-btn-navy w-full py-2.5">
             {submitting ? 'ログイン中…' : 'ログイン'}
+          </button>
+
+          <div className="mt-3 flex items-center gap-3 text-[10px] font-semibold uppercase tracking-widest text-gray-300">
+            <span className="h-px flex-1 bg-gray-200" />
+            <span>または</span>
+            <span className="h-px flex-1 bg-gray-200" />
+          </div>
+
+          <button
+            type="button"
+            onClick={onSubmitDemo}
+            disabled={submitting}
+            data-testid="demo-login-button"
+            className="mt-3 w-full rounded-xl border border-navy-700/15 bg-white py-2.5 text-sm font-semibold text-navy-700 transition hover:bg-[#f4f8ff] disabled:opacity-60"
+          >
+            🐬 デモアカウントで試す（登録不要）
           </button>
 
           <p className="mt-4 text-center text-xs text-gray-400">
