@@ -12,6 +12,7 @@ export default function LegalLayout({ title, lastUpdated, children }) {
           <nav className="flex gap-3 text-sm">
             <Link to="/terms" className="text-gray-500 hover:text-gray-800">利用規約</Link>
             <Link to="/privacy" className="text-gray-500 hover:text-gray-800">プライバシー</Link>
+            <Link to="/help" className="text-gray-500 hover:text-gray-800">ヘルプ</Link>
             <Link to="/login" className="text-brand-600 hover:underline">ログイン</Link>
           </nav>
         </div>
