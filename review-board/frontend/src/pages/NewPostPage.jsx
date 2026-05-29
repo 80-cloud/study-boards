@@ -60,7 +60,7 @@ export default function NewPostPage() {
       <h2 className="mac-h mb-5 text-2xl">成果物を投稿</h2>
       <form onSubmit={submit} className="mac-card p-6 sm:p-7">
         {restored && <DraftNotice onDiscard={discardDraft} />}
-        {error && <p className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+        {error && <p role="alert" className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
         <label htmlFor="post-title" className="mac-label">タイトル（必須）</label>
         <input id="post-title" required value={form.title} onChange={set('title')} className="mac-input mb-4" />
         <label htmlFor="post-description" className="mac-label">説明（必須）<span className="ml-1 text-xs text-gray-400">・マークダウン可</span></label>

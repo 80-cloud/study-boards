@@ -58,7 +58,7 @@ export default function ReviewForm({ postId, onCreated }) {
     <form onSubmit={submit} className="mac-card p-5">
       <h3 className="mac-h mb-3 text-base">レビューを書く <span className="text-xs font-normal text-gray-400">（マークダウン記法が使えます）</span></h3>
       {restored && <DraftNotice onDiscard={discardDraft} />}
-      {error && <p className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+      {error && <p role="alert" className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
       <label htmlFor="review-good" className="mac-label">✅ 良かった点（必須）</label>
       <textarea
         id="review-good"

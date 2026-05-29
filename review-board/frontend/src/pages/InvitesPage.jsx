@@ -102,7 +102,7 @@ export default function InvitesPage() {
       <h2 className="mac-h mb-1 text-2xl">受講生を招待</h2>
       <p className="mb-5 text-sm text-gray-500">招待リンクを受講生に共有すると、各自でアカウント登録できます（あなたの期に参加）。</p>
 
-      {error && <p className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+      {error && <p role="alert" className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
 
       {/* 発行フォーム */}
       <div className="mac-card mb-5 p-6">
