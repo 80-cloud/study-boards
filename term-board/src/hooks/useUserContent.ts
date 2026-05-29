@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { Term, InterviewQuestion, UserContent, Flashcard } from "../types";
+import type { Term, InterviewQuestion, UserContent, Flashcard, PortfolioCard } from "../types";
 import { repository } from "../api";
 import { newId, encodeShareCode, decodeShareCode } from "../utils/share";
 
@@ -9,6 +9,7 @@ import { newId, encodeShareCode, decodeShareCode } from "../utils/share";
 export type NewQuizTerm = Omit<Term, "id" | "source">;
 export type NewInterviewQuestion = Omit<InterviewQuestion, "id" | "source">;
 export type NewFlashcard = Omit<Flashcard, "id" | "source">;
+export type NewPortfolioCard = Omit<PortfolioCard, "id" | "source">;
 
 export type UseUserContent = {
   content: UserContent;
@@ -30,9 +31,15 @@ export type UseUserContent = {
   updateFlashcard: (id: string, c: NewFlashcard) => void;
   /** 暗記カードを削除。#427 */
   removeFlashcard: (id: string) => void;
+  /** 成果物カードを追加。#456 */
+  addPortfolioCard: (p: NewPortfolioCard) => void;
+  /** 成果物カードを更新（id・source は保持）。#456 */
+  updatePortfolioCard: (id: string, p: NewPortfolioCard) => void;
+  /** 成果物カードを削除。#456 */
+  removePortfolioCard: (id: string) => void;
   exportCode: () => string;
   /** 共有コードを取り込み、追加件数を返す。失敗時は例外を投げる。 */
-  importCode: (code: string) => { quiz: number; interview: number; reverse: number; flashcard: number };
+  importCode: (code: string) => { quiz: number; interview: number; reverse: number; flashcard: number; portfolio: number };
 };
 
 const EMPTY: UserContent = {
@@ -40,6 +47,7 @@ const EMPTY: UserContent = {
   interviewQuestions: [],
   reverseQuestions: [],
   flashcards: [],
+  portfolioCards: [],
 };
 
 export function useUserContent(): UseUserContent {
@@ -182,6 +190,39 @@ export function useUserContent(): UseUserContent {
     });
   }, []);
 
+  const addPortfolioCard = useCallback((p: NewPortfolioCard) => {
+    setContent((prev) => {
+      const list = prev.portfolioCards ?? [];
+      const next: UserContent = {
+        ...prev,
+        portfolioCards: [...list, { ...p, id: newId(), source: "user" }],
+      };
+      void repository.saveUserContent(next);
+      return next;
+    });
+  }, []);
+
+  const updatePortfolioCard = useCallback((id: string, p: NewPortfolioCard) => {
+    setContent((prev) => {
+      const list = prev.portfolioCards ?? [];
+      const next: UserContent = {
+        ...prev,
+        portfolioCards: list.map((c) => (c.id === id ? { ...c, ...p } : c)),
+      };
+      void repository.saveUserContent(next);
+      return next;
+    });
+  }, []);
+
+  const removePortfolioCard = useCallback((id: string) => {
+    setContent((prev) => {
+      const list = prev.portfolioCards ?? [];
+      const next: UserContent = { ...prev, portfolioCards: list.filter((c) => c.id !== id) };
+      void repository.saveUserContent(next);
+      return next;
+    });
+  }, []);
+
   const exportCode = useCallback(() => encodeShareCode(content), [content]);
 
   // 取り込み時はIDを振り直して衝突を避け、既存に追記する。
@@ -202,6 +243,11 @@ export function useUserContent(): UseUserContent {
         id: newId(),
         source: "shared" as const,
       }));
+      const incomingPortfolio = (incoming.portfolioCards ?? []).map((p) => ({
+        ...p,
+        id: newId(),
+        source: "shared" as const,
+      }));
       let addedReverse = 0;
       setContent((prev) => {
         const prevReverse = prev.reverseQuestions ?? [];
@@ -217,6 +263,7 @@ export function useUserContent(): UseUserContent {
           interviewQuestions: [...prev.interviewQuestions, ...interview],
           reverseQuestions: mergedReverse,
           flashcards: [...(prev.flashcards ?? []), ...incomingFlash],
+          portfolioCards: [...(prev.portfolioCards ?? []), ...incomingPortfolio],
         };
         void repository.saveUserContent(next);
         return next;
@@ -226,6 +273,7 @@ export function useUserContent(): UseUserContent {
         interview: interview.length,
         reverse: addedReverse,
         flashcard: incomingFlash.length,
+        portfolio: incomingPortfolio.length,
       };
     },
     [],
@@ -244,6 +292,9 @@ export function useUserContent(): UseUserContent {
     addFlashcard,
     updateFlashcard,
     removeFlashcard,
+    addPortfolioCard,
+    updatePortfolioCard,
+    removePortfolioCard,
     exportCode,
     importCode,
   };

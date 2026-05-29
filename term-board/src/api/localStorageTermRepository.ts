@@ -34,7 +34,7 @@ const EXPORT_KEYS = [
   MISSES_KEY,
 ] as const;
 
-const EMPTY_USER_CONTENT: UserContent = { quizTerms: [], interviewQuestions: [] };
+const EMPTY_USER_CONTENT: UserContent = { quizTerms: [], interviewQuestions: [], reverseQuestions: [], flashcards: [], portfolioCards: [] };
 
 // 要件定義書 §4-1 / A-4: localStorage の破損・容量超過・未対応でも
 // 「進捗のみ初期化して用語出題は継続する」graceful degradation を守る。
@@ -70,7 +70,8 @@ function readUserContent(): UserContent {
     const fromUserContent = Array.isArray(obj.reverseQuestions) ? obj.reverseQuestions : null;
     const reverseQuestions = fromUserContent ?? readLegacyReverseQuestions();
     const flashcards = Array.isArray(obj.flashcards) ? obj.flashcards : [];
-    return { quizTerms, interviewQuestions, reverseQuestions, flashcards };
+    const portfolioCards = Array.isArray(obj.portfolioCards) ? obj.portfolioCards : [];
+    return { quizTerms, interviewQuestions, reverseQuestions, flashcards, portfolioCards };
   } catch {
     return EMPTY_USER_CONTENT;
   }

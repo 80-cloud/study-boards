@@ -1,4 +1,4 @@
-import type { UserContent, Term, InterviewQuestion, Flashcard } from "../types";
+import type { UserContent, Term, InterviewQuestion, Flashcard, PortfolioCard } from "../types";
 
 // F-USER-02: 作問データを「共有コード」に変換／復元する（サーバー無しのピア共有）。
 // 共有コードは Discord 等に貼れる base64 文字列。Unicode を壊さず往復させる。
@@ -39,6 +39,7 @@ export function decodeShareCode(code: string): UserContent {
     interviewQuestions?: unknown;
     reverseQuestions?: unknown;
     flashcards?: unknown;
+    portfolioCards?: unknown;
   };
   const quizTerms = Array.isArray(o.quizTerms) ? (o.quizTerms as Term[]) : [];
   const interviewQuestions = Array.isArray(o.interviewQuestions)
@@ -55,13 +56,26 @@ export function decodeShareCode(code: string): UserContent {
           typeof f === "object" && f !== null && typeof f.front === "string" && typeof f.back === "string",
       )
     : [];
+  // PortfolioCard は必須4項目が全て文字列のものだけ受理（#456）。
+  const portfolioCards = Array.isArray(o.portfolioCards)
+    ? (o.portfolioCards as PortfolioCard[]).filter(
+        (p): p is PortfolioCard =>
+          typeof p === "object" &&
+          p !== null &&
+          typeof p.title === "string" &&
+          typeof p.problem === "string" &&
+          typeof p.tech === "string" &&
+          typeof p.effort === "string",
+      )
+    : [];
   if (
     quizTerms.length === 0 &&
     interviewQuestions.length === 0 &&
     reverseQuestions.length === 0 &&
-    flashcards.length === 0
+    flashcards.length === 0 &&
+    portfolioCards.length === 0
   ) {
     throw new Error("取り込める問題が含まれていません。");
   }
-  return { quizTerms, interviewQuestions, reverseQuestions, flashcards };
+  return { quizTerms, interviewQuestions, reverseQuestions, flashcards, portfolioCards };
 }
