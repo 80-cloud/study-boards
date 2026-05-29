@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { uploadScreenshot } from '../api/uploads';
 import AvatarCropper from './AvatarCropper';
 import { getErrorMessage } from '../lib/errorMessages';
+import ProgressBar from './ProgressBar';
 
 // アバター選択 → 正方形に切り抜き → アップロード（SEC-8：返った key を onChange で親へ）。
 // プレビューは署名付き URL（private 保存・URL 経由でのみ表示）。
@@ -12,6 +13,7 @@ export default function AvatarUploader({ initialUrl = '', onChange }) {
   const [pending, setPending] = useState(null); // 切り抜き対象の元ファイル
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [progress, setProgress] = useState(null);
 
   const onSelect = (e) => {
     const file = e.target.files?.[0];
@@ -22,14 +24,16 @@ export default function AvatarUploader({ initialUrl = '', onChange }) {
   const onCropped = async (croppedFile) => {
     setPending(null);
     setBusy(true);
+    setProgress(0);
     try {
-      const { key, url } = await uploadScreenshot(croppedFile);
+      const { key, url } = await uploadScreenshot(croppedFile, (pct) => setProgress(pct));
       setPreview(url);
       onChange(key);
     } catch (err) {
       setError(getErrorMessage(err, 'アップロードできませんでした（PNG / JPEG / WebP・5MB まで）'));
     } finally {
       setBusy(false);
+      setProgress(null);
     }
   };
 
@@ -49,6 +53,7 @@ export default function AvatarUploader({ initialUrl = '', onChange }) {
           />
         </label>
       </div>
+      {busy && <ProgressBar value={progress} label="アップロード中…" className="mt-2 max-w-xs" />}
       {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
 
       {pending && (
