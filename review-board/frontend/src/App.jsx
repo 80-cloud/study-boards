@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, useLocation, Link } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Header from './components/Header';
@@ -9,6 +9,7 @@ import RegisterPage from './pages/RegisterPage';
 import PasswordResetPage from './pages/PasswordResetPage';
 import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
+import HelpPage from './pages/HelpPage';
 import InvitesPage from './pages/InvitesPage';
 import PostsPage from './pages/PostsPage';
 import NewPostPage from './pages/NewPostPage';
@@ -31,13 +32,23 @@ function ScrollToTop() {
   return null;
 }
 
-// 認証必須ページの共通レイアウト（ヘッダー＋本文）。
+// 認証必須ページの共通レイアウト（ヘッダー＋本文＋小フッター）。
+// #494 P10：全画面から /help・/terms・/privacy に到達できる小フッター。
 function Shell({ children }) {
   return (
     <ProtectedRoute>
-      <div className="min-h-screen">
+      <div className="flex min-h-screen flex-col">
         <Header />
-        {children}
+        <div className="flex-1">{children}</div>
+        <footer className="border-t border-black/5 bg-white/60">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-4 gap-y-1 px-6 py-3 text-xs text-gray-400">
+            <Link to="/help" className="hover:text-navy-700 hover:underline">ヘルプ / FAQ</Link>
+            <span>·</span>
+            <Link to="/terms" className="hover:text-navy-700 hover:underline">利用規約</Link>
+            <span>·</span>
+            <Link to="/privacy" className="hover:text-navy-700 hover:underline">プライバシー</Link>
+          </div>
+        </footer>
       </div>
     </ProtectedRoute>
   );
@@ -56,6 +67,7 @@ export default function App() {
         {/* 公開（ログイン不要）の法務ページ（#258） */}
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/help" element={<HelpPage />} />
         <Route path="/" element={<Shell><PostsPage /></Shell>} />
         <Route path="/invites" element={<Shell><InvitesPage /></Shell>} />
         <Route path="/posts/new" element={<Shell><NewPostPage /></Shell>} />

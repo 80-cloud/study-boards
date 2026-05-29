@@ -88,6 +88,10 @@ export default function RegisterPage() {
         <p className="mt-6 text-center text-xs text-gray-400">
           すでにアカウントをお持ちの方は <Link to="/login" className="font-semibold text-navy-700 hover:underline">ログイン</Link>
         </p>
+
+        <p className="mt-4 text-center text-xs text-gray-400">
+          <Link to="/help" className="hover:underline">ヘルプを見る</Link>
+        </p>
       </div>
     </main>
   );

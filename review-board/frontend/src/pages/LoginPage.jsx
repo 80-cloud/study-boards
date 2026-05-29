@@ -206,6 +206,8 @@ export default function LoginPage() {
           <Link to="/terms" className="hover:underline">利用規約</Link>
           <span className="mx-1.5">·</span>
           <Link to="/privacy" className="hover:underline">プライバシーポリシー</Link>
+          <span className="mx-1.5">·</span>
+          <Link to="/help" className="hover:underline">ヘルプを見る</Link>
         </p>
       </div>
     </main>
