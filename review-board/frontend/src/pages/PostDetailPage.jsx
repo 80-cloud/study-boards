@@ -87,66 +87,81 @@ export default function PostDetailPage() {
     }
   };
 
+  // #505：デスクトップは 2 カラム化（左：投稿本体+評価+既存レビュー / 右：sticky の ReviewForm）。
+  // 投稿者本人はフォームが出ないので単一カラム。モバイル（< lg）も縦並び。
+  const useTwoColumn = !isAuthor;
+
   return (
-    <main className="mx-auto max-w-3xl space-y-6 px-6 py-8">
+    <main className="mx-auto max-w-6xl px-6 py-8">
       <Link to="/" className="text-sm font-medium text-brand-500 hover:underline">← 一覧へ</Link>
 
-      <article className="mac-card p-6 sm:p-7">
-        <div className="flex items-start justify-between gap-4">
-          <h2 className="mac-h text-2xl">{post.title}</h2>
-          {isAuthor && (
-            <div className="flex flex-shrink-0 gap-3 text-sm">
-              <Link to={`/posts/${post.id}/edit`} className="font-medium text-brand-500 hover:underline">編集</Link>
-              <button onClick={removePost} className="font-medium text-red-500 hover:underline">削除</button>
+      <div className={useTwoColumn
+        ? "mt-4 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-8"
+        : "mt-4 space-y-6"}>
+        <div className="min-w-0 space-y-6">
+          <article className="mac-card p-6 sm:p-7">
+            <div className="flex items-start justify-between gap-4">
+              <h2 className="mac-h text-2xl">{post.title}</h2>
+              {isAuthor && (
+                <div className="flex flex-shrink-0 gap-3 text-sm">
+                  <Link to={`/posts/${post.id}/edit`} className="font-medium text-brand-500 hover:underline">編集</Link>
+                  <button onClick={removePost} className="font-medium text-red-500 hover:underline">削除</button>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-        <ReviewPrefBadges tones={post.reviewTones} aspects={post.reviewAspects} aiUsage={post.aiUsage} className="mt-3" />
-        <MarkdownText className="mt-3">{post.description}</MarkdownText>
-        {post.screenshotUrl && (
-          <img src={post.screenshotUrl} alt={`${post.title} のスクリーンショット`} className="mt-4 max-h-96 rounded-xl border border-black/5 shadow-mac-sm" />
-        )}
-        <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
-          <button
-            onClick={toggleLike}
-            aria-pressed={post.liked}
-            className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-bold transition active:scale-[0.98] ${
-              post.liked ? 'bg-navy-700 text-white shadow-mac-sm' : 'bg-white text-navy-700 ring-1 ring-black/10 hover:bg-black/[0.03]'
-            }`}
-          >
-            👍 いいね <span className="tabular-nums">{post.likeCount}</span>
-          </button>
-          {post.repoUrl && <a href={post.repoUrl} target="_blank" rel="noreferrer" className="mac-btn-ghost">リポジトリ</a>}
-          {post.demoUrl && <a href={post.demoUrl} target="_blank" rel="noreferrer" className="mac-btn-ghost">デモ</a>}
-        </div>
-      </article>
+            <ReviewPrefBadges tones={post.reviewTones} aspects={post.reviewAspects} aiUsage={post.aiUsage} className="mt-3" />
+            <MarkdownText className="mt-3">{post.description}</MarkdownText>
+            {post.screenshotUrl && (
+              <img src={post.screenshotUrl} alt={`${post.title} のスクリーンショット`} className="mt-4 max-h-96 rounded-xl border border-black/5 shadow-mac-sm" />
+            )}
+            <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
+              <button
+                onClick={toggleLike}
+                aria-pressed={post.liked}
+                className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-bold transition active:scale-[0.98] ${
+                  post.liked ? 'bg-navy-700 text-white shadow-mac-sm' : 'bg-white text-navy-700 ring-1 ring-black/10 hover:bg-black/[0.03]'
+                }`}
+              >
+                👍 いいね <span className="tabular-nums">{post.likeCount}</span>
+              </button>
+              {post.repoUrl && <a href={post.repoUrl} target="_blank" rel="noreferrer" className="mac-btn-ghost">リポジトリ</a>}
+              {post.demoUrl && <a href={post.demoUrl} target="_blank" rel="noreferrer" className="mac-btn-ghost">デモ</a>}
+            </div>
+          </article>
 
-      <EvaluationPanel postId={post.id} evaluation={evaluation} isTeacher={isTeacher} onEvaluated={setEvaluation} />
+          <EvaluationPanel postId={post.id} evaluation={evaluation} isTeacher={isTeacher} onEvaluated={setEvaluation} />
 
-      <section>
-        <h3 className="mac-h mb-3 text-lg">レビュー（{reviews.length}）</h3>
-        {reviews.length === 0 ? (
-          <p className="mb-4 text-sm text-gray-500">まだレビューがありません。</p>
-        ) : (
-          <ul className="mb-4 space-y-3">
-            {reviews.map((r) => (
-              <ReviewItem
-                key={r.id}
-                review={r}
-                canThank={isAuthor}
-                canManageGrowth={isAuthor}
-                isOwner={user?.id === r.reviewerUserId}
-                isBest={post.bestReviewId === r.id}
-                canSelectBest={isAuthor}
-                onSelectBest={chooseBest}
-                onChanged={loadReviews}
-              />
-            ))}
-          </ul>
+          <section>
+            <h3 className="mac-h mb-3 text-lg">レビュー（{reviews.length}）</h3>
+            {reviews.length === 0 ? (
+              <p className="mb-4 text-sm text-gray-500">まだレビューがありません。</p>
+            ) : (
+              <ul className="mb-4 space-y-3">
+                {reviews.map((r) => (
+                  <ReviewItem
+                    key={r.id}
+                    review={r}
+                    canThank={isAuthor}
+                    canManageGrowth={isAuthor}
+                    isOwner={user?.id === r.reviewerUserId}
+                    isBest={post.bestReviewId === r.id}
+                    canSelectBest={isAuthor}
+                    onSelectBest={chooseBest}
+                    onChanged={loadReviews}
+                  />
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
+
+        {/* 右カラム：レビュー投稿フォーム。lg 以上で sticky にしてスクロールせず常時可視。 */}
+        {useTwoColumn && (
+          <aside className="lg:sticky lg:top-24 lg:self-start">
+            <ReviewForm postId={post.id} onCreated={() => loadReviews()} />
+          </aside>
         )}
-        {/* 自分の投稿には自己レビュー不可（backend が 400）。フォームは他人の投稿でのみ出す。 */}
-        {!isAuthor && <ReviewForm postId={post.id} onCreated={() => loadReviews()} />}
-      </section>
+      </div>
 
       <ConfirmDialog
         open={confirmDelete}
@@ -157,6 +172,7 @@ export default function PostDetailPage() {
         onConfirm={confirmRemove}
         onCancel={() => setConfirmDelete(false)}
       />
+
     </main>
   );
 }
