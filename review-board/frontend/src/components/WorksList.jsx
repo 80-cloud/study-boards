@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import ReviewPrefBadges from './ReviewPrefBadges';
 import Avatar from './Avatar';
+import EmptyState from './EmptyState';
 
 // スクショ未登録カードのサムネ：id から決め打ちのグラデーション（装飾プレースホルダ）。
 // 実スクショ（post.screenshotUrl）がある投稿はそちらを優先表示する。
@@ -65,7 +66,13 @@ export default function WorksList({ posts, loading, error, applied, setFilter, o
         ) : error ? (
           <p className="py-16 text-center text-red-500">{error}</p>
         ) : posts.length === 0 ? (
-          <p className="py-16 text-center text-gray-400">該当する成果物がありません。</p>
+          <EmptyState
+            icon="📝"
+            title="まだ投稿がありません"
+            description="最初の投稿を作って、cohort のレビューを集めましょう。"
+            ctaLabel="最初の投稿を書く"
+            ctaHref="/posts/new"
+          />
         ) : (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {posts.map((p) => (

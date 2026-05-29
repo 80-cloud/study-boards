@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { fetchCohortReviews } from '../api/reviews';
 import MarkdownText from '../components/MarkdownText';
 import Avatar from '../components/Avatar';
+import EmptyState from '../components/EmptyState';
 
 // 投稿日の簡易フォーマット（YYYY/MM/DD）。
 const fmtDate = (iso) => {
@@ -39,7 +40,13 @@ export default function ReviewsPage() {
         ) : error ? (
           <p className="py-16 text-center text-red-500">{error}</p>
         ) : reviews.length === 0 ? (
-          <p className="py-16 text-center text-gray-400">まだレビューがありません。</p>
+          <EmptyState
+            icon="💬"
+            title="まだレビューがありません"
+            description="他の人の投稿を見て、最初のレビューを書いてみましょう。"
+            ctaLabel="他の人の投稿を見る"
+            ctaHref="/"
+          />
         ) : (
           <ul className="space-y-4">
             {reviews.map((r) => (

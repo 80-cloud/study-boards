@@ -19,6 +19,7 @@ import ReviewsPage from './pages/ReviewsPage';
 import ProfilePage from './pages/ProfilePage';
 import NotificationsPage from './pages/NotificationsPage';
 import DashboardPage from './pages/DashboardPage';
+import NotFoundPage from './pages/NotFoundPage';
 
 // ページ（パス）が切り替わったらスクロール位置を先頭へ戻す。
 // React Router は既定でスクロールを復元しないため、長いページから遷移すると
@@ -66,6 +67,8 @@ export default function App() {
         <Route path="/notifications" element={<Shell><NotificationsPage /></Shell>} />
         {/* 運営ダッシュボード（講師/管理者専用・#275）。真の防御は backend 403。 */}
         <Route path="/dashboard" element={<Shell><DashboardPage /></Shell>} />
+        {/* 存在しないパスは 404 ページへ（ブラウザ既定の白画面を防ぐ）。 */}
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </AuthProvider>
   );
