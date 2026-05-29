@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchNotifications, markNotificationRead, markAllNotificationsRead } from '../api/notifications';
 import Avatar from '../components/Avatar';
+import EmptyState from '../components/EmptyState';
 
 // F-NOTIF-01 通知センター（S-03）。新着順に並べ、クリックで既読化＋該当投稿へ遷移。
 const MESSAGE = {
@@ -64,7 +65,11 @@ export default function NotificationsPage() {
       </div>
 
       {items.length === 0 ? (
-        <p className="text-gray-500">通知はまだありません。</p>
+        <EmptyState
+          icon="🔔"
+          title="通知はありません"
+          description="新しいレビューや返信が届くと、ここに表示されます。"
+        />
       ) : (
         <ul className="space-y-2">
           {items.map((n) => (

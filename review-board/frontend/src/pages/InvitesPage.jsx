@@ -3,6 +3,7 @@ import { createInvite, fetchInvites, revokeInvite } from '../api/invites';
 import { fetchMembers, disableMember, enableMember } from '../api/members';
 import { ROLE_LABEL } from '../constants';
 import Avatar from '../components/Avatar';
+import EmptyState from '../components/EmptyState';
 
 // 招待コード管理（講師/管理者・Issue #165）。発行→受講生に共有→失効まで。
 // 生コードは発行直後の 1 度しか表示できないため、発行時に共有リンクを目立たせる。
@@ -141,7 +142,11 @@ export default function InvitesPage() {
       {loading ? (
         <p className="py-8 text-center text-gray-400">読み込み中…</p>
       ) : invites.length === 0 ? (
-        <p className="py-8 text-center text-gray-400">まだ招待はありません。</p>
+        <EmptyState
+          icon="✉️"
+          title="まだ招待はありません"
+          description="招待コードを発行して、受講生を cohort に招きましょう。"
+        />
       ) : (
         <ul className="space-y-2">
           {invites.map((inv) => {
