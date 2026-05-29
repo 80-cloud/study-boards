@@ -5,6 +5,7 @@ import ScreenshotUploader from '../components/ScreenshotUploader';
 import ReviewPrefFields from '../components/ReviewPrefFields';
 import DraftNotice from '../components/DraftNotice';
 import { useDraft } from '../hooks/useDraft';
+import { getErrorMessage } from '../lib/errorMessages';
 
 const EMPTY = { title: '', description: '', repoUrl: '', demoUrl: '', screenshotKey: null, reviewTones: [], reviewAspects: [], aiUsage: null };
 
@@ -47,8 +48,8 @@ export default function NewPostPage() {
       });
       clear(); // 投稿成功で下書きは不要
       navigate(`/posts/${post.id}`, { replace: true });
-    } catch {
-      setError('投稿に失敗しました');
+    } catch (err) {
+      setError(getErrorMessage(err, '投稿できませんでした。入力内容をご確認のうえ、もう一度お試しください'));
     } finally {
       setBusy(false);
     }

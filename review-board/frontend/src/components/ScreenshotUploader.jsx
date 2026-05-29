@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { uploadScreenshot } from '../api/uploads';
+import { getErrorMessage } from '../lib/errorMessages';
 
 // SEC-8：成果物スクショの選択→アップロード。返った key を onChange で親に渡す。
 // プレビューは backend が返す署名付き URL を使う（private 保存・URL 経由でのみ表示）。
@@ -19,7 +20,7 @@ export default function ScreenshotUploader({ initialUrl = '', onChange }) {
       onChange(key);
     } catch (err) {
       // 非画像・サイズ超過は backend が 400/413。ユーザーに理由を返す。
-      setError(err.response?.data?.message || 'アップロードに失敗しました（PNG/JPEG/WebP・5MB まで）');
+      setError(getErrorMessage(err, 'アップロードできませんでした（PNG / JPEG / WebP・5MB まで）'));
     } finally {
       setBusy(false);
     }

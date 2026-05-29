@@ -9,6 +9,7 @@ import ReviewItem from '../components/ReviewItem';
 import EvaluationPanel from '../components/EvaluationPanel';
 import ReviewPrefBadges from '../components/ReviewPrefBadges';
 import MarkdownText from '../components/MarkdownText';
+import { getErrorMessage } from '../lib/errorMessages';
 
 // 投稿詳細：本体＋レビュー一覧＋レビュー投稿＋講師評価。
 export default function PostDetailPage() {
@@ -31,7 +32,9 @@ export default function PostDetailPage() {
         setReviews(r);
         setEvaluation(e);
       })
-      .catch((err) => setError(err.response?.status === 404 ? 'この投稿は見つかりません' : '取得に失敗しました'))
+      .catch((err) => setError(err.response?.status === 404
+        ? 'この投稿は見つかりません'
+        : getErrorMessage(err, '投稿を読み込めませんでした。少し待ってからもう一度お試しください')))
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -46,8 +49,8 @@ export default function PostDetailPage() {
     try {
       await deletePost(post.id);
       navigate('/', { replace: true });
-    } catch {
-      setError('削除に失敗しました');
+    } catch (err) {
+      setError(getErrorMessage(err, '削除できませんでした。少し待ってからもう一度お試しください'));
     }
   };
 
@@ -56,8 +59,8 @@ export default function PostDetailPage() {
     try {
       const updated = await selectBestReview(post.id, reviewId);
       setPost(updated);
-    } catch {
-      setError('ベストレビューの選択に失敗しました');
+    } catch (err) {
+      setError(getErrorMessage(err, 'ベストレビューの選択に失敗しました。少し待ってからもう一度お試しください'));
     }
   };
 
@@ -66,8 +69,8 @@ export default function PostDetailPage() {
     try {
       const res = post.liked ? await unlikePost(post.id) : await likePost(post.id);
       setPost((p) => ({ ...p, likeCount: res.likeCount, liked: res.liked }));
-    } catch {
-      setError('いいねに失敗しました');
+    } catch (err) {
+      setError(getErrorMessage(err, 'いいねに失敗しました。少し待ってからもう一度お試しください'));
     }
   };
 

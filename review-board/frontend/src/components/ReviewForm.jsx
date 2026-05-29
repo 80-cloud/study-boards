@@ -3,6 +3,7 @@ import { AXES } from '../constants';
 import { createReview } from '../api/reviews';
 import { useDraft } from '../hooks/useDraft';
 import DraftNotice from './DraftNotice';
+import { getErrorMessage } from '../lib/errorMessages';
 
 // F-REV-01：良かった点・改善提案は必須、観点別コメント（4軸）は任意。
 // F-DRAFT-01：入力を localStorage に自動保存（postId 単位）し、再訪時に復元する。
@@ -48,7 +49,7 @@ export default function ReviewForm({ postId, onCreated }) {
       const s = err.response?.status;
       if (s === 400) setError('自分の投稿にはレビューできません');
       else if (s === 404) setError('この投稿にはレビューできません');
-      else setError('送信に失敗しました');
+      else setError(getErrorMessage(err, 'レビューを送信できませんでした。少し待ってからもう一度お試しください'));
     } finally {
       setSubmitting(false);
     }

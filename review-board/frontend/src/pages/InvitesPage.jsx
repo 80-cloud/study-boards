@@ -4,6 +4,7 @@ import { fetchMembers, disableMember, enableMember } from '../api/members';
 import { ROLE_LABEL } from '../constants';
 import Avatar from '../components/Avatar';
 import EmptyState from '../components/EmptyState';
+import { getErrorMessage } from '../lib/errorMessages';
 
 // 招待コード管理（講師/管理者・Issue #165）。発行→受講生に共有→失効まで。
 // 生コードは発行直後の 1 度しか表示できないため、発行時に共有リンクを目立たせる。
@@ -35,8 +36,8 @@ export default function InvitesPage() {
       const [inv, mem] = await Promise.all([fetchInvites(), fetchMembers()]);
       setInvites(inv);
       setMembers(mem);
-    } catch {
-      setError('一覧の取得に失敗しました。');
+    } catch (e) {
+      setError(getErrorMessage(e, '一覧を読み込めませんでした。少し待ってからもう一度お試しください'));
     } finally {
       setLoading(false);
     }
@@ -54,8 +55,8 @@ export default function InvitesPage() {
       const inv = await createInvite({ maxUses: Number(maxUses), expiresInDays: Number(expiresInDays) });
       setIssued(inv);
       await load();
-    } catch {
-      setError('招待の発行に失敗しました。');
+    } catch (e) {
+      setError(getErrorMessage(e, '招待の発行に失敗しました。少し待ってからもう一度お試しください'));
     } finally {
       setBusy(false);
     }
@@ -76,8 +77,8 @@ export default function InvitesPage() {
     try {
       await revokeInvite(id);
       await load();
-    } catch {
-      setError('失効に失敗しました。');
+    } catch (e) {
+      setError(getErrorMessage(e, '失効に失敗しました。少し待ってからもう一度お試しください'));
     }
   };
 
@@ -91,8 +92,10 @@ export default function InvitesPage() {
     try {
       const updated = disabling ? await disableMember(m.id) : await enableMember(m.id);
       setMembers((list) => list.map((x) => (x.id === updated.id ? updated : x)));
-    } catch {
-      setError(disabling ? '無効化に失敗しました（権限・対象をご確認ください）。' : '有効化に失敗しました。');
+    } catch (e) {
+      setError(getErrorMessage(e, disabling
+        ? '無効化に失敗しました（権限・対象をご確認ください）'
+        : '有効化に失敗しました。少し待ってからもう一度お試しください'));
     }
   };
 

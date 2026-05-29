@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { uploadScreenshot } from '../api/uploads';
 import AvatarCropper from './AvatarCropper';
+import { getErrorMessage } from '../lib/errorMessages';
 
 // アバター選択 → 正方形に切り抜き → アップロード（SEC-8：返った key を onChange で親へ）。
 // プレビューは署名付き URL（private 保存・URL 経由でのみ表示）。
@@ -26,7 +27,7 @@ export default function AvatarUploader({ initialUrl = '', onChange }) {
       setPreview(url);
       onChange(key);
     } catch (err) {
-      setError(err.response?.data?.message || 'アップロードに失敗しました（PNG/JPEG/WebP・5MB まで）');
+      setError(getErrorMessage(err, 'アップロードできませんでした（PNG / JPEG / WebP・5MB まで）'));
     } finally {
       setBusy(false);
     }
