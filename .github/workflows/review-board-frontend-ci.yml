@@ -1,8 +1,8 @@
-name: review-board Frontend CI (lint & build)
+name: review-board Frontend CI (lint, test & build)
 
 # ============================================================
-# 母 M-6：CI は Fail Fast（lint→build）。backend CI と並列のフロント版。
-# review-board/frontend の lint（ESLint）→ build（Vite）を回す。
+# 母 M-6：CI は Fail Fast（lint→test→build）。backend CI と並列のフロント版。
+# review-board/frontend の lint（ESLint）→ unit test（Vitest）→ build（Vite）を回す。
 # ============================================================
 
 on:
@@ -46,9 +46,13 @@ jobs:
       - name: Install (npm ci)
         run: npm ci
 
-      # Fail Fast：lint（軽量）→ build。
+      # Fail Fast：lint（軽量）→ test（中量・vitest）→ build（重量）。
       - name: Lint
         run: npm run lint
+
+      # Issue #484：unit test + coverage 閾値（vite.config.js test.coverage.thresholds）。
+      - name: Unit Test + Coverage
+        run: npm run test:coverage
 
       - name: Build
         run: npm run build
