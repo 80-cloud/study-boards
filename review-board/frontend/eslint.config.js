@@ -5,7 +5,8 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 
 // flat config（ESLint 9+）。React19 + Vite 向け。family(task-board)と同系。
 export default [
-  { ignores: ['dist'] },
+  // coverage は vitest --coverage の生成物。lint 対象外（生成ファイルの directive 警告を防ぐ）。
+  { ignores: ['dist', 'coverage', 'node_modules'] },
   {
     files: ['**/*.{js,jsx}'],
     languageOptions: {
