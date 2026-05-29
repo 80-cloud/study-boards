@@ -118,3 +118,9 @@ body {
     @apply font-extrabold tracking-tight text-navy-700;
   }
 }
+
+/* #500 P8：indeterminate な進捗バーの動き（reduce-motion はゼロ動作） */
+@keyframes progress-indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
