@@ -52,6 +52,7 @@ export type UserContent = {
   interviewQuestions: InterviewQuestion[]; // ユーザー作問の面接Q&A
   reverseQuestions?: string[]; // 逆質問（#425・任意フィールドで後方互換）
   flashcards?: Flashcard[]; // 暗記カード（#427・任意フィールドで後方互換）
+  portfolioCards?: PortfolioCard[]; // 成果物棚卸し（#456・任意フィールドで後方互換）
 };
 
 // F-CARD-01 拡張: ユーザー作問の軽量カード（distractors なし）。
@@ -62,6 +63,21 @@ export type Flashcard = {
   back: string; // 裏（意味・回答）
   category?: string; // 分野（任意）
   level?: "初級" | "中級" | "上級"; // 学習レベル（#444・未設定はフィルタで全レベル該当）
+  source?: "user" | "shared";
+};
+
+// #456: 成果物棚卸しテンプレ。面接で「何作りました？」「工夫した点は？」に
+// 答えるための素地を、本人が自分の言葉で言語化して保存する。
+// AI 自動生成は採用しない（ハルシネーションで本人がいない内容を話す事故を防ぐ）。
+export type PortfolioCard = {
+  id: string;
+  title: string; // 必須: 作ったもの（プロダクト名・概要）
+  problem: string; // 必須: 解決したい課題（誰の何を）
+  tech: string; // 必須: 使った技術（言語・FW・インフラ等）
+  effort: string; // 必須: 工夫した点（自分の判断や試行錯誤）
+  difficulty?: string; // 任意: 困った点と乗り越え方
+  retrospective?: string; // 任意: もう一度作るならどう変えるか
+  githubUrl?: string; // 任意: GitHub URL
   source?: "user" | "shared";
 };
 

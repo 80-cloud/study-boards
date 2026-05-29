@@ -3,7 +3,7 @@ import type { UseUserContent } from "../hooks/useUserContent";
 import { ReverseQuestionStock } from "./ReverseQuestionStock";
 
 type Props = { user: UseUserContent };
-type Tab = "quiz" | "interview" | "card" | "reverse" | "share";
+type Tab = "quiz" | "interview" | "card" | "reverse" | "portfolio" | "share";
 
 const inputClass =
   "w-full rounded-control border border-separator bg-surface px-3 py-2 text-sm text-label focus:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent";
@@ -32,6 +32,9 @@ export function AuthorView({ user }: Props) {
         <SubTab active={tab === "reverse"} onClick={() => setTab("reverse")}>
           逆質問
         </SubTab>
+        <SubTab active={tab === "portfolio"} onClick={() => setTab("portfolio")}>
+          成果物
+        </SubTab>
         <SubTab active={tab === "share"} onClick={() => setTab("share")}>
           共有
         </SubTab>
@@ -41,6 +44,7 @@ export function AuthorView({ user }: Props) {
       {tab === "quiz" && <QuizForm user={user} />}
       {tab === "card" && <FlashcardForm user={user} />}
       {tab === "reverse" && <ReverseQuestionStock user={user} />}
+      {tab === "portfolio" && <PortfolioForm user={user} />}
       {tab === "share" && <SharePanel user={user} />}
     </section>
   );
@@ -503,6 +507,156 @@ function FlashcardForm({ user }: Props) {
   );
 }
 
+// --- 成果物棚卸しテンプレ（追加＋編集・#456） ---
+// 面接の「何作りました？」「工夫した点は？」に本人の言葉で答えられるよう、
+// 制作物を1件1カードで記録する。AI 生成は不採用（ハルシネーション防止）。
+function PortfolioForm({ user }: Props) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [title, setTitle] = useState("");
+  const [problem, setProblem] = useState("");
+  const [tech, setTech] = useState("");
+  const [effort, setEffort] = useState("");
+  const [difficulty, setDifficulty] = useState("");
+  const [retrospective, setRetrospective] = useState("");
+  const [githubUrl, setGithubUrl] = useState("");
+  const [optionalOpen, setOptionalOpen] = useState(false);
+  const valid = title.trim() && problem.trim() && tech.trim() && effort.trim();
+  const isEditing = editingId !== null;
+  const cards = user.content.portfolioCards ?? [];
+
+  const resetForm = () => {
+    setEditingId(null);
+    setTitle("");
+    setProblem("");
+    setTech("");
+    setEffort("");
+    setDifficulty("");
+    setRetrospective("");
+    setGithubUrl("");
+    setOptionalOpen(false);
+  };
+
+  const startEdit = (id: string) => {
+    const item = cards.find((c) => c.id === id);
+    if (!item) return;
+    setEditingId(id);
+    setTitle(item.title);
+    setProblem(item.problem);
+    setTech(item.tech);
+    setEffort(item.effort);
+    setDifficulty(item.difficulty ?? "");
+    setRetrospective(item.retrospective ?? "");
+    setGithubUrl(item.githubUrl ?? "");
+    setOptionalOpen(!!(item.difficulty || item.retrospective || item.githubUrl));
+  };
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!valid) return;
+    const data = {
+      title: title.trim(),
+      problem: problem.trim(),
+      tech: tech.trim(),
+      effort: effort.trim(),
+      difficulty: difficulty.trim() || undefined,
+      retrospective: retrospective.trim() || undefined,
+      githubUrl: githubUrl.trim() || undefined,
+    };
+    if (editingId) {
+      user.updatePortfolioCard(editingId, data);
+    } else {
+      user.addPortfolioCard(data);
+    }
+    resetForm();
+  };
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="rounded-control bg-sky-50 px-4 py-3 text-sm text-sky-900 ring-1 ring-sky-200 dark:bg-sky-950 dark:text-sky-100 dark:ring-sky-900">
+        <p className="font-semibold">この機能は何のため？</p>
+        <p className="mt-1">
+          面接で「何作りました？」「工夫した点は？」と聞かれた時に、ここで書いたカードを見ながら自分の言葉で答えられる状態を目指します。
+          AI に書いてもらうのではなく、<strong>自分で書く</strong>ことが面接で再現できる素地になります。
+        </p>
+      </div>
+
+      <form onSubmit={submit} className="flex flex-col gap-3 hig-card p-5">
+        {isEditing && (
+          <p className="rounded-control bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 ring-1 ring-amber-200 dark:bg-amber-950 dark:text-amber-200 dark:ring-amber-900">
+            編集中：{title || "（タイトル未入力）"}
+          </p>
+        )}
+        <div>
+          <label htmlFor="pf-title" className={labelClass}>作ったもの <span className="text-rose-600">*</span></label>
+          <input id="pf-title" className={inputClass} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="例：タスク管理アプリ（Web）" />
+        </div>
+        <div>
+          <label htmlFor="pf-problem" className={labelClass}>解決したい課題 <span className="text-rose-600">*</span></label>
+          <textarea id="pf-problem" className={inputClass} rows={2} value={problem} onChange={(e) => setProblem(e.target.value)} placeholder="例：複数アプリにメモが散らばって締切を見落とすことを解消したい" />
+        </div>
+        <div>
+          <label htmlFor="pf-tech" className={labelClass}>使った技術 <span className="text-rose-600">*</span></label>
+          <input id="pf-tech" className={inputClass} value={tech} onChange={(e) => setTech(e.target.value)} placeholder="例：React, TypeScript, Vite, GitHub Pages" />
+        </div>
+        <div>
+          <label htmlFor="pf-effort" className={labelClass}>工夫した点 <span className="text-rose-600">*</span></label>
+          <textarea id="pf-effort" className={inputClass} rows={3} value={effort} onChange={(e) => setEffort(e.target.value)} placeholder="例：localStorage で永続化するか DB を使うか迷い、無料運用のため前者を選んだ。理由は…" />
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setOptionalOpen(!optionalOpen)}
+          className="self-start text-sm text-accent underline-offset-2 hover:underline"
+        >
+          {optionalOpen ? "▾ 任意項目を閉じる" : "▸ 任意項目を開く（困った点・振り返り・GitHub URL）"}
+        </button>
+
+        {optionalOpen && (
+          <div className="flex flex-col gap-3 rounded-control bg-fill-quaternary p-3">
+            <div>
+              <label htmlFor="pf-difficulty" className={labelClass}>困った点と乗り越え方</label>
+              <textarea id="pf-difficulty" className={inputClass} rows={3} value={difficulty} onChange={(e) => setDifficulty(e.target.value)} placeholder="例：CORS エラーが解消できず、Vite のプロキシ設定で乗り越えた" />
+            </div>
+            <div>
+              <label htmlFor="pf-retro" className={labelClass}>もう一度作るならどう変える</label>
+              <textarea id="pf-retro" className={inputClass} rows={2} value={retrospective} onChange={(e) => setRetrospective(e.target.value)} placeholder="例：状態管理を Context ではなく Zustand にすると見通しが良くなりそう" />
+            </div>
+            <div>
+              <label htmlFor="pf-url" className={labelClass}>GitHub URL</label>
+              <input id="pf-url" className={inputClass} value={githubUrl} onChange={(e) => setGithubUrl(e.target.value)} placeholder="https://github.com/your-name/your-repo" />
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-2">
+          <button type="submit" disabled={!valid} className={primaryBtn}>
+            {isEditing ? "更新する" : "追加する"}
+          </button>
+          {isEditing && (
+            <button type="button" onClick={resetForm} className={secondaryBtn}>
+              キャンセル
+            </button>
+          )}
+        </div>
+      </form>
+
+      <ItemList
+        title={`登録した成果物（${cards.length}件）`}
+        items={cards.map((c) => ({
+          id: c.id,
+          primary: c.title,
+          secondary: `${c.tech}｜${c.problem}`,
+        }))}
+        onEdit={startEdit}
+        onRemove={(id) => {
+          if (editingId === id) resetForm();
+          user.removePortfolioCard(id);
+        }}
+      />
+    </div>
+  );
+}
+
 // --- 共有（エクスポート/インポート） ---
 function SharePanel({ user }: Props) {
   const [exported, setExported] = useState("");
@@ -510,11 +664,13 @@ function SharePanel({ user }: Props) {
   const [message, setMessage] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const reverseCount = user.content.reverseQuestions?.length ?? 0;
   const flashcardCount = user.content.flashcards?.length ?? 0;
+  const portfolioCount = user.content.portfolioCards?.length ?? 0;
   const total =
     user.content.quizTerms.length +
     user.content.interviewQuestions.length +
     reverseCount +
-    flashcardCount;
+    flashcardCount +
+    portfolioCount;
 
   const doExport = () => {
     if (total === 0) {
@@ -529,11 +685,11 @@ function SharePanel({ user }: Props) {
 
   const doImport = () => {
     try {
-      const { quiz, interview, reverse, flashcard } = user.importCode(importText);
+      const { quiz, interview, reverse, flashcard, portfolio } = user.importCode(importText);
       setImportText("");
       setMessage({
         kind: "ok",
-        text: `取り込みました：4択用語 ${quiz}件／面接Q&A ${interview}件／暗記カード ${flashcard}件／逆質問 ${reverse}件。`,
+        text: `取り込みました：4択用語 ${quiz}件／面接Q&A ${interview}件／暗記カード ${flashcard}件／逆質問 ${reverse}件／成果物 ${portfolio}件。`,
       });
     } catch {
       setMessage({ kind: "err", text: "共有コードを読み取れませんでした。コードが正しいか確認してください。" });
@@ -545,7 +701,7 @@ function SharePanel({ user }: Props) {
       <div className="hig-card p-5">
         <h2 className="font-bold text-label">書き出す（共有する）</h2>
         <p className="mt-1 text-sm text-label-2">
-          自分が作った問題（4択 {user.content.quizTerms.length}件・面接 {user.content.interviewQuestions.length}件・暗記カード {flashcardCount}件・逆質問 {reverseCount}件）を
+          自分が作った問題（4択 {user.content.quizTerms.length}件・面接 {user.content.interviewQuestions.length}件・暗記カード {flashcardCount}件・逆質問 {reverseCount}件・成果物 {portfolioCount}件）を
           共有コードにして、Discordなどに貼って渡せます。
         </p>
         <button type="button" onClick={doExport} className={`mt-3 ${primaryBtn}`}>共有コードを作る</button>
