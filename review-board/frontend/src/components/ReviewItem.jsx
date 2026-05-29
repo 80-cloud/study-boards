@@ -1,22 +1,26 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AXIS_LABEL, GROWTH_OPTIONS, GROWTH_MAP } from '../constants';
-import { sendThanks, updateReview, deleteReview, fetchReplies, createReply, deleteReply, updateReviewGrowth } from '../api/reviews';
+import { sendThanks, updateReview, deleteReview, restoreReview, fetchReplies, createReply, deleteReply, updateReviewGrowth } from '../api/reviews';
 import { useAuth } from '../context/AuthContext';
+import { useUndo } from '../context/UndoContext';
 import MarkdownText from './MarkdownText';
 import Avatar from './Avatar';
+import ConfirmDialog from './ConfirmDialog';
 
 // 1 件のレビュー表示。講師レビューは特別表示（F-REV-02）。
 // 投稿者には「ありがとう」（F-REV-03）、レビュー所有者には編集/削除を出す（権限は backend が判定）。
 // F-GROW-01：投稿者（canManageGrowth）は各レビューの対応状態と Before-After を記録できる。
 export default function ReviewItem({ review, canThank, canManageGrowth, isOwner, isBest, canSelectBest, onSelectBest, onChanged }) {
   const { user } = useAuth();
+  const { requestUndo } = useUndo();
   const [thanks, setThanks] = useState(review.thanksCount);
   const [thanked, setThanked] = useState(false);
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(false);
   const [good, setGood] = useState(review.good);
   const [improvement, setImprovement] = useState(review.improvement);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   // F-GROW-01 対応状態・Before-After
   const [growthStatus, setGrowthStatus] = useState(review.growthStatus ?? 'OPEN');
@@ -108,12 +112,19 @@ export default function ReviewItem({ review, canThank, canManageGrowth, isOwner,
     }
   };
 
-  const remove = async () => {
-    if (!window.confirm('このレビューを削除しますか？')) return;
+  const remove = () => setConfirmDelete(true);
+
+  const confirmRemove = async () => {
+    setConfirmDelete(false);
     setBusy(true);
     try {
-      await deleteReview(review.id);
+      const id = review.id;
+      await deleteReview(id);
       onChanged?.();
+      requestUndo('レビューを削除しました', async () => {
+        await restoreReview(id);
+        onChanged?.();
+      });
     } finally {
       setBusy(false);
     }
@@ -236,6 +247,16 @@ export default function ReviewItem({ review, canThank, canManageGrowth, isOwner,
           返信 {replyCount}
         </button>
       </div>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        title="レビューを削除しますか？"
+        message="削除後 30 秒以内なら「元に戻す」で復元できます。"
+        confirmLabel="削除する"
+        cancelLabel="キャンセル"
+        onConfirm={confirmRemove}
+        onCancel={() => setConfirmDelete(false)}
+      />
 
       {showReplies && (
         <div className="space-y-2 border-t border-black/5 px-5 py-3">

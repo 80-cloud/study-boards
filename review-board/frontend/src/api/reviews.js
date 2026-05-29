@@ -18,6 +18,9 @@ export const updateReview = (reviewId, body) =>
 // F-REV 論理削除（所有者のみ）
 export const deleteReview = (reviewId) => client.delete(`/reviews/${reviewId}`);
 
+// #496 P5 復元（30 秒以内・所有者のみ・期限超過は 404）
+export const restoreReview = (reviewId) => client.post(`/reviews/${reviewId}/restore`);
+
 // F-REV-03 ありがとう（投稿者のみ・冪等）
 export const sendThanks = (reviewId) => client.post(`/reviews/${reviewId}/thanks`);
 

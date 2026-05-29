@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { fetchPost, deletePost, selectBestReview, likePost, unlikePost } from '../api/posts';
+import { fetchPost, deletePost, restorePost, selectBestReview, likePost, unlikePost } from '../api/posts';
 import { fetchReviews } from '../api/reviews';
 import { fetchEvaluation } from '../api/evaluations';
 import { useAuth } from '../context/AuthContext';
@@ -9,6 +9,8 @@ import ReviewItem from '../components/ReviewItem';
 import EvaluationPanel from '../components/EvaluationPanel';
 import ReviewPrefBadges from '../components/ReviewPrefBadges';
 import MarkdownText from '../components/MarkdownText';
+import ConfirmDialog from '../components/ConfirmDialog';
+import { useUndo } from '../context/UndoContext';
 import { getErrorMessage } from '../lib/errorMessages';
 
 // 投稿詳細：本体＋レビュー一覧＋レビュー投稿＋講師評価。
@@ -21,6 +23,9 @@ export default function PostDetailPage() {
   const [evaluation, setEvaluation] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  // #496 P5：削除確認ダイアログ。Undo はグローバル context 側で持つ。
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const { requestUndo } = useUndo();
 
   const loadReviews = useCallback(() => fetchReviews(id).then(setReviews), [id]);
 
@@ -44,11 +49,19 @@ export default function PostDetailPage() {
   const isAuthor = user?.id === post.authorUserId;
   const isTeacher = user?.role === 'TEACHER';
 
-  const removePost = async () => {
-    if (!window.confirm('この投稿を削除しますか？')) return;
+  const removePost = () => setConfirmDelete(true);
+
+  const confirmRemove = async () => {
+    setConfirmDelete(false);
     try {
-      await deletePost(post.id);
+      const id = post.id;
+      await deletePost(id);
+      // 削除後にトップへ。Undo バーは context が App 直下で表示し続ける。
       navigate('/', { replace: true });
+      requestUndo('投稿を削除しました', async () => {
+        await restorePost(id);
+        navigate(`/posts/${id}`, { replace: true });
+      });
     } catch (err) {
       setError(getErrorMessage(err, '削除できませんでした。少し待ってからもう一度お試しください'));
     }
@@ -134,6 +147,16 @@ export default function PostDetailPage() {
         {/* 自分の投稿には自己レビュー不可（backend が 400）。フォームは他人の投稿でのみ出す。 */}
         {!isAuthor && <ReviewForm postId={post.id} onCreated={() => loadReviews()} />}
       </section>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        title="投稿を削除しますか？"
+        message="削除後 30 秒以内なら「元に戻す」で復元できます。"
+        confirmLabel="削除する"
+        cancelLabel="キャンセル"
+        onConfirm={confirmRemove}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </main>
   );
 }

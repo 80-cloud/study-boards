@@ -190,6 +190,35 @@ public class ReviewService {
         auditService.record(principal, AuditAction.REVIEW_DELETED, AuditTargetType.REVIEW, reviewId);
     }
 
+    /**
+     * #496 P5：Undo（30 秒以内なら復元）。
+     * 削除済みかつ自分が削除したレビューのみ、deletedAt から 30 秒以内なら復元し、非正規化カウンタを再増分する。
+     * 期限超過・他人・未存在は 404（IDOR 遮断と同じ方針）。
+     */
+    @Transactional
+    public void restore(AuthPrincipal principal, Long reviewId) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new ResourceNotFoundException("review not found: " + reviewId));
+        if (!review.getReviewerUserId().equals(principal.userId())) {
+            throw new ResourceNotFoundException("not the owner: " + reviewId);
+        }
+        if (review.getDeletedAt() == null) {
+            return; // 冪等
+        }
+        if (review.getDeletedAt().plusSeconds(30).isBefore(OffsetDateTime.now())) {
+            throw new ResourceNotFoundException("restore window expired: " + reviewId);
+        }
+        review.setDeletedAt(null);
+        review.setUpdatedAt(OffsetDateTime.now());
+
+        postRepository.findById(review.getPostId()).ifPresent(p -> {
+            p.setReviewCount(p.getReviewCount() + 1);
+            adjustCount(p.getAuthorUserId(), +1, 0);
+        });
+        adjustCount(principal.userId(), 0, +1);
+        auditService.record(principal, AuditAction.REVIEW_RESTORED, AuditTargetType.REVIEW, reviewId);
+    }
+
     /** F-REV-03 ありがとう（投稿者のみ・冪等）。reviewer の実績に反映。 */
     @Transactional
     public void thank(AuthPrincipal principal, Long reviewId) {

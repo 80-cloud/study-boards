@@ -167,6 +167,29 @@ public class PostService {
     }
 
     /**
+     * #496 P5：Undo（30 秒以内なら復元）。
+     * 削除済みかつ自分が削除した投稿のみ、deletedAt から 30 秒以内なら deletedAt=null に戻す。
+     * 期限超過・他人・存在しないは 404（IDOR 遮断と同じ方針）。
+     */
+    @Transactional
+    public void restore(AuthPrincipal principal, Long postId) {
+        Post post = postRepository.findByIdAndCohortId(postId, principal.cohortId())
+                .orElseThrow(() -> new ResourceNotFoundException("post not found: " + postId));
+        if (!post.getAuthorUserId().equals(principal.userId())) {
+            throw new ResourceNotFoundException("not the owner: " + postId);
+        }
+        if (post.getDeletedAt() == null) {
+            // 未削除の投稿に restore を叩いても何もしない（冪等）
+            return;
+        }
+        if (post.getDeletedAt().plusSeconds(30).isBefore(OffsetDateTime.now())) {
+            throw new ResourceNotFoundException("restore window expired: " + postId);
+        }
+        post.setDeletedAt(null);
+        auditService.record(principal, AuditAction.POST_RESTORED, AuditTargetType.POST, postId);
+    }
+
+    /**
      * F-SAFE-01 / F-REQ-01：投稿者のレビュー希望（トーン・募集観点）を反映する。
      * tone は null で未設定に戻る。aspects は送られた集合で全置換（null は空集合扱い）。
      * 設定主体は所有者に限る（呼び出し元の create/loadOwned で担保。★S軸）。

@@ -108,6 +108,24 @@ class ReviewAuthorizationIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isNoContent());
     }
 
+    /** #498 P5 Undo：削除直後（30 秒以内）なら所有者がレビューを復元できる。他人は 404。 */
+    @Test
+    void owner_can_restore_review_within_30s_and_other_cannot() throws Exception {
+        long reviewId = createReview(reviewerEmail);
+        Cookie reviewer = login(reviewerEmail);
+        mockMvc.perform(delete("/api/reviews/" + reviewId).cookie(reviewer))
+                .andExpect(status().isNoContent());
+
+        // 他人は 404
+        Cookie other = login(otherEmail);
+        mockMvc.perform(post("/api/reviews/" + reviewId + "/restore").cookie(other))
+                .andExpect(status().isNotFound());
+
+        // 所有者は 204 で復元
+        mockMvc.perform(post("/api/reviews/" + reviewId + "/restore").cookie(reviewer))
+                .andExpect(status().isNoContent());
+    }
+
     @Test
     void thanks_only_by_post_author_and_idempotent() throws Exception {
         long reviewId = createReview(reviewerEmail);
