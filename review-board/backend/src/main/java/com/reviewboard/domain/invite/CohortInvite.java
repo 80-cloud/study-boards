@@ -1,5 +1,6 @@
 package com.reviewboard.domain.invite;
 
+import com.reviewboard.domain.user.UserRole;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -41,6 +42,11 @@ public class CohortInvite {
 
     @Column(name = "current_uses", nullable = false)
     private int currentUses;
+
+    /** #511：招待で作成するユーザーのロール。既定 STUDENT、TEACHER は ADMIN のみ発行可。 */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "target_role", nullable = false, length = 10)
+    private UserRole targetRole = UserRole.STUDENT;
 
     @Column(name = "revoked_at")
     private OffsetDateTime revokedAt;

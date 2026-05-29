@@ -2,13 +2,15 @@ import { useEffect, useState, useCallback } from 'react';
 import { createInvite, fetchInvites, revokeInvite } from '../api/invites';
 import { fetchMembers, disableMember, enableMember } from '../api/members';
 import { ROLE_LABEL } from '../constants';
+import { useAuth } from '../context/AuthContext';
 import Avatar from '../components/Avatar';
 import EmptyState from '../components/EmptyState';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { getErrorMessage } from '../lib/errorMessages';
 
-// 招待コード管理（講師/管理者・Issue #165）。発行→受講生に共有→失効まで。
+// 招待コード管理（講師/管理者・Issue #165 / #511）。発行→共有→失効まで。
 // 生コードは発行直後の 1 度しか表示できないため、発行時に共有リンクを目立たせる。
+// #511：targetRole で受講生/講師招待を切替（講師招待は ADMIN のみ）。
 const STATUS_LABEL = {
   ACTIVE: { text: '有効', cls: 'bg-emerald-50 text-emerald-700' },
   EXPIRED: { text: '期限切れ', cls: 'bg-gray-100 text-gray-500' },
@@ -16,17 +18,25 @@ const STATUS_LABEL = {
   REVOKED: { text: '失効済み', cls: 'bg-rose-50 text-rose-600' },
 };
 
+const ROLE_BADGE = {
+  STUDENT: { text: '受講生', cls: 'bg-sky-50 text-sky-700' },
+  TEACHER: { text: '講師', cls: 'bg-violet-50 text-violet-700' },
+};
+
 function fmt(dt) {
   return dt ? new Date(dt).toLocaleString('ja-JP', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
 }
 
 export default function InvitesPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
   const [invites, setInvites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [maxUses, setMaxUses] = useState(30);
   const [expiresInDays, setExpiresInDays] = useState(7);
+  const [targetRole, setTargetRole] = useState('STUDENT'); // #511
   const [issued, setIssued] = useState(null); // 発行直後の生コード（1 度だけ）
   const [copied, setCopied] = useState(false);
   const [members, setMembers] = useState([]);
@@ -55,7 +65,7 @@ export default function InvitesPage() {
     setError('');
     setCopied(false);
     try {
-      const inv = await createInvite({ maxUses: Number(maxUses), expiresInDays: Number(expiresInDays) });
+      const inv = await createInvite({ maxUses: Number(maxUses), expiresInDays: Number(expiresInDays), targetRole });
       setIssued(inv);
       await load();
     } catch (e) {
@@ -111,14 +121,24 @@ export default function InvitesPage() {
   return (
     <main className="mx-auto max-w-3xl px-6 py-8">
       <p className="mac-eyebrow text-left">INVITE</p>
-      <h2 className="mac-h mb-1 text-2xl">受講生を招待</h2>
-      <p className="mb-5 text-sm text-gray-500">招待リンクを受講生に共有すると、各自でアカウント登録できます（あなたの期に参加）。</p>
+      <h2 className="mac-h mb-1 text-2xl">{isAdmin ? '受講生・講師を招待' : '受講生を招待'}</h2>
+      <p className="mb-5 text-sm text-gray-500">招待リンクを共有すると、相手が各自でアカウント登録できます（あなたの期に参加）。{isAdmin && '管理者は講師招待も発行できます。'}</p>
 
       {error && <p role="alert" className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
 
       {/* 発行フォーム */}
       <div className="mac-card mb-5 p-6">
         <div className="flex flex-wrap items-end gap-4">
+          {isAdmin && (
+            <div>
+              <label htmlFor="inv-role" className="mac-label">招待先ロール</label>
+              <select id="inv-role" value={targetRole}
+                onChange={(e) => setTargetRole(e.target.value)} className="mac-input w-40">
+                <option value="STUDENT">受講生</option>
+                <option value="TEACHER">講師</option>
+              </select>
+            </div>
+          )}
           <div>
             <label htmlFor="inv-max" className="mac-label">利用上限（人数）</label>
             <input id="inv-max" type="number" min={1} max={500} value={maxUses}
@@ -136,8 +156,13 @@ export default function InvitesPage() {
 
         {issued && (
           <div className="mt-4 rounded-xl border border-brand-200 bg-brand-50/60 p-4">
-            <p className="mb-1 text-sm font-semibold text-navy-700">招待リンクを発行しました（この画面でのみ表示）</p>
-            <p className="mb-2 text-xs text-gray-500">このリンクを受講生に共有してください。上限 {issued.maxUses} 名・{fmt(issued.expiresAt)} まで有効。</p>
+            <p className="mb-1 text-sm font-semibold text-navy-700">
+              招待リンクを発行しました（この画面でのみ表示）
+              <span className={`ml-2 rounded-full px-2 py-0.5 text-xs font-bold ${(ROLE_BADGE[issued.targetRole] ?? ROLE_BADGE.STUDENT).cls}`}>
+                {(ROLE_BADGE[issued.targetRole] ?? ROLE_BADGE.STUDENT).text}
+              </span>
+            </p>
+            <p className="mb-2 text-xs text-gray-500">このリンクを{issued.targetRole === 'TEACHER' ? '講師候補者' : '受講生'}に共有してください。上限 {issued.maxUses} 名・{fmt(issued.expiresAt)} まで有効。</p>
             <div className="flex items-center gap-2">
               <input readOnly value={shareLink(issued.rawCode)}
                 className="mac-input flex-1 font-mono text-xs" aria-label="招待リンク" />
@@ -167,6 +192,9 @@ export default function InvitesPage() {
               <li key={inv.id} className="mac-card flex flex-wrap items-center justify-between gap-3 p-4">
                 <div className="text-sm">
                   <span className={`mr-2 rounded-full px-2 py-0.5 text-xs font-bold ${s.cls}`}>{s.text}</span>
+                  <span className={`mr-2 rounded-full px-2 py-0.5 text-xs font-bold ${(ROLE_BADGE[inv.targetRole] ?? ROLE_BADGE.STUDENT).cls}`}>
+                    {(ROLE_BADGE[inv.targetRole] ?? ROLE_BADGE.STUDENT).text}
+                  </span>
                   <span className="text-gray-700">利用 {inv.currentUses}/{inv.maxUses}</span>
                   <span className="ml-3 text-xs text-gray-400">期限 {fmt(inv.expiresAt)}</span>
                 </div>

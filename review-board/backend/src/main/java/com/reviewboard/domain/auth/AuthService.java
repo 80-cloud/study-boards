@@ -41,13 +41,13 @@ public class AuthService {
     }
 
     /**
-     * F-AUTH-02 招待コードによる受講生の自己登録（Issue #165・公開）。
-     * 招待を原子的に消費して登録先 cohort を決め、role は常に STUDENT で作成、そのままログイン状態にする。
+     * F-AUTH-02 招待コードによる自己登録（Issue #165・公開）。
+     * 招待を原子的に消費して登録先 cohort と role（#511：STUDENT/TEACHER）を決め、そのままログイン状態にする。
      * email 重複は 400。無効な招待は InviteService が 400（条件は漏らさない）。
      */
     @Transactional
     public LoginResult register(String rawCode, String email, String displayName, String rawPassword) {
-        Long cohortId = inviteService.validateAndConsume(rawCode);
+        InviteService.Consumed consumed = inviteService.validateAndConsume(rawCode);
         String normalizedEmail = email.trim().toLowerCase();
         if (userRepository.existsByEmail(normalizedEmail)) {
             throw new InvalidRequestException("この email は既に使われています");
@@ -57,8 +57,8 @@ public class AuthService {
         user.setEmail(normalizedEmail);
         user.setPasswordHash(passwordEncoder.encode(rawPassword));
         user.setDisplayName(displayName.trim());
-        user.setRole(UserRole.STUDENT);
-        user.setCohortId(cohortId);
+        user.setRole(consumed.targetRole());
+        user.setCohortId(consumed.cohortId());
         user.setCreatedAt(now);
         user.setUpdatedAt(now);
         userRepository.save(user);
