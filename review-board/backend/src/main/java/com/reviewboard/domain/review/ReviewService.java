@@ -77,7 +77,8 @@ public class ReviewService {
         review.setPostId(postId);
         review.setReviewerUserId(principal.userId());
         review.setGood(req.good());
-        review.setImprovement(req.improvement());
+        // #503：improvement は任意化。null/空文字いずれも DB の NOT NULL を満たすよう "" に正規化。
+        review.setImprovement(req.improvement() == null ? "" : req.improvement());
         review.setCreatedAt(now);
         review.setUpdatedAt(now);
         reviewRepository.save(review);
@@ -95,7 +96,7 @@ public class ReviewService {
         notificationService.notify(post.getAuthorUserId(), principal.userId(),
                 NotificationType.REVIEW_RECEIVED, postId, review.getId());
         // F-MENTION：レビュー本文（良かった点＋改善点）の @表示名 を同 cohort で解決し通知
-        notificationService.notifyMentions(req.good() + "\n" + req.improvement(),
+        notificationService.notifyMentions(req.good() + "\n" + (req.improvement() == null ? "" : req.improvement()),
                 principal.userId(), principal.cohortId(), postId, review.getId());
 
         User reviewer = userRepository.findById(principal.userId()).orElseThrow();
@@ -164,7 +165,8 @@ public class ReviewService {
     public ReviewResponse update(AuthPrincipal principal, Long reviewId, ReviewCreateRequest req) {
         Review review = ownedReview(principal, reviewId);
         review.setGood(req.good());
-        review.setImprovement(req.improvement());
+        // #503：improvement 任意化に伴い null/空文字を "" 正規化（編集時も同じ）。
+        review.setImprovement(req.improvement() == null ? "" : req.improvement());
         review.setUpdatedAt(OffsetDateTime.now());
 
         axisCommentRepository.deleteAll(axisCommentRepository.findByReviewId(reviewId));

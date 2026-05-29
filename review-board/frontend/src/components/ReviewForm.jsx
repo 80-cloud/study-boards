@@ -5,7 +5,7 @@ import { useDraft } from '../hooks/useDraft';
 import DraftNotice from './DraftNotice';
 import { getErrorMessage } from '../lib/errorMessages';
 
-// F-REV-01：良かった点・改善提案は必須、観点別コメント（4軸）は任意。
+// F-REV-01：良かった点のみ必須。改善提案・観点別コメント（4軸）は任意（#503：書くハードルを下げる）。
 // F-DRAFT-01：入力を localStorage に自動保存（postId 単位）し、再訪時に復元する。
 export default function ReviewForm({ postId, onCreated }) {
   const [good, setGood] = useState('');
@@ -69,10 +69,9 @@ export default function ReviewForm({ postId, onCreated }) {
         className="mac-input mb-3"
         rows={2}
       />
-      <label htmlFor="review-improvement" className="mac-label">💡 もっと良くなる点（必須）</label>
+      <label htmlFor="review-improvement" className="mac-label">💡 もっと良くなる点（任意）</label>
       <textarea
         id="review-improvement"
-        required
         value={improvement}
         onChange={(e) => setImprovement(e.target.value)}
         className="mac-input mb-3"
