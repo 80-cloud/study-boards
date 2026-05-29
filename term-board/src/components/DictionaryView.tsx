@@ -50,7 +50,8 @@ export function DictionaryView({ bookmarks, level }: Props) {
     const q = query.trim().toLowerCase();
     const list = terms.filter((t) => {
       if (category && t.category !== category) return false;
-      if (level !== "all" && t.level !== level) return false; // #437
+      // #437 + #444: level 未設定（ユーザー作問など）は全レベル該当として残す
+      if (level !== "all" && t.level && t.level !== level) return false;
       if (onlyBookmarked && !bookmarks.isBookmarked(t.id)) return false;
       if (q && !`${t.term} ${t.meaning} ${t.plainMeaning ?? ""}`.toLowerCase().includes(q)) {
         return false;

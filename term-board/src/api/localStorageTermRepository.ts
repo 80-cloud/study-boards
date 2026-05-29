@@ -112,6 +112,7 @@ export const localStorageTermRepository: TermRepository = {
       distractors: [],
       interview: "",
       source: f.source ?? "user",
+      level: f.level, // #444: 暗記カードもレベルフィルタに参加
     }));
     return [...base, ...asTerms];
   },
