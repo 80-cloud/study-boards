@@ -65,7 +65,7 @@ export default function PostEditPage() {
       <p className="mac-eyebrow text-left">EDIT</p>
       <h2 className="mac-h mb-5 text-2xl">投稿を編集</h2>
       <form onSubmit={submit} className="mac-card p-6 sm:p-7">
-        {error && <p className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+        {error && <p role="alert" className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
         <label htmlFor="edit-title" className="mac-label">タイトル（必須）</label>
         <input id="edit-title" required value={form.title} onChange={set('title')} className="mac-input mb-4" />
         <label htmlFor="edit-description" className="mac-label">説明（必須）</label>

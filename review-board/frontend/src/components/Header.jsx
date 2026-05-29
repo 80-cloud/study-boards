@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { fetchUnreadCount } from '../api/notifications';
 import Avatar from './Avatar';
@@ -57,21 +57,21 @@ export default function Header() {
               />
               <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
             </form>
-            <Link to="/posts/new" className="hidden shrink-0 whitespace-nowrap rounded-lg bg-wrblue-500 px-3.5 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-wrblue-600 sm:inline-flex">＋ 投稿する</Link>
+            <NavLink to="/posts/new" className="hidden shrink-0 whitespace-nowrap rounded-lg bg-wrblue-500 px-3.5 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-wrblue-600 sm:inline-flex">＋ 投稿する</NavLink>
             {(user.role === 'TEACHER' || user.role === 'ADMIN') && (
               <>
-                <Link to="/dashboard" className="hidden shrink-0 whitespace-nowrap text-sm font-medium text-gray-600 transition hover:text-navy-700 lg:inline">ダッシュボード</Link>
-                <Link to="/invites" className="hidden shrink-0 whitespace-nowrap text-sm font-medium text-gray-600 transition hover:text-navy-700 lg:inline">招待</Link>
+                <NavLink to="/dashboard" className="hidden shrink-0 whitespace-nowrap text-sm font-medium text-gray-600 transition hover:text-navy-700 lg:inline">ダッシュボード</NavLink>
+                <NavLink to="/invites" className="hidden shrink-0 whitespace-nowrap text-sm font-medium text-gray-600 transition hover:text-navy-700 lg:inline">招待</NavLink>
               </>
             )}
-            <Link to="/notifications" className="relative text-gray-500 transition hover:text-navy-700" aria-label={`通知${unread > 0 ? `（未読 ${unread} 件）` : ''}`}>
+            <NavLink to="/notifications" className="relative text-gray-500 transition hover:text-navy-700" aria-label={`通知${unread > 0 ? `（未読 ${unread} 件）` : ''}`}>
               <span className="inline-block text-xl leading-none">🔔</span>
               {unread > 0 && (
                 <span className="absolute -right-2 -top-1 rounded-full bg-cherry-500 px-1.5 text-xs font-bold text-white shadow-sm">
                   {unread > 99 ? '99+' : unread}
                 </span>
               )}
-            </Link>
+            </NavLink>
             <Link to={`/users/${user.id}/profile`} aria-label={`${user.displayName} のプロフィール`} className="flex shrink-0 items-center gap-2 text-sm text-gray-700 hover:text-navy-700">
               <Avatar url={user.avatarUrl} name={user.displayName} size="md" />
               <span className="hidden font-medium xl:inline">{user.displayName}</span>

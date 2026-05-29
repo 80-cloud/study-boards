@@ -42,7 +42,7 @@ export default function EvaluationPanel({ postId, evaluation, isTeacher, onEvalu
 
       {isTeacher && (
         <form onSubmit={submit} className="border-t border-black/5 pt-3">
-          {error && <p className="mb-2 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+          {error && <p role="alert" className="mb-2 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
           <div className="mb-2 flex gap-4 text-sm">
             {['APPROVED', 'RETURNED'].map((r) => (
               <label key={r} className="flex items-center gap-1">

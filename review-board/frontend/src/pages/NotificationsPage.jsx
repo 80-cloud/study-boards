@@ -71,7 +71,7 @@ export default function NotificationsPage() {
           description="新しいレビューや返信が届くと、ここに表示されます。"
         />
       ) : (
-        <ul className="space-y-2">
+        <ul className="space-y-2" role="region" aria-live="polite" aria-label="通知一覧">
           {items.map((n) => (
             <li key={n.id}>
               <button
