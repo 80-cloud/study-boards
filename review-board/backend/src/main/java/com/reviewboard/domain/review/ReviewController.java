@@ -69,6 +69,14 @@ public class ReviewController {
         return ResponseEntity.noContent().build();
     }
 
+    /** #496 P5：30 秒以内なら復元（所有者のみ・期限超過は 404） */
+    @PostMapping("/api/reviews/{id}/restore")
+    public ResponseEntity<Void> restore(@AuthenticationPrincipal AuthPrincipal principal,
+                                        @PathVariable Long id) {
+        reviewService.restore(principal, id);
+        return ResponseEntity.noContent().build();
+    }
+
     /** F-REV-03 ありがとう（投稿者のみ・冪等） */
     @PostMapping("/api/reviews/{id}/thanks")
     public ResponseEntity<Void> thank(@AuthenticationPrincipal AuthPrincipal principal,

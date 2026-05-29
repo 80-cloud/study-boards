@@ -127,6 +127,14 @@ public class PostController {
         return ResponseEntity.noContent().build();
     }
 
+    /** #496 P5：30 秒以内なら復元（所有者のみ・期限超過は 404） */
+    @PostMapping("/{id}/restore")
+    public ResponseEntity<Void> restore(@AuthenticationPrincipal AuthPrincipal principal,
+                                        @PathVariable Long id) {
+        postService.restore(principal, id);
+        return ResponseEntity.noContent().build();
+    }
+
     /** F-REV-05 ベストレビュー選択（投稿者のみ・他人は 404） */
     @PutMapping("/{id}/best-review")
     public PostResponse selectBestReview(@AuthenticationPrincipal AuthPrincipal principal,

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Routes, Route, useLocation, Link } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { UndoProvider } from './context/UndoContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Header from './components/Header';
 import { APP_NAME } from './constants';
@@ -59,6 +60,7 @@ export default function App() {
   useEffect(() => { document.title = APP_NAME; }, []);
   return (
     <AuthProvider>
+      <UndoProvider>
       <ScrollToTop />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
@@ -82,6 +84,7 @@ export default function App() {
         {/* 存在しないパスは 404 ページへ（ブラウザ既定の白画面を防ぐ）。 */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
+      </UndoProvider>
     </AuthProvider>
   );
 }

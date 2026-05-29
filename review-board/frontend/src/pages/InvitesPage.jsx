@@ -4,6 +4,7 @@ import { fetchMembers, disableMember, enableMember } from '../api/members';
 import { ROLE_LABEL } from '../constants';
 import Avatar from '../components/Avatar';
 import EmptyState from '../components/EmptyState';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { getErrorMessage } from '../lib/errorMessages';
 
 // 招待コード管理（講師/管理者・Issue #165）。発行→受講生に共有→失効まで。
@@ -29,6 +30,8 @@ export default function InvitesPage() {
   const [issued, setIssued] = useState(null); // 発行直後の生コード（1 度だけ）
   const [copied, setCopied] = useState(false);
   const [members, setMembers] = useState([]);
+  // #496 P5：無効化対象（confirm 待ち）
+  const [pendingDisable, setPendingDisable] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -83,11 +86,17 @@ export default function InvitesPage() {
   };
 
   // #229 メンバーの無効化/有効化（kick）。失敗時はメッセージのみ。
+  // #496 P5：無効化はセキュリティ操作のため ConfirmDialog で明示的に確認（Undo は提供しない＝再有効化で対応）。
   const onToggleMember = async (m) => {
     const disabling = m.status === 'ACTIVE';
-    if (disabling && !window.confirm(`${m.displayName} さんを無効化しますか？（ログインできなくなります）`)) {
+    if (disabling) {
+      setPendingDisable(m);
       return;
     }
+    await applyToggleMember(m, false);
+  };
+
+  const applyToggleMember = async (m, disabling) => {
     setError('');
     try {
       const updated = disabling ? await disableMember(m.id) : await enableMember(m.id);
@@ -210,6 +219,22 @@ export default function InvitesPage() {
           })}
         </ul>
       )}
+
+      <ConfirmDialog
+        open={!!pendingDisable}
+        title="メンバーを無効化しますか？"
+        message={pendingDisable
+          ? `${pendingDisable.displayName} さんはログインできなくなります（再有効化で復帰可能）。`
+          : ''}
+        confirmLabel="無効化する"
+        cancelLabel="キャンセル"
+        onConfirm={async () => {
+          const target = pendingDisable;
+          setPendingDisable(null);
+          await applyToggleMember(target, true);
+        }}
+        onCancel={() => setPendingDisable(null)}
+      />
     </main>
   );
 }

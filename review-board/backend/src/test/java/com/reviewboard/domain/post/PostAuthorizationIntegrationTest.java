@@ -105,6 +105,36 @@ class PostAuthorizationIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    /** #498 P5 Undo：削除直後（30 秒以内）なら所有者が復元できる。 */
+    @Test
+    void owner_can_restore_within_30s() throws Exception {
+        Cookie a1 = login(a1Email);
+        long id = createPost(a1, "復元対象");
+
+        mockMvc.perform(delete("/api/posts/" + id).cookie(a1))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/posts/" + id).cookie(a1))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(post("/api/posts/" + id + "/restore").cookie(a1))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/posts/" + id).cookie(a1))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("復元対象"));
+    }
+
+    /** #498 P5 Undo：他人は復元できない（404・IDOR 遮断）。 */
+    @Test
+    void other_cannot_restore() throws Exception {
+        Cookie a1 = login(a1Email);
+        long id = createPost(a1, "他人 restore 検証");
+        mockMvc.perform(delete("/api/posts/" + id).cookie(a1)).andExpect(status().isNoContent());
+
+        Cookie a2 = login(a2Email);
+        mockMvc.perform(post("/api/posts/" + id + "/restore").cookie(a2))
+                .andExpect(status().isNotFound());
+    }
+
     @Test
     void unauthenticated_is_rejected() throws Exception {
         mockMvc.perform(post("/api/posts")
