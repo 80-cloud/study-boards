@@ -20,7 +20,7 @@ review-board の主要画面を、第三者がリポを開いた直後でも完�
 | 01 | [01-login.png](./01-login.png) | ログイン | F-AUTH-01（招待制ログイン） |
 | 02 | [02-register.png](./02-register.png) | 新規登録（招待コード入力） | F-AUTH-02（招待コード登録・#207） |
 | 03 | [03-terms.png](./03-terms.png) | 利用規約 | プライバシー脚注 / [脅威モデリング.md](../脅威モデリング.md) |
-| 04 | [04-privacy.png](./04-privacy.png) | プライバシーポリシー | 母 SEC-5（個人情報・暗号化・退会） |
+| 04 | [04-privacy.png](./04-privacy.png) | プライバシーポリシー | 個人情報・暗号化・退会の方針 |
 | 05 | [05-top-posts.png](./05-top-posts.png) | トップ（受講生ログイン後・成果物一覧） | F-POST-01 / F-LIST-01 |
 | 06 | [06-post-detail.png](./06-post-detail.png) | 投稿詳細 + 講師評価 + レビュー一覧 | F-REV-01 / F-EVAL-01 / 合格バッジ |
 | 07 | [07-review-form.png](./07-review-form.png) | レビューフォーム（多軸：動作・保守性・セキュリティ・性能） | F-REV-01（4 軸 + 良かった点 / 改善点） |
