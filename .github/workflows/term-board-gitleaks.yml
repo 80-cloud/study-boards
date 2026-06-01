@@ -1,4 +1,4 @@
-name: term-board Secret Scan (gitleaks / S軸)
+name: term-board Secret Scan (gitleaks)
 
 # ============================================================
 # 機密情報の server-side スキャン（最後の防衛線）。
@@ -6,18 +6,17 @@ name: term-board Secret Scan (gitleaks / S軸)
 #
 # 目的: GitHub Web 編集 / `git commit --no-verify` 等、ローカル hook を
 #       バイパスする経路を塞ぐ。task-board の平文パスワード Public コミット
-#       事故（不可逆）と同型の再発防止（S軸の核）。
+#       事故（不可逆）と同型の再発防止（安全性の核）。
 #
 # 方式: バージョン固定の gitleaks で term-board ツリーを走査。設定は
 #       リポジトリルートの .gitleaks.toml を review-board と共用する。
 # ============================================================
 
 on:
+  # #525: secret-scan は必須チェック。全PRで必ず報告される必要があるため
+  #       pull_request の paths フィルタを外す（非対象PRでも走って green になり、
+  #       必須条件が満たされずマージ不可になるデッドロックを防ぐ）。
   pull_request:
-    paths:
-      - 'term-board/**'
-      - '.gitleaks.toml'
-      - '.github/workflows/term-board-gitleaks.yml'
   push:
     branches: [main]
     paths:

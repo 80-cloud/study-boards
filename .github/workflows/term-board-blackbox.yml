@@ -4,10 +4,10 @@ name: term-board Blackbox Check
 # 内部用語・固有フレーズがコミットに混入していないことを scripts/blackbox-check.sh で検証する。
 
 on:
+  # #525: Blackbox Check は必須チェック。全PRで必ず報告される必要があるため
+  #       pull_request の paths フィルタを外す（term-board 非対象PRでも term-board スコープを
+  #       検査して green になり、必須条件のデッドロックを防ぐ）。
   pull_request:
-    paths:
-      - "term-board/**"
-      - ".github/workflows/term-board-blackbox.yml"
   push:
     branches: [main]
     paths:

@@ -4,10 +4,10 @@ name: term-board CI
 # 型チェック＋本番ビルドの成功、単体テスト（Vitest）、依存脆弱性 High/Critical 0件を常設で担保する。
 
 on:
+  # #525: build-and-audit は必須チェック。全PRで必ず報告される必要があるため
+  #       pull_request の paths フィルタを外す（term-board 非対象PRでも term-board を
+  #       ビルドして green になり、必須条件が満たされずマージ不可になるデッドロックを防ぐ）。
   pull_request:
-    paths:
-      - "term-board/**"
-      - ".github/workflows/term-board-ci.yml"
   push:
     branches: [main]
     paths:
