@@ -69,16 +69,19 @@ fi
 
 # 検査対象ファイル一覧を取得
 # ※ scripts/blackbox-* と *-blackbox.yml はツール自身なので除外（自己参照防止）
+# 注: `-c core.quotepath=false` が必須。これが無いと git は非ASCIIパスを
+#     `"...\350\246\201...md"` とクォート出力し、末尾が `"` になるため拡張子フィルタ
+#     `\.md$` に外れ、日本語名ファイル（要件定義書.md 等）がサイレントに検査対象外になる。
 if [ "$MODE" = "--staged" ]; then
   # pre-commit: ステージ済みかつテキストファイルのみ
-  FILES=$(git diff --cached --name-only --diff-filter=ACM \
+  FILES=$(git -c core.quotepath=false diff --cached --name-only --diff-filter=ACM \
     | grep -E '\.(md|txt|yml|yaml|json|js|ts|tsx|jsx|py|java|gradle|sh|html|css)$' \
     | grep -v 'scripts/blackbox' \
     | grep -v '\-blackbox\.yml' \
     || true)
 else
   # 全体検査: 追跡対象のテキストファイル
-  FILES=$(git ls-files \
+  FILES=$(git -c core.quotepath=false ls-files \
     | grep -E '\.(md|txt|yml|yaml|json|js|ts|tsx|jsx|py|java|gradle|sh|html|css)$' \
     | grep -v 'scripts/blackbox' \
     | grep -v '\-blackbox\.yml' \

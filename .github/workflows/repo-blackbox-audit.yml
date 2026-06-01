@@ -1,0 +1,44 @@
+name: repo-wide Blackbox Audit
+
+# リポ全体（全アプリ）のブラックボックス化規律を監査する。
+# 既存の term-board 限定 `Blackbox Check`（必須）と違い、本ワークフローは
+# review-board・他アプリも含めて走査する。
+#
+# 段階移行中は「非ブロッキング（情報提供）」。違反があっても job は失敗させず、
+# 検出結果を Step Summary に出すだけにする（必須チェックには含めない）。
+# review-board 等の既存違反を 0 に潰したら、本 job を fail させ必須へ昇格する（#526）。
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Blackbox Audit (repo-wide, 非ブロッキング)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: リポ全体のブラックボックス監査（検知のみ・段階移行中）
+        run: |
+          set -uo pipefail
+          if bash term-board/scripts/blackbox-check.sh > audit.log 2>&1; then
+            echo "## ✅ リポ全体クリーン（ブラックボックス違反なし）" >> "$GITHUB_STEP_SUMMARY"
+            cat audit.log
+          else
+            COUNT=$(grep -c '✘' audit.log || true)
+            {
+              echo "## ⚠️ ブラックボックス違反を検知（段階移行中・非ブロッキング）"
+              echo ""
+              echo "**検出 ${COUNT} 件**。マージはブロックしない（必須チェックは別）。順次解消し、0 になったら本監査を必須へ昇格する（#526）。"
+              echo ""
+              echo '```'
+              grep '✘' audit.log | head -100
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            cat audit.log
+          fi
