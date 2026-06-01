@@ -5,7 +5,7 @@ import { repository } from "../api";
 // #519: 暗記カードの「下」に置く学習サポート（進捗・苦手）。
 // 横サイドパネル案（クイズ深掘り・辞典ナビ）は「読みづらい」と却下されたため、
 // 暗記カードのサポートのみ採用し、配置は右側ではなくカード下に変更した。
-// PC（lg+）限定で表示し、モバイル体験は変えない。
+// モバイル・PC とも表示する（モバイルは縦積み、PC は3枚を横並び）。
 
 // 連続学習日数（DashboardView と同じロジックの軽量版）。
 function calcStreak(days: string[]): number {
@@ -65,8 +65,8 @@ export function StudyProgressPanel({ layout = "column" }: { layout?: "column" | 
       .slice(0, 3);
   }, [terms, progress]);
 
-  // 下配置（row）では3枚を横並び、サイド配置（column）では縦積み。
-  const cardsCls = layout === "row" ? "grid grid-cols-3 gap-3" : "flex flex-col gap-3";
+  // 下配置（row）はモバイルで縦積み・PC（sm+）で3枚を横並び。column は常に縦積み。
+  const cardsCls = layout === "row" ? "grid grid-cols-1 gap-3 sm:grid-cols-3" : "flex flex-col gap-3";
 
   return (
     <div className="flex flex-col gap-3">
