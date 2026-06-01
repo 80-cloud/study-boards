@@ -1,7 +1,7 @@
 plugins {
 	id 'java'
 	id 'jacoco'
-	id 'org.springframework.boot' version '3.5.14'
+	id 'org.springframework.boot' version '4.0.6'
 	id 'io.spring.dependency-management' version '1.1.7'
 }
 
@@ -42,9 +42,9 @@ dependencies {
 	// ★セキュリティの中核：RBAC + 認可（SecurityConfig）
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	// JWT (HS256, HttpOnly Cookie 認証。技術スタック.md §2-4)
-	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
-	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
-	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+	implementation 'io.jsonwebtoken:jjwt-api:0.13.0'
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.13.0'
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
 	// C-6 TOTP 二要素認証（#235・任意の MFA）。Apache-2.0・無料。シークレット生成/コード検証/QR を提供。
 	implementation 'dev.samstevens.totp:totp:1.7.1'
 	runtimeOnly 'org.postgresql:postgresql'
@@ -54,7 +54,7 @@ dependencies {
 	annotationProcessor 'org.projectlombok:lombok'
 	// AWS SDK v2 S3（成果物スクショ。ローカルは MinIO を S3 互換として使う。
 	// 重い Netty を持ち込まず url-connection-client を使う）
-	implementation platform('software.amazon.awssdk:bom:2.31.78')
+	implementation platform('software.amazon.awssdk:bom:2.45.1')
 	implementation('software.amazon.awssdk:s3') {
 		exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
 	}
