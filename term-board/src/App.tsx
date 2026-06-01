@@ -188,12 +188,13 @@ export default function App() {
   );
 
   // PC で横幅を活かすビュー：ホーム（4列カンバン）・4択クイズ（質問＝左／解説＝右の2カラム）・
-  // 暗記カード（余白を抑えてカードを大きく見せる）。
-  // 他ビュー（辞典・面接練習など）は本文の可読幅を優先して従来の max-w-2xl を維持。
+  // 暗記カード（余白を抑えてカードを大きく見せる）・用語辞典（2カラムでスクロールを短縮）。
+  // 他ビュー（面接練習など）は本文の可読幅を優先して従来の max-w-2xl を維持。
   const mainWidth =
     view === "home" ? "max-w-6xl"
     : view === "quiz" ? "max-w-5xl"
     : view === "card" ? "max-w-4xl"
+    : view === "dictionary" ? "max-w-5xl"
     : "max-w-2xl";
   // ヘッダーはビュー切替で幅が動くと違和感が出るため、常に広い幅で固定。
   const headerWidth = sidebar ? "max-w-5xl" : "max-w-6xl";
