@@ -39,14 +39,14 @@ jobs:
       run:
         working-directory: review-board/backend
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
       - name: ./gradlew test（テスト緑がデプロイの前提）
         run: ./gradlew test --no-daemon --console=plain
 
@@ -58,21 +58,21 @@ jobs:
     outputs:
       sha_tag: ${{ steps.meta.outputs.tag }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: SHA タグを解決
         id: meta
         run: echo "tag=$(git rev-parse --short=7 HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
 
@@ -128,7 +128,7 @@ jobs:
       # になったら GitHub へは upload しない。フォールバック時も保持を 7 日に短縮し storage 累積を抑える。
       - name: アーティファクトをアップロード（S3未配線時のフォールバック・7日保持）
         if: steps.guard.outputs.ready != 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: review-board-${{ steps.meta.outputs.tag }}
           path: artifact/${{ steps.meta.outputs.tag }}/
