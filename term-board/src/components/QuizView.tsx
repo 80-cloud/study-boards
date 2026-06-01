@@ -10,7 +10,7 @@ type Props = {
 };
 
 // 選択肢ボタンの見た目を、回答状態に応じて決める。
-// 母 P-9 / 受入条件: 正誤は「色のみに依存しない」ため記号（◯/✕）とテキストでも示す。
+// P-9 / 受入条件: 正誤は「色のみに依存しない」ため記号（◯/✕）とテキストでも示す。
 function optionClass(args: {
   answered: boolean;
   isThisCorrect: boolean;

@@ -1,0 +1,13 @@
+# blackbox-words.local.txt.example — 形式見本（これはリポに入る・実語は書かない）
+#
+# 使い方:
+#   cp scripts/blackbox-words.local.txt.example scripts/blackbox-words.local.txt
+#   （.local.txt は .gitignore 済み。実際の禁止語はそちらにだけ書く）
+#
+# 形式:
+#   1行1語。空行と # 始まりの行は無視。
+#   「禁止語 => 一般化した代替表現」形式も可（=> の左側だけが検査対象）。
+#
+# 例（ダミー。実語ではない）:
+#   ExampleSecretName => 一般的な呼び方
+#   AnotherInternalTerm
