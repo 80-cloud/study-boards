@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Term, Progress, LearningSession } from "../types";
 import type { LevelFilter } from "../hooks/useLevel";
 import { repository } from "../api";
@@ -38,14 +38,17 @@ export function CardView({ level }: Props) {
   const categories = useMemo(() => [...new Set(terms.map((t) => t.category))].sort(), [terms]);
 
   // 苦手＝「まだ」が「覚えた」を上回るカード。
-  const isWeak = (id: string, prog: Progress = cardProgress) => {
-    const p = prog[id];
-    return !!p && p.wrong > p.correct;
-  };
+  const isWeak = useCallback(
+    (id: string, prog: Progress = cardProgress) => {
+      const p = prog[id];
+      return !!p && p.wrong > p.correct;
+    },
+    [cardProgress],
+  );
 
   const weakCount = useMemo(
     () => terms.filter((t) => isWeak(t.id)).length,
-    [terms, cardProgress],
+    [terms, isWeak],
   );
 
   const pool = useMemo(
@@ -57,7 +60,7 @@ export function CardView({ level }: Props) {
         if (onlyWeak && !isWeak(t.id)) return false;
         return true;
       }),
-    [terms, category, level, onlyWeak, cardProgress],
+    [terms, category, level, onlyWeak, isWeak],
   );
 
   // SRS 重み付きで次のカードを選ぶ（直前と同じは避ける）。
