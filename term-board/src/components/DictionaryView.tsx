@@ -189,6 +189,21 @@ export function DictionaryView({ bookmarks, level }: Props) {
                     <p className="mt-1 text-label-2"><span className="font-semibold text-label">現場では：</span>{t.scene}</p>
                   )}
                   <p className="mt-1 text-label-2"><span className="font-semibold text-label">面接での言い方：</span>{t.interview}</p>
+                  {/* 深掘り「なぜ?」チェーン（4択クイズと同じ followUps）。
+                      辞典は参照用途のため、段階開示せず Q/A を最初から表示する。 */}
+                  {t.followUps && t.followUps.length > 0 && (
+                    <div className="mt-3 rounded-xl bg-amber-50 p-3 ring-1 ring-amber-100 dark:bg-amber-950 dark:ring-amber-900">
+                      <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">深掘り：面接ではこう重ねられます</p>
+                      <ol className="mt-1.5 flex flex-col gap-2">
+                        {t.followUps.map((f, i) => (
+                          <li key={i}>
+                            <p className="font-semibold text-label">Q. {f.q}</p>
+                            <p className="mt-0.5 text-label-2">A. {f.a}</p>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  )}
                 </div>
               )}
             </li>
