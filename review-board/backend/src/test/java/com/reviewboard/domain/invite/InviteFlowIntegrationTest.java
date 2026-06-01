@@ -18,7 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 招待フロー（Issue #165）の認可・登録検証。★S軸：発行/失効は自 cohort 限定、
+ * 招待フロー（Issue #165）の認可・登録検証。★セキュリティ：発行/失効は自 cohort 限定、
  * 受講生は発行 403、別 cohort の招待失効は 404、登録は招待消費・cohort 紐付け・重複/無効を拒否。
  */
 class InviteFlowIntegrationTest extends AbstractIntegrationTest {

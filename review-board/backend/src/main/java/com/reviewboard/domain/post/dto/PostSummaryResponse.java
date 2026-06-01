@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 一覧用の軽量レスポンス（F-POST-03）。本文（description）は載せず転送量を抑える（母 P-2）。
+ * 一覧用の軽量レスポンス（F-POST-03）。本文（description）は載せず転送量を抑える（共通設計方針）。
  * トーン・募集観点は一覧での「依頼の見える化」（F-SAFE-01/F-REQ-01）に使うため含める。
  */
 public record PostSummaryResponse(

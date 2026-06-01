@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.OffsetDateTime;
 
 /**
- * いいね（👍）のユースケース。★S軸：対象投稿は同 cohort・未削除に限る（他は 404）。
+ * いいね（👍）のユースケース。★セキュリティ：対象投稿は同 cohort・未削除に限る（他は 404）。
  * いいね数は Post の非正規化カウンタを同一Txで増減する（一覧・ランキングの軽量化）。
  */
 @Service

@@ -14,7 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * F-REV-04 返信スレッドの認可テスト（S軸標準：cohort 境界＋所有者＋拒否系）。
+ * F-REV-04 返信スレッドの認可テスト（セキュリティ標準：cohort 境界＋所有者＋拒否系）。
  */
 class ReplyAuthorizationIntegrationTest extends AbstractIntegrationTest {
 

@@ -17,7 +17,7 @@ import java.io.IOException;
 import java.util.UUID;
 
 /**
- * 1リクエストを横断追跡するための相関 ID を MDC に載せる（母 §3-1 オブザーバビリティ）。
+ * 1リクエストを横断追跡するための相関 ID を MDC に載せる（共通設計方針 オブザーバビリティ）。
  *
  * <ul>
  *   <li>{@code requestId}：受信した {@code X-Request-Id} を尊重し、無ければ UUID を採番する

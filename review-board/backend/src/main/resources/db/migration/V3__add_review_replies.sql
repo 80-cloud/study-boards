@@ -1,5 +1,5 @@
 -- F-REV-04 レビュー返信（スレッド）：レビューに対する返信を保持する。
--- 親レビューに replies_count を非正規化（母 S-3。同一 TX 更新＋将来の定期再計算で補正）。
+-- 親レビューに replies_count を非正規化（共通設計方針。同一 TX 更新＋将来の定期再計算で補正）。
 CREATE TABLE review_replies (
     id              BIGSERIAL PRIMARY KEY,
     review_id       BIGINT      NOT NULL REFERENCES reviews (id),

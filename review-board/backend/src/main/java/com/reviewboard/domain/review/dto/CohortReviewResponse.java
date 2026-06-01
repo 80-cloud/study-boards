@@ -8,7 +8,7 @@ import java.time.OffsetDateTime;
 /**
  * cohort 全体のレビュー一覧（#210）の 1 行。どの投稿への何というレビューかを一覧で見せるため、
  * レビュー本体に加えて投稿タイトル（postTitle）と reviewer の表示名・role を含める。
- * ★S軸：母集合は呼び出し元（ReviewService）が自 cohort の投稿に限定して渡す。
+ * ★セキュリティ：母集合は呼び出し元（ReviewService）が自 cohort の投稿に限定して渡す。
  */
 public record CohortReviewResponse(
         Long id,

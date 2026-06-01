@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 通知設定 API（Issue #233・C-5）。★S軸：常に「自分の設定」だけを読み書きする（本人限定・他人の設定は触れない）。
+ * 通知設定 API（Issue #233・C-5）。★セキュリティ：常に「自分の設定」だけを読み書きする（本人限定・他人の設定は触れない）。
  */
 @RestController
 @RequestMapping("/api/notification-prefs")

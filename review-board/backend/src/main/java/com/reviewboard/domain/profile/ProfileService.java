@@ -27,8 +27,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * 成長記録ページの集約（F-PROF・主役）。★S軸：閲覧対象は同 cohort のメンバーに限る（他 cohort は 404）。
- * 投稿・評価・レビュー・reviewer をバッチで引いて N+1 を避ける（母 P-3）。
+ * 成長記録ページの集約（F-PROF・主役）。★セキュリティ：閲覧対象は同 cohort のメンバーに限る（他 cohort は 404）。
+ * 投稿・評価・レビュー・reviewer をバッチで引いて N+1 を避ける（共通設計方針）。
  */
 @Service
 public class ProfileService {

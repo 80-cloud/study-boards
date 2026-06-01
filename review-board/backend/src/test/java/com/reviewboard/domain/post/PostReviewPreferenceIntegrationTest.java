@@ -17,7 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * F-SAFE-01 心理的安全設定 ＋ F-REQ-01 観点別レビュー依頼の統合テスト。
  *
  * <p>新規エンドポイントは無く、既存 POST/PUT /api/posts に相乗りする（認可境界は据え置き）。
- * S軸標準として「設定は所有者のみ・他人の更新は 404・他 cohort は不可視（404）・不正 enum は 400」を確認する。
+ * セキュリティ標準として「設定は所有者のみ・他人の更新は 404・他 cohort は不可視（404）・不正 enum は 400」を確認する。
  */
 class PostReviewPreferenceIntegrationTest extends AbstractIntegrationTest {
 

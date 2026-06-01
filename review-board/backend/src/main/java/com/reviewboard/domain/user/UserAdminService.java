@@ -16,7 +16,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
- * メンバー管理（#229・kick）。★S軸：講師は自 cohort の受講生のみ、管理者は管理者以外を操作可。
+ * メンバー管理（#229・kick）。★セキュリティ：講師は自 cohort の受講生のみ、管理者は管理者以外を操作可。
  *
  * <p>無効化（DISABLED）するとログイン不可（{@code AuthService.login} が 403）になり、
  * refresh トークンを全失効させるため、既存の access トークンも最長で寿命（15分）内に失効する。

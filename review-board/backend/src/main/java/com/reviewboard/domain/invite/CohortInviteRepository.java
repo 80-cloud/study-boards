@@ -19,7 +19,7 @@ public interface CohortInviteRepository extends JpaRepository<CohortInvite, Long
 
     /**
      * 使用回数を原子的に +1（未失効・未期限切れ・枠あり が WHERE 条件）。
-     * 返り値 1=消費成功 / 0=利用不可（同時登録で maxUses を超えない・S軸の競合対策）。
+     * 返り値 1=消費成功 / 0=利用不可（同時登録で maxUses を超えない・セキュリティの競合対策）。
      */
     @Modifying
     @Query("update CohortInvite c set c.currentUses = c.currentUses + 1 "

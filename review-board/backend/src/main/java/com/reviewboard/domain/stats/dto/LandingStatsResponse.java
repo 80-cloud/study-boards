@@ -5,7 +5,7 @@ import com.reviewboard.domain.user.UserRole;
 import java.util.List;
 
 /**
- * トップページ（案L ランディング）の集計。すべて閲覧者の cohort 内に閉じた実データ（★S軸）。
+ * トップページ（案L ランディング）の集計。すべて閲覧者の cohort 内に閉じた実データ（★セキュリティ）。
  *
  * @param postsCount         cohort 内の未削除投稿数
  * @param reviewsCount       それらに付いた未削除レビュー数

@@ -1,6 +1,6 @@
 -- review-board Phase 1 初期スキーマ（ER図.md 準拠）
 -- スキーマの正は Flyway。Hibernate には作らせない（application.yml ddl-auto: none）。
--- S軸：cohort 境界・所有者検証・論理削除・非正規化カウンタ・監査ログ。
+-- セキュリティ：cohort 境界・所有者検証・論理削除・非正規化カウンタ・監査ログ。
 
 -- ============================================================
 -- cohorts：全認可境界の根（ER図 §1）
@@ -31,7 +31,7 @@ CREATE TABLE users (
 CREATE INDEX idx_users_cohort ON users (cohort_id);
 
 -- ============================================================
--- refresh_tokens：JWT refresh の DB rotation（母 SEC-7）
+-- refresh_tokens：JWT refresh の DB rotation（共通設計方針）
 -- ============================================================
 CREATE TABLE refresh_tokens (
     id         BIGSERIAL PRIMARY KEY,
@@ -61,7 +61,7 @@ CREATE TABLE posts (
     created_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
     updated_at     TIMESTAMPTZ  NOT NULL DEFAULT now()
 );
--- 一覧（F-POST-03）：cohort 境界 + カーソル pagination（母 P-2）
+-- 一覧（F-POST-03）：cohort 境界 + カーソル pagination（共通設計方針）
 CREATE INDEX idx_posts_cohort_created ON posts (cohort_id, created_at DESC, id DESC);
 CREATE INDEX idx_posts_author ON posts (author_user_id);
 
@@ -109,7 +109,7 @@ CREATE INDEX idx_reviews_post ON reviews (post_id);
 CREATE INDEX idx_reviews_reviewer ON reviews (reviewer_user_id);
 
 -- ============================================================
--- review_axis_comments：品質4軸の観点別コメント（任意・1軸1行）
+-- review_axis_comments：評価観点の観点別コメント（任意・1軸1行）
 -- ============================================================
 CREATE TABLE review_axis_comments (
     id        BIGSERIAL PRIMARY KEY,
@@ -145,7 +145,7 @@ CREATE TABLE evaluations (
 CREATE INDEX idx_evaluations_post_latest ON evaluations (post_id, is_latest);
 
 -- ============================================================
--- audit_logs：★S軸 監査（誰が・いつ・誰の資源に・何を）
+-- audit_logs：★セキュリティ 監査（誰が・いつ・誰の資源に・何を）
 -- ============================================================
 CREATE TABLE audit_logs (
     id            BIGSERIAL PRIMARY KEY,

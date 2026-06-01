@@ -9,5 +9,5 @@ CREATE TABLE post_likes (
 );
 CREATE INDEX idx_post_likes_post ON post_likes (post_id);
 
--- 非正規化カウンタ（一覧・ランキングの軽量化。書き込みと同一Txで増減・母 S-3）。
+-- 非正規化カウンタ（一覧・ランキングの軽量化。書き込みと同一Txで増減・共通設計方針）。
 ALTER TABLE posts ADD COLUMN like_count INTEGER NOT NULL DEFAULT 0;

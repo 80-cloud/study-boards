@@ -21,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.OffsetDateTime;
 
 /**
- * 投稿のユースケース（F-POST）。★S軸の中核：cohort 境界と所有者を必ずバックエンドで検証する。
+ * 投稿のユースケース（F-POST）。★セキュリティの中核：cohort 境界と所有者を必ずバックエンドで検証する。
  *
  * <p>取得・一覧は principal.cohortId で絞り、編集・削除は所有者（authorUserId == userId）に限定する。
  * 境界外・他人・削除済みは存在を漏らさず {@link ResourceNotFoundException}（404）に倒す（IDOR 遮断）。
@@ -90,7 +90,7 @@ public class PostService {
 
     /**
      * F-POST-03 一覧 ＋ F-SEARCH-01 検索 ＋ F-FILTER-01 絞り込み/並び替え。
-     * 自 cohort・未削除のみ（IDOR 遮断は Repository クエリで常時担保）。ページネーション（母 P-2）。
+     * 自 cohort・未削除のみ（IDOR 遮断は Repository クエリで常時担保）。ページネーション（共通設計方針）。
      *
      * @param q             キーワード（タイトル/説明の部分一致。空/ null は無視）
      * @param aspects       キーワードから解決した観点（タグ一致でヒット。null/空は無視）
@@ -158,7 +158,7 @@ public class PostService {
         return post;
     }
 
-    /** F-POST-02 論理削除（母 S-4）。所有者のみ（不一致は 404）。 */
+    /** F-POST-02 論理削除（共通設計方針）。所有者のみ（不一致は 404）。 */
     @Transactional
     public void delete(AuthPrincipal principal, Long postId) {
         Post post = loadOwned(principal, postId);
@@ -192,7 +192,7 @@ public class PostService {
     /**
      * F-SAFE-01 / F-REQ-01：投稿者のレビュー希望（トーン・募集観点）を反映する。
      * tone は null で未設定に戻る。aspects は送られた集合で全置換（null は空集合扱い）。
-     * 設定主体は所有者に限る（呼び出し元の create/loadOwned で担保。★S軸）。
+     * 設定主体は所有者に限る（呼び出し元の create/loadOwned で担保。★セキュリティ）。
      */
     private void applyReviewPreferences(Post post, Set<ReviewTone> tones, Set<ReviewAspect> aspects, AiUsage aiUsage) {
         post.setAiUsage(aiUsage);
@@ -208,7 +208,7 @@ public class PostService {
 
     /**
      * 自 cohort・未削除の投稿を取得し、所有者でなければ 404。
-     * 「他人のもの」を 403 ではなく 404 にするのは存在を漏らさないため（★S軸・IDOR）。
+     * 「他人のもの」を 403 ではなく 404 にするのは存在を漏らさないため（★セキュリティ・IDOR）。
      */
     private Post loadOwned(AuthPrincipal principal, Long postId) {
         Post post = postRepository.findByIdAndCohortIdAndDeletedAtIsNull(postId, principal.cohortId())
