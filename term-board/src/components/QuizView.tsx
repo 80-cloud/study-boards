@@ -111,44 +111,48 @@ export function QuizView({ question, selected, isCorrect, onAnswer, onNext }: Pr
           PC は回答前から枠を確保（レイアウトが飛ばない）＋スクロール追従。 */}
       <div className={`${answered ? "" : "hidden lg:block"} lg:sticky lg:top-4`}>
         {answered ? (
-          <div className="hig-card p-6">
-            <p
-              className={`text-lg font-bold ${
-                isCorrect ? "text-emerald-700 dark:text-emerald-400" : "text-rose-700 dark:text-rose-400"
-              }`}
-            >
-              {isCorrect ? "◯ 正解！" : "✕ 不正解"}
-            </p>
-            {question.term.plainMeaning && (
-              <div className="mt-3 rounded-xl bg-sky-50 p-3 ring-1 ring-sky-100 dark:bg-sky-950 dark:ring-sky-900">
-                <p className="text-sm leading-relaxed text-label">
-                  <span className="font-semibold text-accent">かんたんに言うと：</span>
-                  {question.term.plainMeaning}
-                </p>
-              </div>
-            )}
-            <p className="mt-2 text-sm leading-relaxed text-label-2">
-              <span className="font-semibold text-label">正しい意味：</span>
-              {question.answer}
-            </p>
-            <p className="mt-2 text-sm leading-relaxed text-label-2">
-              <span className="font-semibold text-label">面接での言い方：</span>
-              {question.term.interview}
-            </p>
-            {question.term.scene && (
-              <p className="mt-2 text-sm leading-relaxed text-label-2">
-                <span className="font-semibold text-label">現場では：</span>
-                {question.term.scene}
+          // PC では右カラムをビューポート高さに収め、解説＋深掘りだけ内部スクロール、
+          // 「次の問題」は常に下部に見える状態にする（深掘りを開いてもページが伸びない）。
+          <div className="hig-card flex flex-col p-6 lg:max-h-[calc(100vh-2rem)]">
+            <div className="min-h-0 lg:overflow-y-auto">
+              <p
+                className={`text-lg font-bold ${
+                  isCorrect ? "text-emerald-700 dark:text-emerald-400" : "text-rose-700 dark:text-rose-400"
+                }`}
+              >
+                {isCorrect ? "◯ 正解！" : "✕ 不正解"}
               </p>
-            )}
-            {question.term.followUps && question.term.followUps.length > 0 && (
-              <FollowUpChain key={question.term.id} items={question.term.followUps} />
-            )}
+              {question.term.plainMeaning && (
+                <div className="mt-3 rounded-xl bg-sky-50 p-3 ring-1 ring-sky-100 dark:bg-sky-950 dark:ring-sky-900">
+                  <p className="text-sm leading-relaxed text-label">
+                    <span className="font-semibold text-accent">かんたんに言うと：</span>
+                    {question.term.plainMeaning}
+                  </p>
+                </div>
+              )}
+              <p className="mt-2 text-sm leading-relaxed text-label-2">
+                <span className="font-semibold text-label">正しい意味：</span>
+                {question.answer}
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-label-2">
+                <span className="font-semibold text-label">面接での言い方：</span>
+                {question.term.interview}
+              </p>
+              {question.term.scene && (
+                <p className="mt-2 text-sm leading-relaxed text-label-2">
+                  <span className="font-semibold text-label">現場では：</span>
+                  {question.term.scene}
+                </p>
+              )}
+              {question.term.followUps && question.term.followUps.length > 0 && (
+                <FollowUpChain key={question.term.id} items={question.term.followUps} />
+              )}
+            </div>
             <button
               type="button"
               onClick={onNext}
               autoFocus
-              className="hig-btn-primary mt-4 px-5 py-2.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              className="hig-btn-primary mt-4 shrink-0 px-5 py-2.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
               次の問題 →
             </button>
