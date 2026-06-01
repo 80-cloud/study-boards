@@ -23,6 +23,7 @@ import { DashboardView } from "./components/DashboardView";
 import { PrepView } from "./components/PrepView";
 import { LearnView } from "./components/LearnView";
 import { HomeView } from "./components/HomeView";
+import { StudyProgressPanel } from "./components/SidePanels";
 
 // 全ビューの列挙（useViewHistory に渡してURLハッシュで履歴同期する・#387）。
 const VIEWS = [
@@ -108,6 +109,8 @@ export default function App() {
   // 現在のビューが属するグループ（home のときは未選択）。
   const activeGroup = NAV_GROUPS.find((g) => g.views.some((v) => v.view === view));
 
+  const sidebar = nav.layout === "sidebar";
+
   // ビュー本体（レイアウトに依存しないので切り出して両レイアウトで共有する）。
   const viewContent = (
     <>
@@ -155,6 +158,11 @@ export default function App() {
             <LevelSelector value={levelState.level} onChange={levelState.setLevel} />
           </div>
           <CardView level={levelState.level} />
+          {/* #519: 暗記カードの学習サポート（進捗・苦手）はカードの「下」に配置。
+              横サイドパネル案は読みづらく却下されたため下配置に変更（モバイル体験は変えず PC 限定）。 */}
+          <div className="mt-6 hidden lg:block">
+            <StudyProgressPanel layout="row" />
+          </div>
         </>
       )}
       {view === "dictionary" && (
@@ -178,7 +186,6 @@ export default function App() {
     </>
   );
 
-  const sidebar = nav.layout === "sidebar";
   // ホームのみ PC で広いコンテンツ幅にして、4列カンバンの横レイアウトを活かす。
   // 他ビュー（辞典・面接練習など）は本文の可読幅を優先して従来の max-w-2xl を維持。
   const wideHome = view === "home";
