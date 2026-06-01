@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 運用管理 API（★S軸・ADMIN 限定）。cohort 作成とアカウント発行。
+ * 運用管理 API（★セキュリティ・ADMIN 限定）。cohort 作成とアカウント発行。
  *
  * <p>クラス全体を {@code @PreAuthorize("hasRole('ADMIN')")} で保護し、受講生/講師の呼び出しを
  * 403 で弾く（権限昇格防止・F-EVAL-01 と同方針）。公開サインアップは設けず、アカウントは

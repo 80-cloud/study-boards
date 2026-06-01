@@ -79,7 +79,7 @@ export default function PostsPage() {
   const pickCategory = (kw) => { setQ(kw); setApplied((p) => ({ ...p, q: kw })); scrollToWorks(); };
 
   // #210：統計タイルをクリックで各一覧の専用ページへ遷移（3 つとも同じ作り）。
-  // 成果物→/works、合格バッジ→/works?approved=1、レビュー→/reviews（いずれも自 cohort・S軸は backend が担保）。
+  // 成果物→/works、合格バッジ→/works?approved=1、レビュー→/reviews（いずれも自 cohort・セキュリティは backend が担保）。
   const tiles = [
     [stats?.postsCount ?? '—', '成果物', 'みんなの成果物一覧へ', () => navigate('/works')],
     [stats?.reviewsCount ?? '—', 'レビュー', 'みんなのレビュー一覧へ', () => navigate('/reviews')],

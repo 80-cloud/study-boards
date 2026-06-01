@@ -14,7 +14,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
- * 招待コード管理 API（★S軸・講師/管理者のみ・Issue #165）。
+ * 招待コード管理 API（★セキュリティ・講師/管理者のみ・Issue #165）。
  * クラス全体を {@code hasAnyRole('TEACHER','ADMIN')} で保護し、受講生は 403。
  * 対象は常に呼び出し元の cohort（cohort 境界は Service 側で担保）。
  */

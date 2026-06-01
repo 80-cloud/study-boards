@@ -25,7 +25,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * B-4 パスワードリセット（#231）。S軸の拒否系（列挙防止・1度きり・期限切れ）を担保する。
+ * B-4 パスワードリセット（#231）。セキュリティの拒否系（列挙防止・1度きり・期限切れ）を担保する。
  *
  * <p>生トークンはメールにのみ載るため、{@link MockitoSpyBean} で {@link MailService} を覗き、
  * 送信本文のリンクから raw token を取り出して confirm を検証する。

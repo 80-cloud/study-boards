@@ -11,7 +11,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
- * 監査ログの記録と閲覧（★S軸・要件 §4-1）。
+ * 監査ログの記録と閲覧（★セキュリティ・要件 §4-1）。
  *
  * <p>記録は呼び出し元の {@code @Transactional} に参加する（{@code MANDATORY}）。これにより
  * 「操作がコミットされたときだけ監査行も残る」を保証し、ログだけ残る/操作だけ残るを防ぐ。

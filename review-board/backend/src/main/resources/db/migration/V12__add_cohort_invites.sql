@@ -1,7 +1,7 @@
 -- F-AUTH-02 招待フロー（Issue #165）。講師/管理者が cohort 単位で招待コードを発行し、
 -- 受講生が自分で登録できるようにする（管理者が 1 人ずつ手動発行する運用の入口を開く）。
 --
--- セキュリティ（S軸）：
+-- セキュリティ（セキュリティ）：
 --  - 生コードは発行時に 1 度だけ返し、DB には SHA-256 hex（CHAR 64）で保存（URL/ログ漏洩耐性・refresh token と同方針）。
 --  - 検証は raw 比較ではなく code_hash の UNIQUE lookup で行う（timing 比較なし）。
 --  - cohort_id は cohort 削除時 CASCADE。created_by は発行者退会時 SET NULL（未使用招待は失効させない）。

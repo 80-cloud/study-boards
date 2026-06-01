@@ -17,7 +17,7 @@ import java.util.List;
 
 /**
  * レビュー API（F-REV）。すべて認証必須。cohort 境界・自己レビュー禁止・所有者・ありがとう権限の
- * 判定は {@link ReviewService} に集約する（★S軸・認可の一元化）。
+ * 判定は {@link ReviewService} に集約する（★セキュリティ・認可の一元化）。
  */
 @RestController
 public class ReviewController {
@@ -38,7 +38,7 @@ public class ReviewController {
     }
 
     /**
-     * cohort 全体のレビュー一覧（#210）。★S軸：自 cohort の投稿に付いたレビューのみ（越境しない）。
+     * cohort 全体のレビュー一覧（#210）。★セキュリティ：自 cohort の投稿に付いたレビューのみ（越境しない）。
      * トップ統計「レビュー」タイルからの導線。投稿タイトル付きで新着順に返す。
      */
     @GetMapping("/api/reviews")

@@ -58,7 +58,7 @@ management:
       percentiles-histogram:
         http.server.requests: true
 
-# ログ：1リクエストを横断追跡できるよう MDC の requestId/userId を出力する（母 §3-1）。
+# ログ：1リクエストを横断追跡できるよう MDC の requestId/userId を出力する（共通設計方針）。
 # dev は読みやすいプレーンログ＋[requestId,userId]。prod は下の prod プロファイルで JSON 化。
 logging:
   pattern:

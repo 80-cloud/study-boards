@@ -1,4 +1,4 @@
-name: review-board Secret Scan (gitleaks / S軸)
+name: review-board Secret Scan (gitleaks / セキュリティ)
 
 # ============================================================
 # 機密情報の server-side スキャン（最後の防衛線）。
@@ -6,7 +6,7 @@ name: review-board Secret Scan (gitleaks / S軸)
 # 目的: ローカル pre-commit hook では防げないバイパス経路
 #       （GitHub Web 編集 / `git commit --no-verify`）を塞ぐ。
 # 背景: task-board で起きた application.yml への平文パスワード Public
-#       コミット事故（不可逆事故）と同型の再発を防ぐ。S軸（セキュリティ）の核。
+#       コミット事故（不可逆事故）と同型の再発を防ぐ。セキュリティ（セキュリティ）の核。
 #
 # 方式: バージョン固定の gitleaks バイナリで review-board ツリーを走査。
 #       設定はリポジトリルートの .gitleaks.toml（デフォルトルール ＋

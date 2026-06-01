@@ -29,7 +29,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * レビューのユースケース（F-REV）。★S軸：cohort 境界・自己レビュー禁止・所有者・ありがとう権限を
+ * レビューのユースケース（F-REV）。★セキュリティ：cohort 境界・自己レビュー禁止・所有者・ありがとう権限を
  * すべてバックエンドで検証する。可視性外は存在を漏らさず 404（IDOR 遮断）。
  */
 @Service
@@ -85,7 +85,7 @@ public class ReviewService {
 
         List<ReviewAxisComment> axisComments = saveAxisComments(review.getId(), req.axisComments());
 
-        // 非正規化カウンタ更新（母 S-3。ズレは将来の定期再計算で補正）
+        // 非正規化カウンタ更新（共通設計方針。ズレは将来の定期再計算で補正）
         post.setReviewCount(post.getReviewCount() + 1);
         adjustCount(principal.userId(), 0, +1);            // reviewer の「したレビュー」
         adjustCount(post.getAuthorUserId(), +1, 0);        // author の「もらったレビュー」
@@ -112,7 +112,7 @@ public class ReviewService {
         if (reviews.isEmpty()) {
             return List.of();
         }
-        // N+1 回避：axis コメントと reviewer をまとめて引く（母 P-3）
+        // N+1 回避：axis コメントと reviewer をまとめて引く（共通設計方針）
         List<Long> reviewIds = reviews.stream().map(Review::getId).toList();
         Map<Long, List<ReviewAxisComment>> axisByReview = axisCommentRepository.findByReviewIdIn(reviewIds)
                 .stream().collect(Collectors.groupingBy(ReviewAxisComment::getReviewId));
@@ -131,8 +131,8 @@ public class ReviewService {
     }
 
     /**
-     * cohort 全体のレビュー一覧（#210）。★S軸：母集合は自 cohort の未削除投稿に付いたレビューに限定
-     * （越境しない）。投稿タイトル・reviewer をまとめ引きして新着順で返す（N+1回避・母 P-3）。
+     * cohort 全体のレビュー一覧（#210）。★セキュリティ：母集合は自 cohort の未削除投稿に付いたレビューに限定
+     * （越境しない）。投稿タイトル・reviewer をまとめ引きして新着順で返す（N+1回避・共通設計方針）。
      */
     @Transactional(readOnly = true)
     public List<CohortReviewResponse> listForCohort(AuthPrincipal principal) {
@@ -296,7 +296,7 @@ public class ReviewService {
         reply.setCreatedAt(now);
         replyRepository.save(reply);
 
-        review.setRepliesCount(review.getRepliesCount() + 1); // 非正規化（母 S-3）
+        review.setRepliesCount(review.getRepliesCount() + 1); // 非正規化（共通設計方針）
 
         // レビュアー本人へ「返信が付いた」通知（自己返信は notify がスキップ）
         notificationService.notify(review.getReviewerUserId(), principal.userId(),

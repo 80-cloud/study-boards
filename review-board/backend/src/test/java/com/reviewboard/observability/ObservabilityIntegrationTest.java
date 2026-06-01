@@ -14,7 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 観測性（母 §3-1）の検証。
+ * 観測性（共通設計方針）の検証。
  *
  * <ul>
  *   <li>運用メトリクス（metrics/prometheus）の公開範囲が運用ロール（講師）限定であること

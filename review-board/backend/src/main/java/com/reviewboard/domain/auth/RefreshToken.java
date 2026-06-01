@@ -8,7 +8,7 @@ import lombok.Setter;
 import java.time.OffsetDateTime;
 
 /**
- * JWT リフレッシュトークンの DB rotation（母 SEC-7）。
+ * JWT リフレッシュトークンの DB rotation（共通設計方針）。
  * 平文は保存せず SHA-256 ハッシュを保持。refresh ごとに使い捨て rotation（revoked_at で失効）。
  */
 @Entity

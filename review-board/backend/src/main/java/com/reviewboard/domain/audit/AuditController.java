@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 監査ログ閲覧 API（★S軸）。監査情報は機微なため講師ロール限定・自 cohort のみ。
+ * 監査ログ閲覧 API（★セキュリティ）。監査情報は機微なため講師ロール限定・自 cohort のみ。
  */
 @RestController
 @RequestMapping("/api/audit-logs")

@@ -14,7 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * F-NOTIF-01 通知の生成・取得・既読化・認可テスト（S軸標準：受信者本人のみ＋拒否系）。
+ * F-NOTIF-01 通知の生成・取得・既読化・認可テスト（セキュリティ標準：受信者本人のみ＋拒否系）。
  */
 class NotificationIntegrationTest extends AbstractIntegrationTest {
 

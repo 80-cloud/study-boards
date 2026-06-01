@@ -8,7 +8,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * review-board バックエンドのエントリポイント。
- * 成長支援型レビューコミュニティ（クローズド・cohort 境界・S軸＝認可）。
+ * 成長支援型レビューコミュニティ（クローズド・cohort 境界・セキュリティ＝認可）。
  */
 @SpringBootApplication
 @ConfigurationPropertiesScan

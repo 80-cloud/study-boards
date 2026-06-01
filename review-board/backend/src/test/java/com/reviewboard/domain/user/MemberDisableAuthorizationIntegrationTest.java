@@ -13,7 +13,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * #229 メンバー無効化（kick）の認可テスト（★S軸）。
+ * #229 メンバー無効化（kick）の認可テスト（★セキュリティ）。
  * cohort 境界・対象ロール・自己操作・無効化後のログイン遮断を網羅する。
  */
 class MemberDisableAuthorizationIntegrationTest extends AbstractIntegrationTest {

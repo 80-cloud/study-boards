@@ -1,11 +1,11 @@
 # =====================================================================
 # rds.tf — RDS PostgreSQL（private・最小露出・★多層の削除保護）
 # =====================================================================
-# review-board は S軸が突出点。DB は最重要資産のため task-board より強く守る：
+# review-board は セキュリティが突出点。DB は最重要資産のため task-board より強く守る：
 #   - deletion_protection = true（AWS 側の削除保護）
 #   - lifecycle.prevent_destroy = true（Terraform 側の削除保護）
 #   - skip_final_snapshot = false（破棄時に最終スナップショットを必ず取得）
-# 母要件定義書 §13-1「Terraform で本番DB(バックアップ含む)を全削除」事故の予防（多層防御 階層2）。
+# 共通設計方針 §13-1「Terraform で本番DB(バックアップ含む)を全削除」事故の予防（多層防御 階層2）。
 # =====================================================================
 
 resource "aws_db_subnet_group" "main" {

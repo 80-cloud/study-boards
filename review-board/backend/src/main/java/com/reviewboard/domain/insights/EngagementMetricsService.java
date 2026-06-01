@@ -31,7 +31,7 @@ import java.util.Map;
 
 /**
  * エンゲージメント指標の算出（#273・compute-on-read）。
- * すべて principal.cohortId に閉じる（S軸）。新規テーブル/バッチは持たず、既存テーブルの集計で都度算出する。
+ * すべて principal.cohortId に閉じる（セキュリティ）。新規テーブル/バッチは持たず、既存テーブルの集計で都度算出する。
  */
 @Service
 public class EngagementMetricsService {

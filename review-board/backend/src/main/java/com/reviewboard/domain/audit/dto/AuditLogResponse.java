@@ -7,7 +7,7 @@ import com.reviewboard.domain.audit.AuditTargetType;
 import java.time.OffsetDateTime;
 
 /**
- * 監査ログの閲覧レスポンス（★S軸）。誰が(actorUserId)・いつ(createdAt)・
+ * 監査ログの閲覧レスポンス（★セキュリティ）。誰が(actorUserId)・いつ(createdAt)・
  * 誰の資源に(targetType/targetId)・何を(action)。
  */
 public record AuditLogResponse(

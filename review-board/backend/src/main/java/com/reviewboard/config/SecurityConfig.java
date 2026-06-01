@@ -19,7 +19,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 
 /**
- * ★S軸の中核。RBAC + ステートレス認可。
+ * ★セキュリティの中核。RBAC + ステートレス認可。
  *
  * <ul>
  *   <li>セッションは持たない（STATELESS）。認証は JWT in HttpOnly Cookie（{@link JwtAuthenticationFilter}）。</li>

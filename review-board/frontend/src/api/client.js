@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-// 認証は HttpOnly Cookie（母 SEC-7）。トークンを JS で保持しないため withCredentials のみで成立。
+// 認証は HttpOnly Cookie（共通設計方針）。トークンを JS で保持しないため withCredentials のみで成立。
 const client = axios.create({
   baseURL: '/api',
   withCredentials: true,

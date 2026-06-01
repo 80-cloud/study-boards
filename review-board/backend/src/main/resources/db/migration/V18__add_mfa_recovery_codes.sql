@@ -1,6 +1,6 @@
 -- MFA リカバリコード（Issue #241）。端末/認証アプリ紛失時の自己復旧手段。
 --
--- セキュリティ（S軸）：
+-- セキュリティ（セキュリティ）：
 --  - 生コードは MFA 有効化応答で1度だけ返し、DB には SHA-256 hex（CHAR 64）で保存
 --    （refresh / invite / password-reset と同方針。漏洩耐性・timing 比較なしの UNIQUE lookup）。
 --  - 1 度きりの使い捨て：消費時に used_at を立て、再利用は拒否（401）。

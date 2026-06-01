@@ -10,7 +10,7 @@ import java.util.List;
 
 /**
  * メンバー管理 API（#229・kick）。講師・管理者のみ（クラス全体を {@code hasAnyRole}）。
- * cohort 境界・対象ロールの検証は {@link UserAdminService} に集約する（★S軸）。
+ * cohort 境界・対象ロールの検証は {@link UserAdminService} に集約する（★セキュリティ）。
  */
 @RestController
 @RequestMapping("/api/members")

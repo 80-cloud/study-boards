@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 
 /**
  * 投稿 API（F-POST）。すべて認証必須（SecurityConfig の anyRequest().authenticated()）。
- * cohort 境界・所有者の判定は {@link PostService} に集約する（★S軸・認可の一元化）。
+ * cohort 境界・所有者の判定は {@link PostService} に集約する（★セキュリティ・認可の一元化）。
  */
 @RestController
 @RequestMapping("/api/posts")

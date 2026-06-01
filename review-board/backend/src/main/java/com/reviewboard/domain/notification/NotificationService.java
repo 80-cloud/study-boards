@@ -17,7 +17,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * F-NOTIF-01 通知のユースケース。★S軸：閲覧・既読化は受信者本人のものに限る（他人の通知は 404）。
+ * F-NOTIF-01 通知のユースケース。★セキュリティ：閲覧・既読化は受信者本人のものに限る（他人の通知は 404）。
  *
  * <p>生成（{@link #notify}）はレビュー作成・ありがとう等のドメイン処理から同一 TX で呼ばれる。
  * 自分が自分に通知することはしない（recipient == actor はスキップ）。

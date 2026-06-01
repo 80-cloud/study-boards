@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.OffsetDateTime;
 
 /**
- * 講師の最終評価のユースケース（F-EVAL-01・★S軸の重点）。
+ * 講師の最終評価のユースケース（F-EVAL-01・★セキュリティの重点）。
  *
  * <p>ロール制御（講師限定）は Controller の {@code @PreAuthorize} で担保する。本サービスは
  * cohort 境界（他 cohort の投稿は 404）と「最新1件＋履歴」の整合を担う。
@@ -38,7 +38,7 @@ public class EvaluationService {
     }
 
     /**
-     * F-EVAL-01 評価を付ける。旧 latest を倒し、新規を is_latest=true で積む（履歴保持・母 S-4）。
+     * F-EVAL-01 評価を付ける。旧 latest を倒し、新規を is_latest=true で積む（履歴保持・共通設計方針）。
      * 投稿は評価者（講師）の cohort 内のものに限る（他 cohort は 404）。
      */
     @Transactional

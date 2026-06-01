@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
  * post.auto_screenshot_key へ反映する。★best-effort（失敗は握りつぶし投稿処理に影響させない）。
  *
  * <p>フラグ {@code app.thumbnail.auto-capture-enabled} が false（本番既定）なら何もしない。
- * SSRF は {@link UrlSafetyValidator} で撮影前に遮断する（S軸）。
+ * SSRF は {@link UrlSafetyValidator} で撮影前に遮断する（セキュリティ）。
  */
 @Service
 public class ThumbnailCaptureService {

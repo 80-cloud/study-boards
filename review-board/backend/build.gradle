@@ -8,7 +8,7 @@ plugins {
 group = 'com.reviewboard'
 version = '0.0.1-SNAPSHOT'
 
-// ★S軸：依存脆弱性スキャン(CI/Trivy)で検出された High/Critical を 0 件に保つための
+// ★セキュリティ：依存脆弱性スキャン(CI/Trivy)で検出された High/Critical を 0 件に保つための
 // バージョン上書き。Spring Boot 3.5.14 で大半が解消するが、BOM 管理版より新しい
 // 修正版が必要なものは spring-boot-dependencies の version property を上書きする。
 // 各値は Trivy が示した fixed version に対応（更新時は CI の検出結果で再確認すること）。
@@ -36,10 +36,10 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	// メール通知（#175・過疎化対策）。SMTP は env 駆動・app.mail.enabled で有効化（既定 false）。
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
-	// 4 ゴールデンシグナルの収集（母 §3-1）。http.server.requests（Latency/Traffic/Errors）と
+	// 4 ゴールデンシグナルの収集（共通設計方針）。http.server.requests（Latency/Traffic/Errors）と
 	// Hikari/JVM（Saturation）を Micrometer が Actuator 経由で /actuator/prometheus に公開する。
 	runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
-	// ★S軸の中核：RBAC + 認可（SecurityConfig）
+	// ★セキュリティの中核：RBAC + 認可（SecurityConfig）
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	// JWT (HS256, HttpOnly Cookie 認証。技術スタック.md §2-4)
 	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
@@ -93,7 +93,7 @@ tasks.named('test') {
 	finalizedBy jacocoTestReport
 }
 
-// JaCoCo カバレッジ。レポート生成＋回帰床ゲート（母 M-9・#251）。
+// JaCoCo カバレッジ。レポート生成＋回帰床ゲート（共通設計方針・#251）。
 jacocoTestReport {
 	dependsOn test
 	reports {
