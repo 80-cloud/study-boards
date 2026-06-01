@@ -11,7 +11,7 @@ import { repository } from "../api";
 function calcStreak(days: string[]): number {
   const set = new Set(days);
   const fmt = (d: Date) => d.toLocaleDateString("sv-SE");
-  let cursor = new Date();
+  const cursor = new Date();
   if (!set.has(fmt(cursor))) {
     cursor.setDate(cursor.getDate() - 1);
     if (!set.has(fmt(cursor))) return 0;
