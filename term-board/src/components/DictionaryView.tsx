@@ -137,11 +137,13 @@ export function DictionaryView({ bookmarks, level }: Props) {
         )}
       </div>
 
-      <ul className="flex flex-col gap-2">
+      {/* PC（md〜）は2カラムにして縦スクロールを約半分に。展開時の高さ差で
+          隣のカードが伸びないよう items-start（自然な高さ）にする。 */}
+      <ul className="grid grid-cols-1 gap-2 md:grid-cols-2 md:items-start">
         {filtered.map((t) => {
           const open = isOpen(t.id);
           return (
-            <li key={t.id} className="hig-card">
+            <li key={t.id} className="hig-card self-start">
               <div className="flex items-center gap-2 p-3">
                 <button
                   type="button"
