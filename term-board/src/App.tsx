@@ -195,6 +195,7 @@ export default function App() {
     : view === "quiz" ? "max-w-5xl"
     : view === "card" ? "max-w-4xl"
     : view === "dictionary" ? "max-w-5xl"
+    : view === "interview" ? "max-w-5xl"
     : "max-w-2xl";
   // ヘッダーはビュー切替で幅が動くと違和感が出るため、常に広い幅で固定。
   const headerWidth = sidebar ? "max-w-5xl" : "max-w-6xl";
