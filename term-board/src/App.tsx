@@ -130,7 +130,7 @@ export default function App() {
               <div className="mb-3">
                 <LevelSelector value={levelState.level} onChange={levelState.setLevel} />
               </div>
-              <div className="hig-card mb-5 flex items-center justify-between px-4 py-3 text-sm">
+              <div className="hig-card mb-5 flex items-center justify-between gap-4 px-4 py-3 text-sm lg:justify-center lg:gap-12">
                 <span className="text-label-2">解答数 <span className="font-bold text-label">{quiz.answeredCount}</span></span>
                 <span className="text-label-2">正答 <span className="font-bold text-emerald-700 dark:text-emerald-400">{quiz.correctCount}</span></span>
                 <span className="text-label-2">正答率 <span className="font-bold text-accent">{rate}%</span></span>
@@ -186,10 +186,10 @@ export default function App() {
     </>
   );
 
-  // ホームのみ PC で広いコンテンツ幅にして、4列カンバンの横レイアウトを活かす。
+  // PC で横幅を活かすビュー：ホーム（4列カンバン）と4択クイズ（質問＝左／解説＝右の2カラム）。
   // 他ビュー（辞典・面接練習など）は本文の可読幅を優先して従来の max-w-2xl を維持。
-  const wideHome = view === "home";
-  const mainWidth = wideHome ? "max-w-6xl" : "max-w-2xl";
+  const wideView = view === "home" || view === "quiz";
+  const mainWidth = view === "home" ? "max-w-6xl" : wideView ? "max-w-5xl" : "max-w-2xl";
   // ヘッダーはビュー切替で幅が動くと違和感が出るため、常に広い幅で固定。
   const headerWidth = sidebar ? "max-w-5xl" : "max-w-6xl";
 
