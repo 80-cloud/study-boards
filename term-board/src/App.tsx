@@ -159,8 +159,9 @@ export default function App() {
           </div>
           <CardView level={levelState.level} />
           {/* #519: 暗記カードの学習サポート（進捗・苦手）はカードの「下」に配置。
-              横サイドパネル案は読みづらく却下されたため下配置に変更（モバイル体験は変えず PC 限定）。 */}
-          <div className="mt-6 hidden lg:block">
+              横サイドパネル案は読みづらく却下されたため下配置に。
+              モバイルでも表示（縦積み）／PC は3枚を横並び。 */}
+          <div className="mt-6">
             <StudyProgressPanel layout="row" />
           </div>
         </>
@@ -186,10 +187,14 @@ export default function App() {
     </>
   );
 
-  // PC で横幅を活かすビュー：ホーム（4列カンバン）と4択クイズ（質問＝左／解説＝右の2カラム）。
+  // PC で横幅を活かすビュー：ホーム（4列カンバン）・4択クイズ（質問＝左／解説＝右の2カラム）・
+  // 暗記カード（余白を抑えてカードを大きく見せる）。
   // 他ビュー（辞典・面接練習など）は本文の可読幅を優先して従来の max-w-2xl を維持。
-  const wideView = view === "home" || view === "quiz";
-  const mainWidth = view === "home" ? "max-w-6xl" : wideView ? "max-w-5xl" : "max-w-2xl";
+  const mainWidth =
+    view === "home" ? "max-w-6xl"
+    : view === "quiz" ? "max-w-5xl"
+    : view === "card" ? "max-w-4xl"
+    : "max-w-2xl";
   // ヘッダーはビュー切替で幅が動くと違和感が出るため、常に広い幅で固定。
   const headerWidth = sidebar ? "max-w-5xl" : "max-w-6xl";
 

@@ -165,11 +165,13 @@ export function CardView({ level }: Props) {
           </p>
 
           {/* カード本体（クリックで裏返す） */}
+          {/* PC では横幅（max-w-4xl）と表面の文字を拡大して余白を活かす。
+              高さは控えめ（lg:min-h-72）にして、下の学習サポートまでスクロールせず収まるようにする。 */}
           <button
             type="button"
             onClick={() => setFlipped((f) => !f)}
             aria-pressed={flipped}
-            className="hig-card min-h-56 w-full p-6 text-left transition hover:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="hig-card flex min-h-56 w-full flex-col p-6 text-left transition hover:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent lg:min-h-72 lg:p-8"
           >
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-accent">{current.category}</span>
@@ -178,26 +180,27 @@ export function CardView({ level }: Props) {
               )}
             </div>
             {!flipped ? (
-              <div className="mt-6 flex flex-col items-center justify-center gap-2 text-center">
-                <p className="text-3xl font-bold text-label">{current.term}</p>
-                <p className="text-xs text-label-2">タップで意味を見る</p>
+              // flex-1 で縦方向に中央寄せし、大きくなったカードの中心に用語を据える。
+              <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
+                <p className="text-3xl font-bold text-label lg:text-5xl">{current.term}</p>
+                <p className="text-xs text-label-2 lg:text-sm">タップで意味を見る</p>
               </div>
             ) : (
-              <div className="mt-3 flex flex-col gap-2">
-                <p className="text-lg font-bold text-label">{current.term}</p>
+              <div className="mt-4 flex flex-col gap-2 lg:mt-6 lg:gap-3">
+                <p className="text-lg font-bold text-label lg:text-2xl">{current.term}</p>
                 {current.plainMeaning && (
-                  <p className="text-sm leading-relaxed text-label">
+                  <p className="text-sm leading-relaxed text-label lg:text-base">
                     <span className="font-semibold text-accent">かんたんに：</span>
                     {current.plainMeaning}
                   </p>
                 )}
-                <p className="text-sm leading-relaxed text-label-2">
+                <p className="text-sm leading-relaxed text-label-2 lg:text-base">
                   <span className="font-semibold text-label">意味：</span>
                   {current.meaning}
                 </p>
                 {/* Flashcard は interview を持たない（空文字）ため、ある時だけ表示。 */}
                 {current.interview && (
-                  <p className="text-sm leading-relaxed text-label-2">
+                  <p className="text-sm leading-relaxed text-label-2 lg:text-base">
                     <span className="font-semibold text-label">面接での言い方：</span>
                     {current.interview}
                   </p>
