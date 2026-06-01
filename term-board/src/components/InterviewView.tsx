@@ -3,6 +3,7 @@ import type { InterviewQuestion, LearningSession } from "../types";
 import { repository } from "../api";
 import { pickRandom } from "../utils/shuffle";
 import { newId } from "../utils/share";
+import { FollowUpChain } from "./FollowUpChain";
 import bundledQuestions from "../data/interviewQuestions.json";
 
 type Props = {
@@ -176,6 +177,10 @@ export function InterviewView({ userQuestions }: Props) {
               <span className="font-semibold text-label">メモ：</span>
               {current.memo}
             </p>
+          )}
+          {/* 深掘り「なぜ?」チェーン（4択クイズと同じ・面接官の追い質問）。 */}
+          {current.followUps && current.followUps.length > 0 && (
+            <FollowUpChain key={current.id} items={current.followUps} />
           )}
           <div className="mt-4 flex flex-col gap-2">
             <p className="text-sm font-medium text-label-2">
