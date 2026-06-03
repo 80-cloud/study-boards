@@ -8,7 +8,6 @@
 |---|---|---|---|
 | **[term-board](./term-board)** | IT 用語の学習＋面接対策アプリ | React 19 + TypeScript + Vite | [🌐 公開中](https://80-cloud.github.io/study-boards/term-board/) |
 | [task-board](./task-board) | タスク管理 Kanban アプリ | Spring Boot + React + PostgreSQL | — |
-| [review-board](./review-board) | レビュー型コミュニティ学習プロジェクト | Spring Boot + React + PostgreSQL | — |
 | [infra](./infra) | AWS デプロイ環境（task-board 用 IaC） | Terraform + AWS 無料枠 | — |
 
 各プロジェクトの詳細は、それぞれの README を参照してください。

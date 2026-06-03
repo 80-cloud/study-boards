@@ -1,7 +1,7 @@
 name: term-board E2E (Playwright)
 
 # term-board は「サーバー無しの静的SPA」。backend/DB/MinIO は不要で、
-# Playwright が Vite dev を起動して smoke + a11y を回すだけ（review-board-e2e を簡素化）。
+# Playwright が Vite dev を起動して smoke + a11y を回すだけ。
 # PR では chromium-desktop で smoke と a11y の両方を自動実行する。
 
 on:

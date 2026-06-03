@@ -1,47 +1,7 @@
 # Dependabot：依存の自動更新 PR（#253）。供給網の脆弱性を放置しないための定期更新。
-# monorepo のため review-board の各エコシステムをディレクトリ指定で個別に対象化する。
 # 更新はまとめて（grouped）週次で出し、PR 洪水を避ける。ラベルは chore。
 version: 2
 updates:
-  # backend（Gradle）
-  - package-ecosystem: gradle
-    directory: /review-board/backend
-    schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
-    labels:
-      - chore
-    groups:
-      backend-deps:
-        patterns:
-          - "*"
-
-  # frontend（npm）
-  - package-ecosystem: npm
-    directory: /review-board/frontend
-    schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
-    labels:
-      - chore
-    groups:
-      frontend-deps:
-        patterns:
-          - "*"
-
-  # e2e（Playwright・npm）
-  - package-ecosystem: npm
-    directory: /review-board/e2e
-    schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
-    labels:
-      - chore
-    groups:
-      e2e-deps:
-        patterns:
-          - "*"
-
   # GitHub Actions のワークフローで使う action のバージョン更新
   - package-ecosystem: github-actions
     directory: /

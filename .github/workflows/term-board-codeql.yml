@@ -4,8 +4,7 @@ name: term-board CodeQL (SAST)
 # CodeQL による静的アプリケーションセキュリティテスト（SAST）。
 # term-board は JavaScript/TypeScript のみ（Javaなし）なので 1 言語で解析する。
 # 公開リポジトリのため CodeQL は無料。paths は term-board に限定し、
-# monorepo の他アプリ（review-board / task-board 等）には走らせない。
-# review-board-codeql.yml を雛形に backend(Java) を削除したもの。
+# monorepo の他アプリには走らせない。
 # ============================================================
 
 on:

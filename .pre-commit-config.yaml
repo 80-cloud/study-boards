@@ -4,7 +4,7 @@
 # 目的: パスワード・API キー・トークン等の誤コミットを commit 時点で自動ブロック。
 # 経緯: task-board で application.yml に DB パスワードを平文ハードコードして Public
 #       リポジトリに push した不可逆事故が発生。再発防止の第一防衛線（最後の砦は
-#       .github/workflows/review-board-gitleaks.yml の server-side スキャン）。
+#       CI の gitleaks server-side スキャン）。
 #
 # 導入手順（任意・各開発者のローカル）:
 #   1. brew install pre-commit gitleaks
