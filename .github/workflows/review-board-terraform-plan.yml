@@ -6,7 +6,7 @@ name: review-board Terraform Plan
 # AWS 認証が設定されている場合のみ実 plan を実行して差分を可視化する。
 #
 # 危険な差分（リソースの destroy / 再作成 / prevent_destroy 解除）を
-# 強調表示する（修練城 §12-4 デプロイ前監査チェックリストと整合）。
+# 強調表示する（共通方針 §12-4 デプロイ前監査チェックリストと整合）。
 #
 # apply は CI では行わない（CLAUDE.md §6/§12：apply は人間承認必須）。
 # review-board は未デプロイ（S-2 前）のため、AWS 認証 secret が未設定でも
@@ -86,7 +86,7 @@ jobs:
 
       - name: Detect dangerous changes
         if: env.AWS_KEY != ''
-        # destroy / 再作成 / prevent_destroy 解除を検出して強調（修練城 §12-4）。
+        # destroy / 再作成 / prevent_destroy 解除を検出して強調（共通方針 §12-4）。
         run: |
           DANGER=0
           {

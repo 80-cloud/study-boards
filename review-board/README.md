@@ -37,7 +37,7 @@ cd frontend && npm install && npm run dev
 # → http://localhost:5175
 ```
 
-ポート競合時の挙動は [/Users/macmini/Desktop/Cursor/CLAUDE.md §10](../CLAUDE.md) のルール（殺してから正規ポートで起動）に従う。
+ポート競合時の挙動は [~/Desktop/Cursor/CLAUDE.md §10](../CLAUDE.md) のルール（殺してから正規ポートで起動）に従う。
 
 ---
 
