@@ -12,7 +12,7 @@ import java.util.List;
 
 /**
  * 招待コードの発行・一覧・失効と、登録時の消費（Issue #165 / #511）。
- * ★S軸：発行/一覧/失効は呼び出し元 principal の cohort に限定（cohort 境界）。
+ * ★セキュリティ：発行/一覧/失効は呼び出し元 principal の cohort に限定（cohort 境界）。
  * 生コードは発行時にしか存在せず、保存・検証は SHA-256 hash で行う。
  * #511：targetRole（STUDENT/TEACHER）を招待ごとに保持し、登録時に適用する。
  */

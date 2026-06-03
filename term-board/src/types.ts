@@ -44,6 +44,7 @@ export type InterviewQuestion = {
   tags?: string[]; // 例 ["頻出", "未経験定番"]。面接練習でフィルタに使う
   template?: string; // 回答の型（PREP/STAR 等）のヒント
   ngExample?: string; // ありがちなNG回答＋改善ポイント
+  followUps?: { q: string; a: string }[]; // 深掘り「なぜ?」チェーン（面接官の追い質問・F-INTV-03）
 };
 
 // F-USER-02: 共有・保存の単位。エクスポート/インポートはこの形をやり取りする。

@@ -13,7 +13,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * F-PROF 成長記録ページの認可・集約テスト（★S軸・テスト計画書 §6）。
+ * F-PROF 成長記録ページの認可・集約テスト（★セキュリティ・テスト計画書 §6）。
  * 投稿履歴/もらったレビュー(講師強調)/合格バッジ/したレビュー実績の集約と、
  * cohort 境界（他 cohort は 404）・未認証を検証する。
  */

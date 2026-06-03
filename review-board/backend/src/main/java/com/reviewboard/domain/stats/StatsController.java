@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 集計 API。認証必須・cohort 境界は {@link StatsService} に集約（★S軸）。
+ * 集計 API。認証必須・cohort 境界は {@link StatsService} に集約（★セキュリティ）。
  */
 @RestController
 @RequestMapping("/api/stats")

@@ -13,7 +13,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * S軸 監査ログの認可・記録テスト（要件 §4-1）。
+ * セキュリティ 監査ログの認可・記録テスト（要件 §4-1）。
  * 操作が監査行として残ること、閲覧が講師限定・自 cohort のみであることを検証する。
  */
 class AuditAuthorizationIntegrationTest extends AbstractIntegrationTest {

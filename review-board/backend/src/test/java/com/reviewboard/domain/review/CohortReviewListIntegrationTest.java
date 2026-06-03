@@ -13,7 +13,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * cohort 全体のレビュー一覧（#210・GET /api/reviews）の検証。
- * ★S軸：自 cohort の投稿に付いたレビューだけを返し、他 cohort のレビューは漏らさない（越境しない）。
+ * ★セキュリティ：自 cohort の投稿に付いたレビューだけを返し、他 cohort のレビューは漏らさない（越境しない）。
  */
 class CohortReviewListIntegrationTest extends AbstractIntegrationTest {
 
@@ -51,7 +51,7 @@ class CohortReviewListIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$[0].good").value("よい"));
     }
 
-    /** ★S軸：他 cohort のレビューは一覧に漏れない。 */
+    /** ★セキュリティ：他 cohort のレビューは一覧に漏れない。 */
     @Test
     void does_not_leak_other_cohort_reviews() throws Exception {
         mockMvc.perform(get("/api/reviews").cookie(login(reviewerBEmail)))

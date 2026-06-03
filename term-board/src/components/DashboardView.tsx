@@ -15,7 +15,7 @@ function calcStreak(days: string[]): number {
   const fmt = (d: Date) => d.toLocaleDateString("sv-SE");
   const today = new Date();
   // 今日が無ければ昨日起点（今日はこれから学習する余地があるため）。
-  let cursor = new Date(today);
+  const cursor = new Date(today);
   if (!set.has(fmt(cursor))) {
     cursor.setDate(cursor.getDate() - 1);
     if (!set.has(fmt(cursor))) return 0;

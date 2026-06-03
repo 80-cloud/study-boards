@@ -14,7 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * F-GROW-01 成長ループ管理の認可テスト（S軸標準：cohort 境界＋投稿者限定＋拒否系）。
+ * F-GROW-01 成長ループ管理の認可テスト（セキュリティ標準：cohort 境界＋投稿者限定＋拒否系）。
  * 対応状態を更新できるのは投稿者本人のみ。レビュアー含む他人は 403、他 cohort は 404。
  */
 class GrowthAuthorizationIntegrationTest extends AbstractIntegrationTest {

@@ -1,0 +1,29 @@
+name: term-board Blackbox Check
+
+# term-board のブラックボックス化規律を CI で常設担保する。
+# 内部用語・固有フレーズがコミットに混入していないことを scripts/blackbox-check.sh で検証する。
+
+on:
+  # #525: Blackbox Check は必須チェック。全PRで必ず報告される必要があるため
+  #       pull_request の paths フィルタを外す（term-board 非対象PRでも term-board スコープを
+  #       検査して green になり、必須条件のデッドロックを防ぐ）。
+  pull_request:
+  push:
+    branches: [main]
+    paths:
+      - "term-board/**"
+      - ".github/workflows/term-board-blackbox.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  blackbox:
+    name: Blackbox Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ブラックボックス化検証（term-board スコープ）
+        working-directory: term-board
+        run: bash scripts/blackbox-check.sh

@@ -13,7 +13,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * F-REV-05 ベストレビュー選択の認可テスト（S軸標準：所有者のみ＋拒否系）。
+ * F-REV-05 ベストレビュー選択の認可テスト（セキュリティ標準：所有者のみ＋拒否系）。
  */
 class PostBestReviewIntegrationTest extends AbstractIntegrationTest {
 

@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * ★SSRF 遮断（S軸）の単体テスト。内部到達に使える URL を確実に拒否することを担保する。
+ * ★SSRF 遮断（セキュリティ）の単体テスト。内部到達に使える URL を確実に拒否することを担保する。
  * IP リテラルは DNS を引かずに判定できるため、ネットワーク非依存で検証できる。
  */
 class UrlSafetyValidatorTest {

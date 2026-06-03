@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * エンゲージメント計測 API（#273・★S軸・運営限定）。
+ * エンゲージメント計測 API（#273・★セキュリティ・運営限定）。
  * 講師/管理者のみが自 cohort の「使われ方」を取得できる（受講生403・未認証401・他 cohort 不可視）。
  * 非競争方針：本 API は運営専用で、学生 UI には一切露出しない。
  */

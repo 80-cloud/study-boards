@@ -12,7 +12,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * F-POST の認可テスト（★S軸の中核。テスト計画書 §6 認可マトリクスの投稿部分）。
+ * F-POST の認可テスト（★セキュリティの中核。テスト計画書 §6 認可マトリクスの投稿部分）。
  *
  * <p>cohort A（所有者 a1・同 cohort の a2）と cohort B（b1）を用意し、
  * 所有者境界・cohort 境界・未認証を網羅する。他人/他 cohort は存在を漏らさず 404（IDOR 遮断）。

@@ -15,7 +15,7 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 /**
  * 例外 → 共通エラーレスポンスの変換（機能一覧.md §共通仕様）。
  *
- * <p>S軸の方針：認可失敗は 403、未認証は 401、リソース無し/他 cohort は 404（存在を漏らさず IDOR 遮断）。
+ * <p>セキュリティの方針：認可失敗は 403、未認証は 401、リソース無し/他 cohort は 404（存在を漏らさず IDOR 遮断）。
  * 個別ドメインの NotFound 例外は後続 feature PR で追加し、ここに 404 マッピングを足す。
  */
 @RestControllerAdvice

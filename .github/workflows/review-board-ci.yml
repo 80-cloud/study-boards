@@ -1,7 +1,7 @@
 name: review-board CI (build & test)
 
 # ============================================================
-# 母 M-6：CI は Fail Fast（lint→build→test）。問題は安く速く落とす。
+# 共通設計方針：CI は Fail Fast（lint→build→test）。問題は安く速く落とす。
 # 本ワークフローは review-board/backend の build（compile）→ test を回す。
 # test は Testcontainers(PostgreSQL) を使うため runner の Docker を利用する。
 # 依存脆弱性スキャンは review-board-dependency-scan.yml に分離（並列実行）。
@@ -57,7 +57,7 @@ jobs:
       - name: Test
         run: ./gradlew test --no-daemon
 
-      # カバレッジ回帰床ゲート（母 M-9・#251）。閾値割れで fail。
+      # カバレッジ回帰床ゲート（共通設計方針・#251）。閾値割れで fail。
       - name: Coverage gate (JaCoCo)
         run: ./gradlew jacocoTestCoverageVerification --no-daemon
 

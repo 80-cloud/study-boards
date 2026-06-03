@@ -14,7 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * エンゲージメント計測 API の認可（#273・★S軸）。
+ * エンゲージメント計測 API の認可（#273・★セキュリティ）。
  * 運営限定（講師/管理者）・自 cohort のみ・受講生403・未認証401・他 cohort 越境不可を検証する。
  */
 class InsightsAuthorizationIntegrationTest extends AbstractIntegrationTest {

@@ -15,7 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 運用管理 API（ADMIN 限定）の認可・整合性テスト（★S軸）。
+ * 運用管理 API（ADMIN 限定）の認可・整合性テスト（★セキュリティ）。
  * 受講生/講師が /api/admin/** を呼べないこと（権限昇格防止）を必ず確認する。
  */
 class AdminIntegrationTest extends AbstractIntegrationTest {

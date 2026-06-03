@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_DB: reviewboard
       POSTGRES_USER: reviewboard
-      # 機密はハードコードせず .env から渡す（母 SEC-9）
+      # 機密はハードコードせず .env から渡す（共通設計方針）
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-change-me-in-local}
     ports:
       - "5434:5432"

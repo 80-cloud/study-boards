@@ -12,7 +12,7 @@ import java.util.Set;
 
 /**
  * 成果物（F-POST）。cohort_id を冗長保持し、一覧の cohort 境界を単純化（ER図 §3-2）。
- * 論理削除（deleted_at）で履歴・参照整合性を保つ（母 S-4）。
+ * 論理削除（deleted_at）で履歴・参照整合性を保つ（共通設計方針）。
  */
 @Entity
 @Table(name = "posts")
@@ -44,7 +44,7 @@ public class Post {
     @Column(name = "demo_url", length = 512)
     private String demoUrl;
 
-    /** S3（ローカル MinIO）オブジェクトキー。本体は DB に置かない（母 P-10） */
+    /** S3（ローカル MinIO）オブジェクトキー。本体は DB に置かない（共通設計方針） */
     @Column(name = "screenshot_key", length = 512)
     private String screenshotKey;
 

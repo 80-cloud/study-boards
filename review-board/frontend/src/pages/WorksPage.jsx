@@ -5,7 +5,7 @@ import { matchAspects, matchTones } from '../constants/reviewPrefs';
 import WorksList from '../components/WorksList';
 
 // #210 成果物の専用一覧ページ。トップの統計タイル「成果物」/「合格バッジ」からの導線。
-// ?approved=1 で合格作品のみ（最新評価 APPROVED）に絞った状態で開く。S軸＝自 cohort のみ（backend が担保）。
+// ?approved=1 で合格作品のみ（最新評価 APPROVED）に絞った状態で開く。セキュリティ＝自 cohort のみ（backend が担保）。
 export default function WorksPage() {
   const [searchParams] = useSearchParams();
   const approvedOnly = searchParams.get('approved') === '1';

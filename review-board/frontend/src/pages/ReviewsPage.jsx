@@ -13,7 +13,7 @@ const fmtDate = (iso) => {
 };
 
 // #210 cohort 全体のレビュー一覧。トップ統計「レビュー」タイルからの導線。
-// ★S軸：API（GET /api/reviews）が自 cohort の投稿に付いたレビューだけを返す（越境しない）。
+// ★セキュリティ：API（GET /api/reviews）が自 cohort の投稿に付いたレビューだけを返す（越境しない）。
 export default function ReviewsPage() {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);

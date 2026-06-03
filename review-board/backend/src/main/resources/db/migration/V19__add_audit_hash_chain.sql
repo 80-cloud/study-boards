@@ -5,7 +5,7 @@
 --    直前行の entry_hash（cohort ごとに独立した連鎖）。1 行でも書き換えると以降の連鎖が破れる。
 --  - genesis（cohort の最初の行）は prev_hash = NULL。
 --
--- セキュリティ（S軸）：
+-- セキュリティ（セキュリティ）：
 --  - 後からの単独改ざんを検知できる。検証は講師限定 GET /api/audit-logs/verify（自 cohort）。
 --  - 並行書き込みの prev_hash 競合は、記録 TX 内の pg_advisory_xact_lock(cohort_id) で single-writer 化。
 --

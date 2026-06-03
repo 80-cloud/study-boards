@@ -12,7 +12,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * F-REV の認可テスト（★S軸・テスト計画書 §6）。
+ * F-REV の認可テスト（★セキュリティ・テスト計画書 §6）。
  * cohort 境界・自己レビュー禁止・所有者・ありがとう権限（投稿者のみ・冪等）を網羅する。
  */
 class ReviewAuthorizationIntegrationTest extends AbstractIntegrationTest {

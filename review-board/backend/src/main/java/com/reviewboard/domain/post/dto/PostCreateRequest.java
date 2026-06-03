@@ -10,7 +10,7 @@ import java.util.Set;
 
 /**
  * 投稿作成リクエスト（F-POST-01）。タイトルと説明は必須、URL/スクショキーは任意。
- * cohort_id・author は principal（検証済み JWT）から導出し、クライアント入力は信用しない（★S軸）。
+ * cohort_id・author は principal（検証済み JWT）から導出し、クライアント入力は信用しない（★セキュリティ）。
  *
  * @param reviewTones   F-SAFE-01 歓迎トーン（任意・多値・Set で重複排除。空は未設定）
  * @param reviewAspects F-REQ-01 募集観点（任意・Set で重複排除。不正な enum 値は 400）

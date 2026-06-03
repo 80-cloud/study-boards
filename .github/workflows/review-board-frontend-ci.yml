@@ -1,7 +1,7 @@
 name: review-board Frontend CI (lint, test & build)
 
 # ============================================================
-# 母 M-6：CI は Fail Fast（lint→test→build）。backend CI と並列のフロント版。
+# 共通設計方針：CI は Fail Fast（lint→test→build）。backend CI と並列のフロント版。
 # review-board/frontend の lint（ESLint）→ unit test（Vitest）→ build（Vite）を回す。
 # ============================================================
 

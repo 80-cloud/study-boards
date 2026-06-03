@@ -10,7 +10,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * 講師の最終評価 API（F-EVAL-01・★S軸）。
+ * 講師の最終評価 API（F-EVAL-01・★セキュリティ）。
  * 評価作成は {@code @PreAuthorize("hasRole('TEACHER')")} で講師に限定し、受講生の権限昇格を 403 で弾く。
  * 取得は同 cohort のメンバーなら可（成長記録の合格バッジ表示に使う）。
  */

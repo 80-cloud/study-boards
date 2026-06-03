@@ -14,7 +14,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * F-EVAL の認可テスト（★S軸の重点＝権限昇格防止）。
+ * F-EVAL の認可テスト（★セキュリティの重点＝権限昇格防止）。
  * 受講生が講師限定の評価操作を呼べないこと（403）を中心に、cohort 境界・最新後勝ち＋履歴を検証する。
  */
 class EvaluationAuthorizationIntegrationTest extends AbstractIntegrationTest {

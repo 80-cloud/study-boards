@@ -8,7 +8,7 @@ import java.net.URI;
 import java.net.UnknownHostException;
 
 /**
- * ★SSRF 遮断（S軸）：ヘッドレス撮影でサーバーが開く URL の安全性を検証する。
+ * ★SSRF 遮断（セキュリティ）：ヘッドレス撮影でサーバーが開く URL の安全性を検証する。
  *
  * <p>demo_url は利用者入力のため、サーバーが任意 URL を開くと内部資源（クラウドメタデータ
  * 169.254.169.254／localhost／プライベート IP／RDS 等）への到達に悪用されうる。次を満たさないURLは拒否：

@@ -1,7 +1,7 @@
-name: review-board Dependency Scan (S軸)
+name: review-board Dependency Scan (セキュリティ)
 
 # ============================================================
-# 要件定義書 §4-1（★S軸）MUST：依存脆弱性スキャンを CI に常設し
+# 要件定義書 §4-1（★セキュリティ）MUST：依存脆弱性スキャンを CI に常設し
 # High/Critical 0 件を維持する。
 #
 # 方式：Spring Boot の bootJar をビルドし、Trivy で fat jar を走査する。

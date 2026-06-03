@@ -8,7 +8,7 @@ import lombok.Setter;
 import java.time.OffsetDateTime;
 
 /**
- * F-NOTIF-01 通知。recipient（受信者）本人のみ閲覧・既読化できる（★S軸）。
+ * F-NOTIF-01 通知。recipient（受信者）本人のみ閲覧・既読化できる（★セキュリティ）。
  * actor は通知を引き起こした相手、post_id/review_id は遷移先の手がかり。
  */
 @Entity

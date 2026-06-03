@@ -13,7 +13,7 @@ import java.util.HexFormat;
 import java.util.Optional;
 
 /**
- * refresh トークンの発行・rotation・revoke・reuse 検知（母 SEC-7）。
+ * refresh トークンの発行・rotation・revoke・reuse 検知（共通設計方針）。
  *
  * <p>平文は保存せず SHA-256 ハッシュのみ DB に持つ。refresh のたびに使い捨て rotation。
  * 既に失効済みのトークンが再提示されたら「盗用（reuse）」とみなし、当該ユーザーの

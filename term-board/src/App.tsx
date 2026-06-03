@@ -23,6 +23,7 @@ import { DashboardView } from "./components/DashboardView";
 import { PrepView } from "./components/PrepView";
 import { LearnView } from "./components/LearnView";
 import { HomeView } from "./components/HomeView";
+import { StudyProgressPanel } from "./components/SidePanels";
 
 // 全ビューの列挙（useViewHistory に渡してURLハッシュで履歴同期する・#387）。
 const VIEWS = [
@@ -108,6 +109,8 @@ export default function App() {
   // 現在のビューが属するグループ（home のときは未選択）。
   const activeGroup = NAV_GROUPS.find((g) => g.views.some((v) => v.view === view));
 
+  const sidebar = nav.layout === "sidebar";
+
   // ビュー本体（レイアウトに依存しないので切り出して両レイアウトで共有する）。
   const viewContent = (
     <>
@@ -127,7 +130,7 @@ export default function App() {
               <div className="mb-3">
                 <LevelSelector value={levelState.level} onChange={levelState.setLevel} />
               </div>
-              <div className="hig-card mb-5 flex items-center justify-between px-4 py-3 text-sm">
+              <div className="hig-card mb-5 flex items-center justify-between gap-4 px-4 py-3 text-sm lg:justify-center lg:gap-12">
                 <span className="text-label-2">解答数 <span className="font-bold text-label">{quiz.answeredCount}</span></span>
                 <span className="text-label-2">正答 <span className="font-bold text-emerald-700 dark:text-emerald-400">{quiz.correctCount}</span></span>
                 <span className="text-label-2">正答率 <span className="font-bold text-accent">{rate}%</span></span>
@@ -155,6 +158,12 @@ export default function App() {
             <LevelSelector value={levelState.level} onChange={levelState.setLevel} />
           </div>
           <CardView level={levelState.level} />
+          {/* #519: 暗記カードの学習サポート（進捗・苦手）はカードの「下」に配置。
+              横サイドパネル案は読みづらく却下されたため下配置に。
+              モバイルでも表示（縦積み）／PC は3枚を横並び。 */}
+          <div className="mt-6">
+            <StudyProgressPanel layout="row" />
+          </div>
         </>
       )}
       {view === "dictionary" && (
@@ -178,11 +187,16 @@ export default function App() {
     </>
   );
 
-  const sidebar = nav.layout === "sidebar";
-  // ホームのみ PC で広いコンテンツ幅にして、4列カンバンの横レイアウトを活かす。
-  // 他ビュー（辞典・面接練習など）は本文の可読幅を優先して従来の max-w-2xl を維持。
-  const wideHome = view === "home";
-  const mainWidth = wideHome ? "max-w-6xl" : "max-w-2xl";
+  // PC で横幅を活かすビュー：ホーム（4列カンバン）・4択クイズ（質問＝左／解説＝右の2カラム）・
+  // 暗記カード（余白を抑えてカードを大きく見せる）・用語辞典（2カラムでスクロールを短縮）。
+  // 他ビュー（面接練習など）は本文の可読幅を優先して従来の max-w-2xl を維持。
+  const mainWidth =
+    view === "home" ? "max-w-6xl"
+    : view === "quiz" ? "max-w-5xl"
+    : view === "card" ? "max-w-4xl"
+    : view === "dictionary" ? "max-w-5xl"
+    : view === "interview" ? "max-w-5xl"
+    : "max-w-2xl";
   // ヘッダーはビュー切替で幅が動くと違和感が出るため、常に広い幅で固定。
   const headerWidth = sidebar ? "max-w-5xl" : "max-w-6xl";
 

@@ -4,7 +4,7 @@ import rehypeSanitize from 'rehype-sanitize';
 
 // マークダウン描画（コード批評の読みやすさ向上）。
 // 生 HTML は描画しない（react-markdown 既定で無効・rehype-raw 不使用）→ XSS 面を増やさない。
-// rehype-sanitize で多層防御（S軸）。要素は Tailwind で明示スタイル（typography プラグイン非依存）。
+// rehype-sanitize で多層防御（セキュリティ）。要素は Tailwind で明示スタイル（typography プラグイン非依存）。
 const COMPONENTS = {
   p: ({ children }) => <p className="mb-2 whitespace-pre-wrap last:mb-0">{children}</p>,
   h1: ({ children }) => <h1 className="mb-2 mt-3 text-base font-bold text-gray-800">{children}</h1>,

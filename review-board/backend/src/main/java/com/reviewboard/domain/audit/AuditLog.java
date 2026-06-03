@@ -8,7 +8,7 @@ import lombok.Setter;
 import java.time.OffsetDateTime;
 
 /**
- * 監査ログ（★S軸・要件 §4-1）。「誰が(actor)・いつ(createdAt)・誰の資源に(targetType/targetId)・
+ * 監査ログ（★セキュリティ・要件 §4-1）。「誰が(actor)・いつ(createdAt)・誰の資源に(targetType/targetId)・
  * 何を(action)」を追跡する。cohort_id を持ち、閲覧の cohort 境界に使う。
  */
 @Entity

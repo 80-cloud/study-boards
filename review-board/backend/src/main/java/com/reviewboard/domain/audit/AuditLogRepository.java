@@ -11,7 +11,7 @@ import java.util.Optional;
 
 public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
 
-    /** 閲覧（★S軸）：自 cohort の監査ログのみ・新しい順。他 cohort は返さない。 */
+    /** 閲覧（★セキュリティ）：自 cohort の監査ログのみ・新しい順。他 cohort は返さない。 */
     Page<AuditLog> findByCohortIdOrderByCreatedAtDesc(Long cohortId, Pageable pageable);
 
     /** 連鎖の直前行（#247）：同 cohort で最新（id 最大）の行。genesis 判定に使う。 */
