@@ -46,6 +46,11 @@ public class SecretCipher {
         this.key = new SecretKeySpec(raw, "AES");
     }
 
+    /** 暗号鍵が設定済みか（未設定なら暗号化・v1 復号は利用不可）。 */
+    public boolean isEnabled() {
+        return key != null;
+    }
+
     /** 平文を暗号化し {@code v1:...} 形式で返す。鍵未設定なら例外。 */
     public String encrypt(String plaintext) {
         requireKey();

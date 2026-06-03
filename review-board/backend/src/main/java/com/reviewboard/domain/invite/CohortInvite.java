@@ -30,6 +30,14 @@ public class CohortInvite {
     @Column(name = "code_hash", nullable = false, unique = true, length = 64)
     private String codeHash;
 
+    /**
+     * #563：生コードの at-rest 暗号化値（{@code v1:...}・{@link com.reviewboard.domain.mfa.SecretCipher}）。
+     * 講師/管理者の一覧で復号して招待リンクを再表示するために保持する。平文は保存しない。
+     * 鍵未設定の環境や V25 より前に発行した招待では null（その場合は再表示不可＝従来挙動）。
+     */
+    @Column(name = "code_encrypted")
+    private String codeEncrypted;
+
     /** 発行者（退会時は DB 側で SET NULL）。 */
     @Column(name = "created_by")
     private Long createdBy;

@@ -56,6 +56,22 @@ class InviteFlowIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void teacher_can_redisplay_invite_link_from_list() throws Exception {
+        // #563：発行済みの招待リンクを一覧から再表示できる（生コードを暗号化保存→復号して返す）。
+        Cohort a = newCohort("A");
+        newUser("teacher-a@test", UserRole.TEACHER, a.getId());
+        Cookie teacher = login("teacher-a@test");
+
+        String code = issueCode(teacher, "{}");
+
+        MvcResult list = mockMvc.perform(get("/api/invites").cookie(teacher))
+                .andExpect(status().isOk())
+                .andReturn();
+        String listedCode = JsonPath.parse(list.getResponse().getContentAsString()).read("$[0].rawCode");
+        assertThat(listedCode).isEqualTo(code);
+    }
+
+    @Test
     void student_cannot_issue_invite_403() throws Exception {
         Cohort a = newCohort("A");
         newUser("student-a@test", UserRole.STUDENT, a.getId());

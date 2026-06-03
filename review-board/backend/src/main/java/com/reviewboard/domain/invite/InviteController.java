@@ -53,11 +53,16 @@ public class InviteController {
                 .body(InviteResponse.withRawCode(issued.invite(), issued.rawCode(), OffsetDateTime.now()));
     }
 
-    /** 自 cohort の招待一覧（生コードは含まない）。 */
+    /**
+     * 自 cohort の招待一覧。講師/管理者のみ（クラスの {@code @PreAuthorize}）アクセスでき、
+     * 再表示用に復号した生コードを含む（#563）。暗号文が無い招待は rawCode=null。
+     */
     @GetMapping
     public List<InviteResponse> list(@AuthenticationPrincipal AuthPrincipal principal) {
         OffsetDateTime now = OffsetDateTime.now();
-        return inviteService.list(principal).stream().map(i -> InviteResponse.of(i, now)).toList();
+        return inviteService.list(principal).stream()
+                .map(i -> InviteResponse.withRawCode(i.invite(), i.rawCode(), now))
+                .toList();
     }
 
     /** 招待を失効させる（自 cohort 以外は 404）。 */

@@ -42,6 +42,9 @@ export default function InvitesPage() {
   const [members, setMembers] = useState([]);
   // #496 P5：無効化対象（confirm 待ち）
   const [pendingDisable, setPendingDisable] = useState(null);
+  // #563：一覧でリンクを開いている招待 id と、コピー済みの招待 id
+  const [openInviteId, setOpenInviteId] = useState(null);
+  const [copiedInviteId, setCopiedInviteId] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -82,6 +85,22 @@ export default function InvitesPage() {
       setCopied(true);
     } catch {
       setCopied(false);
+    }
+  };
+
+  // #563：発行済みの招待リンクを一覧から再表示・コピーする。
+  const onToggleInviteLink = (id) => {
+    setCopiedInviteId(null);
+    setOpenInviteId((cur) => (cur === id ? null : id));
+  };
+
+  const onCopyInviteLink = async (inv) => {
+    if (!inv.rawCode) return;
+    try {
+      await navigator.clipboard.writeText(shareLink(inv.rawCode));
+      setCopiedInviteId(inv.id);
+    } catch {
+      setCopiedInviteId(null);
     }
   };
 
@@ -188,21 +207,49 @@ export default function InvitesPage() {
         <ul className="space-y-2">
           {invites.map((inv) => {
             const s = STATUS_LABEL[inv.status] ?? STATUS_LABEL.EXPIRED;
+            const canShowLink = inv.status === 'ACTIVE' && !!inv.rawCode;
+            const open = openInviteId === inv.id;
             return (
-              <li key={inv.id} className="mac-card flex flex-wrap items-center justify-between gap-3 p-4">
-                <div className="text-sm">
-                  <span className={`mr-2 rounded-full px-2 py-0.5 text-xs font-bold ${s.cls}`}>{s.text}</span>
-                  <span className={`mr-2 rounded-full px-2 py-0.5 text-xs font-bold ${(ROLE_BADGE[inv.targetRole] ?? ROLE_BADGE.STUDENT).cls}`}>
-                    {(ROLE_BADGE[inv.targetRole] ?? ROLE_BADGE.STUDENT).text}
-                  </span>
-                  <span className="text-gray-700">利用 {inv.currentUses}/{inv.maxUses}</span>
-                  <span className="ml-3 text-xs text-gray-400">期限 {fmt(inv.expiresAt)}</span>
+              <li key={inv.id} className="mac-card p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="text-sm">
+                    <span className={`mr-2 rounded-full px-2 py-0.5 text-xs font-bold ${s.cls}`}>{s.text}</span>
+                    <span className={`mr-2 rounded-full px-2 py-0.5 text-xs font-bold ${(ROLE_BADGE[inv.targetRole] ?? ROLE_BADGE.STUDENT).cls}`}>
+                      {(ROLE_BADGE[inv.targetRole] ?? ROLE_BADGE.STUDENT).text}
+                    </span>
+                    <span className="text-gray-700">利用 {inv.currentUses}/{inv.maxUses}</span>
+                    <span className="ml-3 text-xs text-gray-400">期限 {fmt(inv.expiresAt)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {canShowLink && (
+                      <button onClick={() => onToggleInviteLink(inv.id)}
+                        aria-expanded={open}
+                        className="rounded-lg border border-black/10 bg-white px-3 py-1.5 text-sm font-medium text-navy-700 transition hover:bg-black/[0.03]">
+                        {open ? 'リンクを隠す' : 'リンクを表示'}
+                      </button>
+                    )}
+                    {inv.status === 'ACTIVE' && (
+                      <button onClick={() => onRevoke(inv.id)}
+                        className="rounded-lg border border-black/10 bg-white px-3 py-1.5 text-sm font-medium text-rose-600 transition hover:bg-rose-50">
+                        失効させる
+                      </button>
+                    )}
+                  </div>
                 </div>
-                {inv.status === 'ACTIVE' && (
-                  <button onClick={() => onRevoke(inv.id)}
-                    className="rounded-lg border border-black/10 bg-white px-3 py-1.5 text-sm font-medium text-rose-600 transition hover:bg-rose-50">
-                    失効させる
-                  </button>
+                {/* #563：発行済みのリンクを再表示（暗号化保存した生コードを復号して取得） */}
+                {canShowLink && open && (
+                  <div className="mt-3 flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50/60 p-3">
+                    <input readOnly value={shareLink(inv.rawCode)}
+                      className="mac-input flex-1 font-mono text-xs" aria-label="招待リンク" />
+                    <button onClick={() => onCopyInviteLink(inv)}
+                      className="mac-btn-navy whitespace-nowrap px-4 py-2 text-sm">
+                      {copiedInviteId === inv.id ? 'コピー済み ✓' : 'コピー'}
+                    </button>
+                  </div>
+                )}
+                {/* 暗号文を持たない旧い招待は再表示できない（発行時のみ表示） */}
+                {inv.status === 'ACTIVE' && !inv.rawCode && (
+                  <p className="mt-2 text-xs text-gray-400">このリンクは発行時のみ表示できます（再表示するには新しく発行してください）。</p>
                 )}
               </li>
             );

@@ -6,8 +6,9 @@ import com.reviewboard.domain.user.UserRole;
 import java.time.OffsetDateTime;
 
 /**
- * 招待レスポンス（Issue #165 / #511）。
- * {@code rawCode} は発行直後の 1 度だけ値が入り（受講生に渡す元データ）、一覧では常に null。
+ * 招待レスポンス（Issue #165 / #511 / #563）。
+ * {@code rawCode} は招待リンクの元データ。発行直後に加え、講師/管理者の一覧でも
+ * 復号して再表示する（#563）。暗号文を持たない招待（鍵未設定 / V25 以前）では null。
  * {@code targetRole} は招待で作成されるユーザーのロール（STUDENT または TEACHER）。
  * {@code status} は ACTIVE / EXPIRED / USED_UP / REVOKED を読み側で算出。
  */
@@ -23,15 +24,7 @@ public record InviteResponse(
         OffsetDateTime createdAt,
         String status) {
 
-    /** 一覧用（rawCode は保持していないので null）。 */
-    public static InviteResponse of(CohortInvite inv, OffsetDateTime now) {
-        return new InviteResponse(inv.getId(), inv.getCohortId(), null,
-                inv.getMaxUses(), inv.getCurrentUses(), inv.getTargetRole(),
-                inv.getExpiresAt(), inv.getRevokedAt(),
-                inv.getCreatedAt(), status(inv, now));
-    }
-
-    /** 発行直後用（生コードを 1 度だけ返す）。 */
+    /** 発行直後・一覧の再表示用（生コードを伴う。暗号文が無ければ rawCode=null）。 */
     public static InviteResponse withRawCode(CohortInvite inv, String rawCode, OffsetDateTime now) {
         return new InviteResponse(inv.getId(), inv.getCohortId(), rawCode,
                 inv.getMaxUses(), inv.getCurrentUses(), inv.getTargetRole(),
