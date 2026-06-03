@@ -2,14 +2,13 @@ name: term-board Secret Scan (gitleaks)
 
 # ============================================================
 # 機密情報の server-side スキャン（最後の防衛線）。
-# review-board-gitleaks.yml を term-board スコープで複製したもの。
 #
 # 目的: GitHub Web 編集 / `git commit --no-verify` 等、ローカル hook を
 #       バイパスする経路を塞ぐ。task-board の平文パスワード Public コミット
 #       事故（不可逆）と同型の再発防止（安全性の核）。
 #
 # 方式: バージョン固定の gitleaks で term-board ツリーを走査。設定は
-#       リポジトリルートの .gitleaks.toml を review-board と共用する。
+#       リポジトリルートの .gitleaks.toml を使用する。
 # ============================================================
 
 on:

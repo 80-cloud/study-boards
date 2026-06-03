@@ -1,7 +1,0 @@
-// JDK 25 toolchain をローカル Java バージョンに依存せず自動プロビジョンするための resolver
-// （技術スタック.md §8 M-14：ローカルが Java 21 でも Gradle が Java 25 を取得してコンパイルする）
-plugins {
-	id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
-}
-
-rootProject.name = 'backend'
