@@ -24,6 +24,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: ルール定義を復元（Secret）
+        working-directory: term-board
+        run: printf '%s\n' "${{ secrets.BLACKBOX_WORDS }}" > scripts/blackbox-words.local.txt
+
       - name: ブラックボックス化検証（term-board スコープ）
         working-directory: term-board
         run: bash scripts/blackbox-check.sh
