@@ -28,9 +28,9 @@ test.describe('post crud @smoke', () => {
     await expect(page).toHaveURL(/\/posts\/\d+/);
     await expect(page.getByRole('heading', { name: editedTitle })).toBeVisible();
 
-    // delete（確認ダイアログは accept で承諾）
-    page.once('dialog', (d) => d.accept());
-    await page.getByRole('button', { name: '削除' }).click();
+    // delete：#498 で ConfirmDialog 化。削除ボタン → 確認ダイアログ「削除する」を踏む。
+    await page.getByRole('button', { name: '削除', exact: true }).click();
+    await page.getByRole('button', { name: '削除する' }).click();
     // 削除成功 → /posts/:id から離脱（トップ or 一覧へ遷移）。
     await page.waitForURL((url) => !url.pathname.match(/\/posts\/\d+$/), { timeout: 10_000 });
     // 遷移先のページに編集後タイトルが残っていない＝削除が反映されている。
