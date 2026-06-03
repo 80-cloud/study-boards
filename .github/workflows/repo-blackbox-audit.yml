@@ -23,6 +23,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: ルール定義を復元（Secret）
+        run: printf '%s\n' "${{ secrets.BLACKBOX_WORDS }}" > term-board/scripts/blackbox-words.local.txt
+
       - name: リポ全体のブラックボックス監査（検知のみ・段階移行中）
         run: |
           set -uo pipefail
