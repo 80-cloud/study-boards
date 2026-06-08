@@ -262,6 +262,7 @@ function QuizForm({ user }: Props) {
   const [d2, setD2] = useState("");
   const [interview, setInterview] = useState("");
   const [plainMeaning, setPlainMeaning] = useState("");
+  const [tagsInput, setTagsInput] = useState(""); // 出題タグ（カンマ区切り・任意）
   // 深掘り（面接官の追い質問・任意）。最大2つまで入力可。
   const [fu1q, setFu1q] = useState("");
   const [fu1a, setFu1a] = useState("");
@@ -275,7 +276,7 @@ function QuizForm({ user }: Props) {
   const resetForm = () => {
     setEditingId(null);
     setTerm(""); setCategory(""); setMeaning(""); setD0(""); setD1(""); setD2("");
-    setInterview(""); setPlainMeaning("");
+    setInterview(""); setPlainMeaning(""); setTagsInput("");
     setFu1q(""); setFu1a(""); setFu2q(""); setFu2a("");
   };
 
@@ -291,6 +292,7 @@ function QuizForm({ user }: Props) {
     setD2(item.distractors[2] ?? "");
     setInterview(item.interview);
     setPlainMeaning(item.plainMeaning ?? "");
+    setTagsInput((item.tags ?? []).join(", "));
     setFu1q(item.followUps?.[0]?.q ?? "");
     setFu1a(item.followUps?.[0]?.a ?? "");
     setFu2q(item.followUps?.[1]?.q ?? "");
@@ -313,6 +315,8 @@ function QuizForm({ user }: Props) {
       { q: fu1q.trim(), a: fu1a.trim() },
       { q: fu2q.trim(), a: fu2a.trim() },
     ].filter((p) => p.q && p.a);
+    // 出題タグ（カンマ区切り→trim・空除去・重複除去）。
+    const tags = [...new Set(tagsInput.split(",").map((x) => x.trim()).filter(Boolean))];
     const data = {
       term: term.trim(),
       category: category.trim(),
@@ -320,6 +324,7 @@ function QuizForm({ user }: Props) {
       distractors: [d0.trim(), d1.trim(), d2.trim()],
       interview: interview.trim(),
       plainMeaning: plainMeaning.trim() || undefined,
+      tags: tags.length > 0 ? tags : undefined,
       followUps: followUps.length > 0 ? followUps : undefined,
     };
     if (editingId) {
@@ -371,6 +376,11 @@ function QuizForm({ user }: Props) {
         <div>
           <label htmlFor="q-plain" className={labelClass}>かんたんに言うと（任意）</label>
           <input id="q-plain" className={inputClass} value={plainMeaning} onChange={(e) => setPlainMeaning(e.target.value)} placeholder="中学生にも分かる言い方" />
+        </div>
+        <div>
+          <label htmlFor="q-tags" className={labelClass}>出題タグ（カンマ区切り・任意）</label>
+          <input id="q-tags" className={inputClass} value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} placeholder="例：AWS, 自作セット" />
+          <p className="mt-1 text-xs text-label-3">4択クイズ・模擬面接で、このタグだけに絞って出題できます。</p>
         </div>
         {/* 深掘り「面接ではこう重ねられます」（任意）。正解後に段階開示される追い質問。 */}
         <details className="rounded-control border border-separator p-3 open:bg-fill-quaternary">
