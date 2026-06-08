@@ -92,6 +92,9 @@ function InterviewForm({ user }: Props) {
   const [fu2a, setFu2a] = useState("");
   const valid = category.trim() && question.trim() && answer.trim();
   const isEditing = editingId !== null;
+  // 深掘りは Q/A 両方そろって初めて登録される。片方だけの「中途半端なペア」を検出。
+  const fuIncomplete =
+    (!!fu1q.trim() !== !!fu1a.trim()) || (!!fu2q.trim() !== !!fu2a.trim());
 
   const resetForm = () => {
     setEditingId(null);
@@ -261,8 +264,13 @@ function InterviewForm({ user }: Props) {
             </div>
           </div>
         </details>
+        {fuIncomplete && (
+          <p role="alert" className="rounded-control bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 ring-1 ring-amber-200 dark:bg-amber-950 dark:text-amber-200 dark:ring-amber-900">
+            深掘りは Q（追い質問）と A（答え方）の両方を入力してください。片方だけだと登録されません（両方空ならOK）。
+          </p>
+        )}
         <div className="flex flex-wrap gap-2">
-          <button type="submit" disabled={!valid || isDuplicate} className={primaryBtn}>
+          <button type="submit" disabled={!valid || isDuplicate || fuIncomplete} className={primaryBtn}>
             {isEditing ? "更新する" : "追加する"}
           </button>
           {isEditing && (
@@ -311,6 +319,9 @@ function QuizForm({ user }: Props) {
     term.trim() && category.trim() && meaning.trim() && interview.trim() &&
     d0.trim() && d1.trim() && d2.trim();
   const isEditing = editingId !== null;
+  // 深掘りは Q/A 両方そろって初めて登録される。片方だけの「中途半端なペア」を検出。
+  const fuIncomplete =
+    (!!fu1q.trim() !== !!fu1a.trim()) || (!!fu2q.trim() !== !!fu2a.trim());
 
   const resetForm = () => {
     setEditingId(null);
@@ -444,8 +455,13 @@ function QuizForm({ user }: Props) {
             </div>
           </div>
         </details>
+        {fuIncomplete && (
+          <p role="alert" className="rounded-control bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 ring-1 ring-amber-200 dark:bg-amber-950 dark:text-amber-200 dark:ring-amber-900">
+            深掘りは Q（追い質問）と A（答え方）の両方を入力してください。片方だけだと登録されません（両方空ならOK）。
+          </p>
+        )}
         <div className="flex flex-wrap gap-2">
-          <button type="submit" disabled={!valid || isDuplicate} className={primaryBtn}>
+          <button type="submit" disabled={!valid || isDuplicate || fuIncomplete} className={primaryBtn}>
             {isEditing ? "更新する" : "追加する"}
           </button>
           {isEditing && (
