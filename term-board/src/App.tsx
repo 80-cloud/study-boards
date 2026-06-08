@@ -130,6 +130,38 @@ export default function App() {
               <div className="mb-3">
                 <LevelSelector value={levelState.level} onChange={levelState.setLevel} />
               </div>
+              {/* 出題範囲：タグ（AWS 等）・出どころ（自作のみ/既定のみ）で絞る。 */}
+              <div className="mb-3 flex flex-wrap items-center gap-3">
+                {quiz.tags.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <label htmlFor="quiz-tag" className="text-sm font-medium text-label-2">タグ</label>
+                    <select
+                      id="quiz-tag"
+                      value={quiz.tag}
+                      onChange={(e) => quiz.setTag(e.target.value)}
+                      className="rounded-control border border-separator bg-surface px-2 py-1.5 text-sm text-label focus:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                    >
+                      <option value="">すべて</option>
+                      {quiz.tags.map((tg) => (
+                        <option key={tg} value={tg}>{tg}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <label htmlFor="quiz-source" className="text-sm font-medium text-label-2">出どころ</label>
+                  <select
+                    id="quiz-source"
+                    value={quiz.source}
+                    onChange={(e) => quiz.setSource(e.target.value as "all" | "user" | "builtin")}
+                    className="rounded-control border border-separator bg-surface px-2 py-1.5 text-sm text-label focus:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  >
+                    <option value="all">すべて</option>
+                    <option value="user">自作のみ</option>
+                    <option value="builtin">既定のみ</option>
+                  </select>
+                </div>
+              </div>
               <div className="hig-card mb-5 flex items-center justify-between gap-4 px-4 py-3 text-sm lg:justify-center lg:gap-12">
                 <span className="text-label-2">解答数 <span className="font-bold text-label">{quiz.answeredCount}</span></span>
                 <span className="text-label-2">正答 <span className="font-bold text-emerald-700 dark:text-emerald-400">{quiz.correctCount}</span></span>
@@ -144,7 +176,7 @@ export default function App() {
                   onNext={quiz.next}
                 />
               ) : (
-                <p className="text-center text-label-2">この分野には出題できる用語がありません。</p>
+                <p className="text-center text-label-2">この条件（分野・レベル・タグ・出どころ）では出題できる用語がありません。</p>
               )}
             </>
           )}

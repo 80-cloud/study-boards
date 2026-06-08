@@ -20,11 +20,19 @@ function buildQuestion(term: Term): Question {
   return { term, options, answer: term.meaning };
 }
 
+// 出どころ絞り込み：すべて / 自作のみ / 既定（同梱）のみ。
+export type SourceFilter = "all" | "user" | "builtin";
+
 export type UseQuiz = {
   status: QuizStatus;
   categories: string[];
   category: string; // "" = 全分野
   setCategory: (c: string) => void;
+  tags: string[]; // 出題タグの一覧（用語に付いたタグの和集合）
+  tag: string; // "" = すべてのタグ
+  setTag: (t: string) => void;
+  source: SourceFilter;
+  setSource: (s: SourceFilter) => void;
   question: Question | null;
   selected: string | null; // 未回答なら null
   isCorrect: boolean | null;
@@ -43,6 +51,8 @@ export function useQuiz(reloadKey: number | string = 0, level: LevelFilter = "al
   const [status, setStatus] = useState<QuizStatus>("loading");
 
   const [category, setCategory] = useState<string>("");
+  const [tag, setTag] = useState<string>("");
+  const [source, setSource] = useState<SourceFilter>("all");
   const [question, setQuestion] = useState<Question | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
 
@@ -76,16 +86,25 @@ export function useQuiz(reloadKey: number | string = 0, level: LevelFilter = "al
     [terms],
   );
 
-  // 現在の分野・レベルで出題可能な用語（F-QUIZ-04 分野別・全分野ランダム / #437 レベル絞り込み）。
+  const tags = useMemo(
+    () => [...new Set(terms.flatMap((t) => t.tags ?? []))].sort(),
+    [terms],
+  );
+
+  // 現在の分野・レベル・タグ・出どころで出題可能な用語
+  // （F-QUIZ-04 分野別 / #437 レベル絞り込み / タグ・自作絞り込み）。
   const pool = useMemo(
     () =>
       terms.filter((t) => {
         if (category && t.category !== category) return false;
         // level 未設定（ユーザー作問など）は全レベル該当として残す（#444）
         if (level !== "all" && t.level && t.level !== level) return false;
+        if (tag && !(t.tags ?? []).includes(tag)) return false;
+        if (source === "user" && t.source !== "user") return false;
+        if (source === "builtin" && (t.source ?? "builtin") !== "builtin") return false;
         return true;
       }),
-    [terms, category, level],
+    [terms, category, level, tag, source],
   );
 
   // 次の問題を出す。SRS の重み付き選択で苦手・未出題を優先しつつ、
@@ -153,6 +172,11 @@ export function useQuiz(reloadKey: number | string = 0, level: LevelFilter = "al
     categories,
     category,
     setCategory,
+    tags,
+    tag,
+    setTag,
+    source,
+    setSource,
     question,
     selected,
     isCorrect,

@@ -21,6 +21,7 @@ export function InterviewView({ userQuestions }: Props) {
   const [current, setCurrent] = useState<InterviewQuestion | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [tag, setTag] = useState<string>(""); // "" = すべて
+  const [source, setSource] = useState<"all" | "user" | "builtin">("all"); // 出どころ絞り込み
   // F-INTV-02: この練習セッションの自己採点カウンタ（言えた / 練習数）。
   const [sessionAsked, setSessionAsked] = useState(0);
   const [sessionSaid, setSessionSaid] = useState(0);
@@ -36,8 +37,14 @@ export function InterviewView({ userQuestions }: Props) {
   );
 
   const pool = useMemo(
-    () => (tag ? allQuestions.filter((q) => q.tags?.includes(tag)) : allQuestions),
-    [allQuestions, tag],
+    () =>
+      allQuestions.filter((q) => {
+        if (tag && !q.tags?.includes(tag)) return false;
+        if (source === "user" && q.source !== "user") return false;
+        if (source === "builtin" && (q.source ?? "builtin") !== "builtin") return false;
+        return true;
+      }),
+    [allQuestions, tag, source],
   );
 
   // pool が揃ったら／タグ変更で pool 外になったら出題し直す。
@@ -81,15 +88,13 @@ export function InterviewView({ userQuestions }: Props) {
     next();
   };
 
-  if (pool.length === 0) {
+  if (allQuestions.length === 0) {
     return (
       <p className="text-center text-label-2">
         面接の質問がありません。「マイ問題」で追加できます。
       </p>
     );
   }
-
-  if (!current) return null;
 
   return (
     <section className="flex flex-col gap-5" aria-live="polite">
@@ -116,11 +121,27 @@ export function InterviewView({ userQuestions }: Props) {
             </select>
           </div>
         )}
+        <div className="flex items-center gap-2">
+          <label htmlFor="iv-source" className="text-sm font-medium text-label-2">出どころ</label>
+          <select
+            id="iv-source"
+            value={source}
+            onChange={(e) => setSource(e.target.value as "all" | "user" | "builtin")}
+            className="rounded-control border border-separator bg-surface px-2 py-1.5 text-sm text-label focus:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            <option value="all">すべて</option>
+            <option value="user">自作のみ</option>
+            <option value="builtin">既定のみ</option>
+          </select>
+        </div>
       </div>
 
-      {/* 面接対策レイアウト（PC）：左＝面接官の質問＋自分で答える、
-          右＝模範解答＋面接官の追い質問。本番の「問われて答える」流れに合わせる。
-          モバイルは従来どおり縦積み。 */}
+      {!current ? (
+        <p className="text-center text-label-2">この条件（タグ・出どころ）では出題できる質問がありません。</p>
+      ) : (
+        // 面接対策レイアウト（PC）：左＝面接官の質問＋自分で答える、
+        // 右＝模範解答＋面接官の追い質問。本番の「問われて答える」流れに合わせる。
+        // モバイルは従来どおり縦積み。
       <div className="flex flex-col gap-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
         {/* 左：面接官からの質問＋自分のターン */}
         <div className="flex flex-col gap-5">
@@ -237,6 +258,7 @@ export function InterviewView({ userQuestions }: Props) {
           )}
         </div>
       </div>
+      )}
     </section>
   );
 }

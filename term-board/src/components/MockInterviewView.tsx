@@ -12,6 +12,8 @@ const TIMER_SECONDS = 30;
 
 export function MockInterviewView() {
   const [terms, setTerms] = useState<Term[]>([]);
+  const [tag, setTag] = useState("");
+  const [source, setSource] = useState<"all" | "user" | "builtin">("all");
   const [current, setCurrent] = useState<Term | null>(null);
   const [input, setInput] = useState("");
   const [revealed, setRevealed] = useState(false);
@@ -36,9 +38,7 @@ export function MockInterviewView() {
     repository.getTerms().then((t) => {
       if (!active) return;
       // 面接の言い方（interview）を持つ用語だけを出題対象にする。
-      const usable = t.filter((x) => x.interview && x.interview.trim().length > 0);
-      setTerms(usable);
-      if (usable.length > 0) setCurrent(pickRandom(usable));
+      setTerms(t.filter((x) => x.interview && x.interview.trim().length > 0));
     });
     return () => {
       active = false;
@@ -53,6 +53,28 @@ export function MockInterviewView() {
     }
     return picked;
   };
+
+  // 出題タグ・出どころ（自作のみ/既定のみ）で出題プールを絞る。
+  const tags = useMemo(() => [...new Set(terms.flatMap((t) => t.tags ?? []))].sort(), [terms]);
+  const pool = useMemo(
+    () =>
+      terms.filter((t) => {
+        if (tag && !(t.tags ?? []).includes(tag)) return false;
+        if (source === "user" && t.source !== "user") return false;
+        if (source === "builtin" && (t.source ?? "builtin") !== "builtin") return false;
+        return true;
+      }),
+    [terms, tag, source],
+  );
+
+  // プールが変わったら、現在の問題がプール外になっていれば出し直す。
+  useEffect(() => {
+    setCurrent((prev) => {
+      if (pool.length === 0) return null;
+      if (prev && pool.some((t) => t.id === prev.id)) return prev;
+      return pickRandom(pool);
+    });
+  }, [pool]);
 
   const startTimer = () => {
     clearTimer();
@@ -97,7 +119,7 @@ export function MockInterviewView() {
     setInput("");
     setRevealed(false);
     setRubric({ conclusion: false, reason: false, concrete: false });
-    setCurrent((prev) => (terms.length > 0 ? pickNext(terms, prev) : null));
+    setCurrent((prev) => (pool.length > 0 ? pickNext(pool, prev) : null));
   };
 
   const timerLabel = useMemo(() => {
@@ -106,7 +128,7 @@ export function MockInterviewView() {
     return `残り ${remaining} 秒`;
   }, [remaining]);
 
-  if (terms.length === 0 || !current) {
+  if (terms.length === 0) {
     return (
       <p className="text-center text-label-2">
         模擬面接に使える用語がありません。
@@ -127,6 +149,41 @@ export function MockInterviewView() {
         )}
       </div>
 
+      {/* 出題範囲：タグ（AWS 等）・出どころ（自作のみ/既定のみ）で絞る。 */}
+      <div className="flex flex-wrap items-center gap-3">
+        {tags.length > 0 && (
+          <div className="flex items-center gap-2">
+            <label htmlFor="mock-tag" className="text-sm font-medium text-label-2">タグ</label>
+            <select
+              id="mock-tag"
+              value={tag}
+              onChange={(e) => setTag(e.target.value)}
+              className="rounded-control border border-separator bg-surface px-2 py-1.5 text-sm text-label focus:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              <option value="">すべて</option>
+              {tags.map((tg) => (<option key={tg} value={tg}>{tg}</option>))}
+            </select>
+          </div>
+        )}
+        <div className="flex items-center gap-2">
+          <label htmlFor="mock-source" className="text-sm font-medium text-label-2">出どころ</label>
+          <select
+            id="mock-source"
+            value={source}
+            onChange={(e) => setSource(e.target.value as "all" | "user" | "builtin")}
+            className="rounded-control border border-separator bg-surface px-2 py-1.5 text-sm text-label focus:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            <option value="all">すべて</option>
+            <option value="user">自作のみ</option>
+            <option value="builtin">既定のみ</option>
+          </select>
+        </div>
+      </div>
+
+      {!current ? (
+        <p className="text-center text-label-2">この条件（タグ・出どころ）では出題できる用語がありません。</p>
+      ) : (
+      <>
       {/* 質問 */}
       <div className="hig-card p-6">
         <p className="text-sm font-medium text-accent">{current.category}</p>
@@ -244,6 +301,8 @@ export function MockInterviewView() {
             </button>
           </div>
         </div>
+      )}
+      </>
       )}
     </section>
   );
