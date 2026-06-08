@@ -85,6 +85,11 @@ function InterviewForm({ user }: Props) {
   const [template, setTemplate] = useState("");
   const [ngExample, setNgExample] = useState("");
   const [tagsInput, setTagsInput] = useState(""); // カンマ区切り入力
+  // 深掘り（面接官の追い質問・任意）。最大2つまで。
+  const [fu1q, setFu1q] = useState("");
+  const [fu1a, setFu1a] = useState("");
+  const [fu2q, setFu2q] = useState("");
+  const [fu2a, setFu2a] = useState("");
   const valid = category.trim() && question.trim() && answer.trim();
   const isEditing = editingId !== null;
 
@@ -97,6 +102,7 @@ function InterviewForm({ user }: Props) {
     setTemplate("");
     setNgExample("");
     setTagsInput("");
+    setFu1q(""); setFu1a(""); setFu2q(""); setFu2a("");
   };
 
   const startEdit = (id: string) => {
@@ -110,6 +116,10 @@ function InterviewForm({ user }: Props) {
     setTemplate(item.template ?? "");
     setNgExample(item.ngExample ?? "");
     setTagsInput((item.tags ?? []).join(", "));
+    setFu1q(item.followUps?.[0]?.q ?? "");
+    setFu1a(item.followUps?.[0]?.a ?? "");
+    setFu2q(item.followUps?.[1]?.q ?? "");
+    setFu2a(item.followUps?.[1]?.a ?? "");
   };
 
   // #397: 既に同じ質問が登録済みかどうか（編集中は自分自身を除外）。
@@ -133,6 +143,11 @@ function InterviewForm({ user }: Props) {
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!valid || isDuplicate) return;
+    // 深掘り：Q/A 両方が埋まっているペアだけ採用（任意）。
+    const followUps = [
+      { q: fu1q.trim(), a: fu1a.trim() },
+      { q: fu2q.trim(), a: fu2a.trim() },
+    ].filter((p) => p.q && p.a);
     const data = {
       category: category.trim(),
       question: question.trim(),
@@ -141,6 +156,7 @@ function InterviewForm({ user }: Props) {
       template: template.trim() || undefined,
       ngExample: ngExample.trim() || undefined,
       tags: parseTags(tagsInput),
+      followUps: followUps.length > 0 ? followUps : undefined,
     };
     if (editingId) {
       user.updateInterviewQuestion(editingId, data);
@@ -219,6 +235,29 @@ function InterviewForm({ user }: Props) {
                 onChange={(e) => setTagsInput(e.target.value)}
                 placeholder="例：頻出, 未経験定番, STAR"
               />
+            </div>
+          </div>
+        </details>
+        {/* 深掘り「面接ではこう重ねられます」（任意）。面接練習で模範回答の後に段階開示される。 */}
+        <details className="rounded-control border border-separator p-3 open:bg-fill-quaternary">
+          <summary className="cursor-pointer text-sm font-medium text-label-2">
+            深掘り（任意）：面接官の追い質問（最大2つ）
+          </summary>
+          <p className="mt-2 text-xs text-label-3">
+            面接練習で「模範回答を見る」の後に「答えを見る」で段階表示されます。Q（追い質問）とA（答え方）の両方を書いたペアだけ登録されます。
+          </p>
+          <div className="mt-3 flex flex-col gap-3">
+            <div>
+              <label htmlFor="iv-fu1q" className={labelClass}>追い質問1（Q）</label>
+              <input id="iv-fu1q" className={inputClass} value={fu1q} onChange={(e) => setFu1q(e.target.value)} placeholder="例：それを具体的にどう進めましたか？" />
+              <label htmlFor="iv-fu1a" className={`${labelClass} mt-2`}>答え方1（A）</label>
+              <textarea id="iv-fu1a" className={inputClass} rows={2} value={fu1a} onChange={(e) => setFu1a(e.target.value)} placeholder="核を突いてやさしく完結（新しい用語を持ち込みすぎない）" />
+            </div>
+            <div>
+              <label htmlFor="iv-fu2q" className={labelClass}>追い質問2（Q）</label>
+              <input id="iv-fu2q" className={inputClass} value={fu2q} onChange={(e) => setFu2q(e.target.value)} placeholder="例：そこから何を学びましたか？" />
+              <label htmlFor="iv-fu2a" className={`${labelClass} mt-2`}>答え方2（A）</label>
+              <textarea id="iv-fu2a" className={inputClass} rows={2} value={fu2a} onChange={(e) => setFu2a(e.target.value)} placeholder="（任意）2つ目の追い質問の答え方" />
             </div>
           </div>
         </details>
