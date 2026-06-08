@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Term, InterviewQuestion, UserContent, Flashcard, PortfolioCard } from "../types";
 import { repository } from "../api";
 import { newId, encodeShareCode, decodeShareCode } from "../utils/share";
@@ -52,176 +52,177 @@ const EMPTY: UserContent = {
 
 export function useUserContent(): UseUserContent {
   const [content, setContent] = useState<UserContent>(EMPTY);
+  // データの非同期読み込みが完了したか。完了前の保存（空状態での上書き＝データ消失）を防ぐ。
+  const loadedRef = useRef(false);
 
   useEffect(() => {
     let active = true;
     repository.getUserContent().then((c) => {
-      if (active) setContent(c);
+      if (!active) return;
+      setContent(c);
+      loadedRef.current = true;
     });
     return () => {
       active = false;
     };
   }, []);
 
+  // すべての作問データ更新はここを通す。読み込み完了前は保存しない（空上書き＝消失の防止）。
+  const commit = useCallback((updater: (prev: UserContent) => UserContent) => {
+    if (!loadedRef.current) {
+      console.warn("[term-board] 読み込み完了前のため保存をスキップしました。少し待って再操作してください。");
+      return;
+    }
+    setContent((prev) => {
+      const next = updater(prev);
+      void repository.saveUserContent(next);
+      return next;
+    });
+  }, []);
+
   const addQuizTerm = useCallback(
     (t: NewQuizTerm) => {
-      setContent((prev) => {
-        const next: UserContent = {
-          ...prev,
-          quizTerms: [...prev.quizTerms, { ...t, id: newId(), source: "user" }],
-        };
-        void repository.saveUserContent(next);
-        return next;
-      });
+      commit((prev) => ({
+        ...prev,
+        quizTerms: [...prev.quizTerms, { ...t, id: newId(), source: "user" }],
+      }));
     },
-    [],
+    [commit],
   );
 
-  const addInterviewQuestion = useCallback((q: NewInterviewQuestion) => {
-    setContent((prev) => {
-      const next: UserContent = {
+  const addInterviewQuestion = useCallback(
+    (q: NewInterviewQuestion) => {
+      commit((prev) => ({
         ...prev,
-        interviewQuestions: [
-          ...prev.interviewQuestions,
-          { ...q, id: newId(), source: "user" },
-        ],
-      };
-      void repository.saveUserContent(next);
-      return next;
-    });
-  }, []);
+        interviewQuestions: [...prev.interviewQuestions, { ...q, id: newId(), source: "user" }],
+      }));
+    },
+    [commit],
+  );
 
   // 既存4択用語の更新（id・source を保持）。#389
-  const updateQuizTerm = useCallback((id: string, t: NewQuizTerm) => {
-    setContent((prev) => {
-      const next: UserContent = {
+  const updateQuizTerm = useCallback(
+    (id: string, t: NewQuizTerm) => {
+      commit((prev) => ({
         ...prev,
         quizTerms: prev.quizTerms.map((q) => (q.id === id ? { ...q, ...t } : q)),
-      };
-      void repository.saveUserContent(next);
-      return next;
-    });
-  }, []);
+      }));
+    },
+    [commit],
+  );
 
   // 既存面接Q&Aの更新（id・source を保持）。#389
-  const updateInterviewQuestion = useCallback((id: string, q: NewInterviewQuestion) => {
-    setContent((prev) => {
-      const next: UserContent = {
+  const updateInterviewQuestion = useCallback(
+    (id: string, q: NewInterviewQuestion) => {
+      commit((prev) => ({
         ...prev,
         interviewQuestions: prev.interviewQuestions.map((iq) =>
           iq.id === id ? { ...iq, ...q } : iq,
         ),
-      };
-      void repository.saveUserContent(next);
-      return next;
-    });
-  }, []);
+      }));
+    },
+    [commit],
+  );
 
-  const removeQuizTerm = useCallback((id: string) => {
-    setContent((prev) => {
-      const next = { ...prev, quizTerms: prev.quizTerms.filter((t) => t.id !== id) };
-      void repository.saveUserContent(next);
-      return next;
-    });
-  }, []);
+  const removeQuizTerm = useCallback(
+    (id: string) => {
+      commit((prev) => ({ ...prev, quizTerms: prev.quizTerms.filter((t) => t.id !== id) }));
+    },
+    [commit],
+  );
 
-  const removeInterviewQuestion = useCallback((id: string) => {
-    setContent((prev) => {
-      const next = {
+  const removeInterviewQuestion = useCallback(
+    (id: string) => {
+      commit((prev) => ({
         ...prev,
         interviewQuestions: prev.interviewQuestions.filter((q) => q.id !== id),
-      };
-      void repository.saveUserContent(next);
-      return next;
-    });
-  }, []);
+      }));
+    },
+    [commit],
+  );
 
-  const addReverseQuestion = useCallback((q: string) => {
-    const v = q.trim();
-    if (!v) return;
-    setContent((prev) => {
-      const current = prev.reverseQuestions ?? [];
-      if (current.includes(v)) return prev; // 重複は追加しない
-      const next: UserContent = { ...prev, reverseQuestions: [...current, v] };
-      void repository.saveUserContent(next);
-      return next;
-    });
-  }, []);
+  const addReverseQuestion = useCallback(
+    (q: string) => {
+      const v = q.trim();
+      if (!v) return;
+      commit((prev) => {
+        const current = prev.reverseQuestions ?? [];
+        if (current.includes(v)) return prev; // 重複は追加しない
+        return { ...prev, reverseQuestions: [...current, v] };
+      });
+    },
+    [commit],
+  );
 
-  const removeReverseQuestion = useCallback((q: string) => {
-    setContent((prev) => {
-      const current = prev.reverseQuestions ?? [];
-      const next: UserContent = { ...prev, reverseQuestions: current.filter((x) => x !== q) };
-      void repository.saveUserContent(next);
-      return next;
-    });
-  }, []);
-
-  const addFlashcard = useCallback((c: NewFlashcard) => {
-    setContent((prev) => {
-      const list = prev.flashcards ?? [];
-      const next: UserContent = {
+  const removeReverseQuestion = useCallback(
+    (q: string) => {
+      commit((prev) => ({
         ...prev,
-        flashcards: [...list, { ...c, id: newId(), source: "user" }],
-      };
-      void repository.saveUserContent(next);
-      return next;
-    });
-  }, []);
+        reverseQuestions: (prev.reverseQuestions ?? []).filter((x) => x !== q),
+      }));
+    },
+    [commit],
+  );
 
-  const updateFlashcard = useCallback((id: string, c: NewFlashcard) => {
-    setContent((prev) => {
-      const list = prev.flashcards ?? [];
-      const next: UserContent = {
+  const addFlashcard = useCallback(
+    (c: NewFlashcard) => {
+      commit((prev) => ({
         ...prev,
-        flashcards: list.map((f) => (f.id === id ? { ...f, ...c } : f)),
-      };
-      void repository.saveUserContent(next);
-      return next;
-    });
-  }, []);
+        flashcards: [...(prev.flashcards ?? []), { ...c, id: newId(), source: "user" }],
+      }));
+    },
+    [commit],
+  );
 
-  const removeFlashcard = useCallback((id: string) => {
-    setContent((prev) => {
-      const list = prev.flashcards ?? [];
-      const next: UserContent = { ...prev, flashcards: list.filter((f) => f.id !== id) };
-      void repository.saveUserContent(next);
-      return next;
-    });
-  }, []);
-
-  const addPortfolioCard = useCallback((p: NewPortfolioCard) => {
-    setContent((prev) => {
-      const list = prev.portfolioCards ?? [];
-      const next: UserContent = {
+  const updateFlashcard = useCallback(
+    (id: string, c: NewFlashcard) => {
+      commit((prev) => ({
         ...prev,
-        portfolioCards: [...list, { ...p, id: newId(), source: "user" }],
-      };
-      void repository.saveUserContent(next);
-      return next;
-    });
-  }, []);
+        flashcards: (prev.flashcards ?? []).map((f) => (f.id === id ? { ...f, ...c } : f)),
+      }));
+    },
+    [commit],
+  );
 
-  const updatePortfolioCard = useCallback((id: string, p: NewPortfolioCard) => {
-    setContent((prev) => {
-      const list = prev.portfolioCards ?? [];
-      const next: UserContent = {
+  const removeFlashcard = useCallback(
+    (id: string) => {
+      commit((prev) => ({
         ...prev,
-        portfolioCards: list.map((c) => (c.id === id ? { ...c, ...p } : c)),
-      };
-      void repository.saveUserContent(next);
-      return next;
-    });
-  }, []);
+        flashcards: (prev.flashcards ?? []).filter((f) => f.id !== id),
+      }));
+    },
+    [commit],
+  );
 
-  const removePortfolioCard = useCallback((id: string) => {
-    setContent((prev) => {
-      const list = prev.portfolioCards ?? [];
-      const next: UserContent = { ...prev, portfolioCards: list.filter((c) => c.id !== id) };
-      void repository.saveUserContent(next);
-      return next;
-    });
-  }, []);
+  const addPortfolioCard = useCallback(
+    (p: NewPortfolioCard) => {
+      commit((prev) => ({
+        ...prev,
+        portfolioCards: [...(prev.portfolioCards ?? []), { ...p, id: newId(), source: "user" }],
+      }));
+    },
+    [commit],
+  );
+
+  const updatePortfolioCard = useCallback(
+    (id: string, p: NewPortfolioCard) => {
+      commit((prev) => ({
+        ...prev,
+        portfolioCards: (prev.portfolioCards ?? []).map((c) => (c.id === id ? { ...c, ...p } : c)),
+      }));
+    },
+    [commit],
+  );
+
+  const removePortfolioCard = useCallback(
+    (id: string) => {
+      commit((prev) => ({
+        ...prev,
+        portfolioCards: (prev.portfolioCards ?? []).filter((c) => c.id !== id),
+      }));
+    },
+    [commit],
+  );
 
   const exportCode = useCallback(() => encodeShareCode(content), [content]);
 
@@ -230,6 +231,10 @@ export function useUserContent(): UseUserContent {
   // 逆質問は文字列なのでIDなし、重複は無視（#425）。
   const importCode = useCallback(
     (code: string) => {
+      // 読み込み完了前の取り込みは既存データを空に上書きしうるため拒否する。
+      if (!loadedRef.current) {
+        throw new Error("データ読み込み中です。少し待ってから取り込みを実行してください。");
+      }
       const incoming = decodeShareCode(code);
       const quiz = incoming.quizTerms.map((t) => ({ ...t, id: newId(), source: "shared" as const }));
       const interview = incoming.interviewQuestions.map((q) => ({
