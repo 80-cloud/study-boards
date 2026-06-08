@@ -262,6 +262,11 @@ function QuizForm({ user }: Props) {
   const [d2, setD2] = useState("");
   const [interview, setInterview] = useState("");
   const [plainMeaning, setPlainMeaning] = useState("");
+  // 深掘り（面接官の追い質問・任意）。最大2つまで入力可。
+  const [fu1q, setFu1q] = useState("");
+  const [fu1a, setFu1a] = useState("");
+  const [fu2q, setFu2q] = useState("");
+  const [fu2a, setFu2a] = useState("");
   const valid =
     term.trim() && category.trim() && meaning.trim() && interview.trim() &&
     d0.trim() && d1.trim() && d2.trim();
@@ -271,6 +276,7 @@ function QuizForm({ user }: Props) {
     setEditingId(null);
     setTerm(""); setCategory(""); setMeaning(""); setD0(""); setD1(""); setD2("");
     setInterview(""); setPlainMeaning("");
+    setFu1q(""); setFu1a(""); setFu2q(""); setFu2a("");
   };
 
   const startEdit = (id: string) => {
@@ -285,6 +291,10 @@ function QuizForm({ user }: Props) {
     setD2(item.distractors[2] ?? "");
     setInterview(item.interview);
     setPlainMeaning(item.plainMeaning ?? "");
+    setFu1q(item.followUps?.[0]?.q ?? "");
+    setFu1a(item.followUps?.[0]?.a ?? "");
+    setFu2q(item.followUps?.[1]?.q ?? "");
+    setFu2a(item.followUps?.[1]?.a ?? "");
   };
 
   // #397: 既に同じ用語名（自作分）が登録済みかどうか（編集中は自分自身を除外）。
@@ -298,6 +308,11 @@ function QuizForm({ user }: Props) {
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!valid || isDuplicate) return;
+    // 深掘り：Q/A 両方が埋まっているペアだけ採用（任意）。
+    const followUps = [
+      { q: fu1q.trim(), a: fu1a.trim() },
+      { q: fu2q.trim(), a: fu2a.trim() },
+    ].filter((p) => p.q && p.a);
     const data = {
       term: term.trim(),
       category: category.trim(),
@@ -305,6 +320,7 @@ function QuizForm({ user }: Props) {
       distractors: [d0.trim(), d1.trim(), d2.trim()],
       interview: interview.trim(),
       plainMeaning: plainMeaning.trim() || undefined,
+      followUps: followUps.length > 0 ? followUps : undefined,
     };
     if (editingId) {
       user.updateQuizTerm(editingId, data);
@@ -356,6 +372,29 @@ function QuizForm({ user }: Props) {
           <label htmlFor="q-plain" className={labelClass}>かんたんに言うと（任意）</label>
           <input id="q-plain" className={inputClass} value={plainMeaning} onChange={(e) => setPlainMeaning(e.target.value)} placeholder="中学生にも分かる言い方" />
         </div>
+        {/* 深掘り「面接ではこう重ねられます」（任意）。正解後に段階開示される追い質問。 */}
+        <details className="rounded-control border border-separator p-3 open:bg-fill-quaternary">
+          <summary className="cursor-pointer text-sm font-medium text-label-2">
+            深掘り（任意）：面接官の追い質問（最大2つ）
+          </summary>
+          <p className="mt-2 text-xs text-label-3">
+            正解後に「答えを見る」で段階表示されます。Q（追い質問）とA（答え方）の両方を書いたペアだけ登録されます。
+          </p>
+          <div className="mt-3 flex flex-col gap-3">
+            <div>
+              <label htmlFor="q-fu1q" className={labelClass}>追い質問1（Q）</label>
+              <input id="q-fu1q" className={inputClass} value={fu1q} onChange={(e) => setFu1q(e.target.value)} placeholder="例：具体的には何ですか？" />
+              <label htmlFor="q-fu1a" className={`${labelClass} mt-2`}>答え方1（A）</label>
+              <textarea id="q-fu1a" className={inputClass} rows={2} value={fu1a} onChange={(e) => setFu1a(e.target.value)} placeholder="核を突いてやさしく完結（新しい用語を持ち込みすぎない）" />
+            </div>
+            <div>
+              <label htmlFor="q-fu2q" className={labelClass}>追い質問2（Q）</label>
+              <input id="q-fu2q" className={inputClass} value={fu2q} onChange={(e) => setFu2q(e.target.value)} placeholder="例：他とどう違いますか？" />
+              <label htmlFor="q-fu2a" className={`${labelClass} mt-2`}>答え方2（A）</label>
+              <textarea id="q-fu2a" className={inputClass} rows={2} value={fu2a} onChange={(e) => setFu2a(e.target.value)} placeholder="（任意）2つ目の追い質問の答え方" />
+            </div>
+          </div>
+        </details>
         <div className="flex flex-wrap gap-2">
           <button type="submit" disabled={!valid || isDuplicate} className={primaryBtn}>
             {isEditing ? "更新する" : "追加する"}
