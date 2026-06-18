@@ -1,0 +1,14 @@
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+crash.log
+override.tf
+override.tf.json
+
+# CloudFormation / build artifacts
+packaged.yaml
+
+# リファクタ前の旧コード（参照用ローカル保持・提出には含めない）
+_legacy_*.tf.txt
