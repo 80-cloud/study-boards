@@ -91,6 +91,8 @@ aws ssm start-session --target <instance-id>
 terraform destroy -var="my_ip=$(curl -s https://checkip.amazonaws.com)/32"
 ```
 
+> RDS は既定で破棄時に最終スナップショットを残す（`skip_final_snapshot = false`）ため、誤操作によるデータ消失を防げる。学習で一括破棄したい時だけ `-var="skip_final_snapshot=true"` を追加で渡す（この場合は最終スナップショットを作らず削除する）。
+
 > state 置き場（`bootstrap/` の S3・DynamoDB）はほぼ無料なので残してよい。完全に消す場合は `bootstrap/` でも `terraform destroy` を実行する。
 
 ## モジュール構成

@@ -16,3 +16,10 @@ variable "backup_retention_period" {
   type    = number
   default = 0
 }
+
+# 破棄時に最終スナップショットを省略するか。既定 false=残す（誤操作でのデータ消失を防ぐ）。
+# 学習で一括破棄したい時だけ true を渡す。
+variable "skip_final_snapshot" {
+  type    = bool
+  default = false
+}

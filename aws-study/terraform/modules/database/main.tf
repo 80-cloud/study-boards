@@ -23,6 +23,9 @@ resource "aws_db_instance" "this" {
   multi_az                = var.multi_az
   backup_retention_period = var.backup_retention_period
 
-  skip_final_snapshot = true # 学習用：破棄時に最終スナップを作らず一括削除
-  tags                = { Name = "${var.project}-rds" }
+  # 既定(false)では破棄時に最終スナップショットを残しデータ消失を防ぐ。
+  # 学習で一括破棄したい時のみ skip_final_snapshot=true を渡す。
+  skip_final_snapshot       = var.skip_final_snapshot
+  final_snapshot_identifier = var.skip_final_snapshot ? null : "${var.project}-final-snapshot"
+  tags                      = { Name = "${var.project}-rds" }
 }
