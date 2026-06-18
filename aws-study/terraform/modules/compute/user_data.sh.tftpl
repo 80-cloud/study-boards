@@ -1,0 +1,9 @@
+#!/bin/bash
+set -ux
+# Docker 導入
+dnf install -y docker
+systemctl enable --now docker
+# 簡易アプリを 8080 で起動（ALB のヘルスチェック先）
+docker run -d -p 8080:80 --restart always --name app public.ecr.aws/nginx/nginx:latest
+# Secrets Manager から DB 認証を取得（IAMロール最小権限の実証）
+aws secretsmanager get-secret-value --secret-id ${secret_id} --query SecretString --output text --region ${region} > /root/db_credentials.json
