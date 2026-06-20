@@ -8,8 +8,3 @@ variable "state_bucket_name" {
   type    = string
   default = "aws-study-tfstate-hideharu"
 }
-
-variable "lock_table_name" {
-  type    = string
-  default = "aws-study-tflock"
-}

@@ -23,3 +23,10 @@ variable "my_ip" {
     error_message = "my_ip は x.x.x.x/32 形式で指定してください（0.0.0.0/0 は不可）。"
   }
 }
+
+# RDS 破棄時に最終スナップショットを省略するか。既定 false=残す（誤操作でのデータ消失を防ぐ）。
+# 学習で一括破棄したい時だけ true を渡す（database モジュールへ受け渡す）。
+variable "skip_final_snapshot" {
+  type    = bool
+  default = false
+}
