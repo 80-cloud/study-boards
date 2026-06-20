@@ -12,3 +12,7 @@ packaged.yaml
 
 # リファクタ前の旧コード（参照用ローカル保持・提出には含めない）
 _legacy_*.tf.txt
+
+# Lambda のビルド成果物（zip）はコミットしない
+**/build/
+*.zip
