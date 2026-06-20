@@ -26,7 +26,7 @@ AWS 上に **VPC / EC2 / RDS / ALB / WAF / CloudWatch** 一式を Terraform で�
         └─────────────────────┘
 
   監視: CloudWatch アラーム（CPU高負荷／EC2 自己修復）＋ SNS 通知
-  state: S3 バケット ＋ DynamoDB ロック（bootstrap で作成）
+  state: S3 バケット（S3 ネイティブロックで同時実行を防止）
 ```
 
 ## 主な設計方針（セキュリティ・運用）
@@ -38,7 +38,7 @@ AWS 上に **VPC / EC2 / RDS / ALB / WAF / CloudWatch** 一式を Terraform で�
 - **ALB は public サブネット 2AZ**・アクセスログを S3 に出力。
 - **WAF**（AWS マネージドルール）で SQLi/XSS など一般的な攻撃をブロック。
 - **CloudWatch** でアラーム通知＋ EC2 自己修復（システム障害時に自動 recover）。
-- **state は S3 + DynamoDB ロック**で管理（共有・同時実行の衝突防止）。
+- **state は S3 ＋ S3 ネイティブロック（`use_lockfile`）**で管理（共有・同時実行の衝突防止）。
 
 ## 前提
 
@@ -60,9 +60,9 @@ terraform init
 terraform apply        # S3 バケット + DynamoDB テーブルを作成（ほぼ無料・常設）
 ```
 
-作成したバケット名・テーブル名を本体の `backend.tf` の値と一致させます（既定: `aws-study-tfstate-hideharu` / `aws-study-tflock`）。バケット名は世界で一意のため、必要に応じて変更してください。
+作成したバケット名を本体の `backend.tf` の `bucket` と一致させます（既定: `aws-study-tfstate-hideharu`）。バケット名は世界で一意のため、必要に応じて変更してください。
 
-> 補足：本バージョンの Terraform では backend の `dynamodb_table` に対し「`use_lockfile`（S3 ネイティブロック）を推奨」という非推奨警告が出ますが、要件に合わせて DynamoDB ロックを採用しています。
+> 補足：state のロックは S3 ネイティブロック（`use_lockfile = true`・Terraform 1.10 以上が必要）を採用しています。以前は DynamoDB テーブルでロックするのが一般的でしたが、現在は非推奨のため使いません。`bootstrap/` が作成する DynamoDB テーブルは現状では使われないため、後で削除しても構いません。
 
 ## デプロイ
 
