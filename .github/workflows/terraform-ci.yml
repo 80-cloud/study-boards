@@ -1,0 +1,46 @@
+name: terraform-ci
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  id-token: write # terraform-test の OIDC 用
+
+jobs:
+  # 必須チェックにする方。AWS 不要のオフライン検査だけ＝全PRで走り常に緑。
+  terraform-validate:
+    name: terraform-validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: aws-study/terraform
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: "1.15.2"
+      - run: terraform fmt -check -recursive
+      - run: terraform init -backend=false
+      - run: terraform validate
+
+  # 非必須。OIDC plan ロールで terraform test（plan モード・$0）を CI でも回す。
+  terraform-test:
+    name: terraform-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: aws-study/terraform
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6.2.0
+        with:
+          role-to-assume: ${{ secrets.AWS_PLAN_ROLE_ARN }}
+          aws-region: ap-northeast-1
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: "1.15.2"
+      - run: terraform init
+      - run: terraform test

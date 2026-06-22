@@ -28,7 +28,7 @@ resource "aws_cloudwatch_log_group" "this" {
 resource "aws_lambda_function" "this" {
   function_name    = "${var.project}-${var.function_name}"
   role             = aws_iam_role.this.arn
-  runtime          = "nodejs20.x"
+  runtime          = "nodejs22.x"
   handler          = "handler.handler"
   filename         = data.archive_file.this.output_path
   source_code_hash = data.archive_file.this.output_base64sha256
