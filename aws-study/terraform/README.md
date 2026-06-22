@@ -52,17 +52,17 @@ AWS 上に **VPC / EC2 / RDS / ALB / WAF / CloudWatch** 一式を Terraform で�
 
 ## state バックエンドの準備（最初の 1 回だけ）
 
-state を S3 に保存するため、先に置き場（S3 バケット＋ DynamoDB テーブル）を作ります。これは `bootstrap/` の小さなスタックで行います（このスタック自身は鶏と卵を避けるためローカル state）。
+state を S3 に保存するため、先に置き場を作ります。これは `bootstrap/` の小さなスタックで行います（このスタック自身は鶏と卵を避けるためローカル state）。`bootstrap/` は state 用の S3 バケット（バージョニング・暗号化・公開遮断・バケットポリシー付き）と、GitHub Actions 用の OIDC プロバイダ／ロールを作成します。
 
 ```bash
 cd bootstrap
 terraform init
-terraform apply        # S3 バケット + DynamoDB テーブルを作成（ほぼ無料・常設）
+terraform apply        # state 用 S3 バケット＋OIDC ロールを作成（ほぼ無料・常設）
 ```
 
 作成したバケット名を本体の `backend.tf` の `bucket` と一致させます（既定: `aws-study-tfstate-hideharu`）。バケット名は世界で一意のため、必要に応じて変更してください。
 
-> 補足：state のロックは S3 ネイティブロック（`use_lockfile = true`・Terraform 1.10 以上が必要）を採用しています。以前は DynamoDB テーブルでロックするのが一般的でしたが、現在は非推奨のため使いません。`bootstrap/` が作成する DynamoDB テーブルは現状では使われないため、後で削除しても構いません。
+> 補足：state のロックは S3 ネイティブロック（`use_lockfile = true`・Terraform 1.10 以上が必要）を採用しています。以前は DynamoDB テーブルでロックするのが一般的でしたが、現在は非推奨のため使いません。
 
 ## デプロイ
 
@@ -94,6 +94,12 @@ terraform destroy -var="my_ip=$(curl -s https://checkip.amazonaws.com)/32"
 > RDS は既定で破棄時に最終スナップショットを残す（`skip_final_snapshot = false`）ため、誤操作によるデータ消失を防げる。学習で一括破棄したい時だけ `-var="skip_final_snapshot=true"` を追加で渡す（この場合は最終スナップショットを作らず削除する）。
 
 > state 置き場（`bootstrap/` の S3・DynamoDB）はほぼ無料なので残してよい。完全に消す場合は `bootstrap/` でも `terraform destroy` を実行する。
+
+## CI/CD（GitHub Actions）
+
+-  **CI（`terraform-ci.yml`・PR 時）**：`fmt -check` / `validate` のオフライン検査（必須チェック）と、`terraform test`（plan モード）で構成と安全性を検証する。AWS へは OIDC の読み取り専用ロールで接続する。
+- **CD（`terraform-cd.yml`・main マージ時）**：`aws-study/terraform/**` の変更が main に入ると起動し、`environment: prod` の承認を経てから apply する（承認するまで何も適用しない）。apply 後に ALB の DNS へ `curl` して反映を確認する。
+- 認証は OIDC（短期トークン）で長期アクセスキーは使わない。詳細は [docs/state-management.md](../docs/state-management.md) を参照。
 
 ## モジュール構成
 
