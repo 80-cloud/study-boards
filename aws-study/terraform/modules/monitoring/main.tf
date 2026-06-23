@@ -20,8 +20,8 @@ resource "aws_cloudwatch_metric_alarm" "cpu_high" {
   namespace           = "AWS/EC2"
   period              = 300
   statistic           = "Average"
-  threshold           = 80
-  alarm_description   = "EC2 CPU > 80% が継続"
+  threshold           = 70
+  alarm_description   = "EC2 CPU > 70% が継続"
   dimensions          = { InstanceId = var.instance_id }
   alarm_actions       = [aws_sns_topic.alerts.arn]
   ok_actions          = [aws_sns_topic.alerts.arn]
