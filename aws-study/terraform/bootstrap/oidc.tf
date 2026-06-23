@@ -144,10 +144,11 @@ data "aws_iam_policy_document" "apply_infra" {
   statement {
     sid    = "S3SiteManage"
     effect = "Allow"
+    # provider はバケット作成時に accelerate/lifecycle 等のサブ設定を読むため、
+    # リソースを aws-study-* に限定したうえで Get/Put/List を広めに許可する。
     actions = [
-      "s3:CreateBucket", "s3:DeleteBucket", "s3:ListBucket", "s3:GetBucket*", "s3:PutBucket*",
-      "s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:GetEncryptionConfiguration",
-      "s3:PutEncryptionConfiguration", "s3:PutBucketPublicAccessBlock", "s3:GetBucketPublicAccessBlock",
+      "s3:CreateBucket", "s3:DeleteBucket", "s3:DeleteObject",
+      "s3:Get*", "s3:Put*", "s3:List*",
     ]
     resources = ["arn:aws:s3:::aws-study-*", "arn:aws:s3:::aws-study-*/*"]
   }
