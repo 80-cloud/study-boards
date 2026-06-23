@@ -1,0 +1,77 @@
+name: ansible-java
+
+# 手動起動のみ。environment: prod の承認ゲートで止まり、承認後に apply→ansible が走る。
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write   # OIDC トークン取得に必須
+  contents: read
+
+concurrency:
+  group: ansible-java
+  cancel-in-progress: false
+
+jobs:
+  provision-and-install:
+    name: terraform-apply + ansible
+    runs-on: ubuntu-latest
+    environment: prod          # ★apply ロールの OIDC sub 条件が environment:prod のため必須＋承認ゲート
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: aws-study/ansible
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: "1.15.2"
+
+      - uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6.2.0
+        with:
+          role-to-assume: ${{ secrets.AWS_APPLY_ROLE_ARN }}
+          aws-region: ap-northeast-1
+
+      - name: Terraform apply (provision the target EC2)
+        working-directory: aws-study/ansible/infra
+        run: |
+          terraform init
+          terraform plan -out=tfplan -input=false -var="my_ip=${{ secrets.MY_IP_CIDR }}"
+          terraform apply -input=false tfplan
+
+      - name: Write SSH private key
+        run: |
+          printf '%s\n' "${{ secrets.ANSIBLE_SSH_KEY }}" > key.pem
+          chmod 600 key.pem
+
+      - name: Build inventory from terraform output
+        run: |
+          IP=$(terraform -chdir=infra output -raw ec2_public_ip)
+          SG=$(terraform -chdir=infra output -raw security_group_id)
+          sed -i "s|__EC2_IP__|${IP}|" inventory/hosts.ini
+          echo "SG_ID=${SG}" >> "$GITHUB_ENV"
+
+      - name: Open SSH from this runner (temporary)
+        run: |
+          RUNNER_IP=$(curl -s https://checkip.amazonaws.com)
+          aws ec2 authorize-security-group-ingress \
+            --group-id "$SG_ID" --protocol tcp --port 22 \
+            --cidr "${RUNNER_IP}/32" --region ap-northeast-1
+          echo "RUNNER_CIDR=${RUNNER_IP}/32" >> "$GITHUB_ENV"
+
+      - name: Install Ansible
+        run: pipx install --include-deps ansible
+
+      - name: Run playbook (install + verify Java)
+        run: ansible-playbook -i inventory/hosts.ini playbooks/install-java.yml
+
+      - name: Revoke temporary SSH (always)
+        if: always()
+        run: |
+          if [ -n "${SG_ID:-}" ] && [ -n "${RUNNER_CIDR:-}" ]; then
+            aws ec2 revoke-security-group-ingress \
+              --group-id "$SG_ID" --protocol tcp --port 22 \
+              --cidr "$RUNNER_CIDR" --region ap-northeast-1 || true
+          fi
