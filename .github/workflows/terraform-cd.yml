@@ -7,6 +7,8 @@ on:
     branches: [main]
     paths:
       - "aws-study/terraform/**"
+      - "!aws-study/terraform/bootstrap/**"
+      - "!aws-study/terraform/README.md"
 
 permissions:
   id-token: write # OIDC トークン取得に必須
