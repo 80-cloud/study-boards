@@ -1,0 +1,33 @@
+---
+- name: Install Java on EC2 (Amazon Corretto)
+  hosts: java_targets
+  gather_facts: false
+  become: true
+
+  vars:
+    java_major: "21"
+    java_pkg: "java-21-amazon-corretto-devel"
+
+  tasks:
+    - name: Wait until SSH is reachable (EC2 起動直後は SSH 未起動のため)
+      ansible.builtin.wait_for_connection:
+        timeout: 180
+
+    - name: Install Java (Amazon Corretto)
+      ansible.builtin.dnf:
+        name: "{{ java_pkg }}"
+        state: present
+
+    - name: Get java version
+      ansible.builtin.command: java -version
+      register: java_check
+      changed_when: false        # java -version は何も変更しない＆出力は stderr に出る
+
+    - name: Assert the installed major version
+      ansible.builtin.assert:
+        that:
+          - expected_token in java_check.stderr
+        fail_msg: "Java {{ java_major }} が入っていない: {{ java_check.stderr }}"
+        success_msg: "OK: {{ java_check.stderr_lines[0] }}"
+      vars:
+        expected_token: '"{{ java_major }}.'
