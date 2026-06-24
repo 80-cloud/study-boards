@@ -66,12 +66,12 @@ jobs:
           terraform -chdir=aws-study/terraform apply -input=false tfplan
 
       # 4) Ansible/SSM 前提を導入
-      - name: Install session-manager-plugin and Ansible
+      - name: Install session-manager-plugin and Ansible deps
         run: |
           curl -s "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o /tmp/smp.deb
           sudo dpkg -i /tmp/smp.deb
-          pipx install --include-deps ansible
-          pipx inject ansible boto3 botocore
+          # runner は ansible を ansible-core venv でプリインストール済み。実際に動くその venv へ boto3 を入れる。
+          pipx inject ansible-core boto3 botocore
           ansible-galaxy collection install -r aws-study/ansible/requirements.yml
 
       # 5) インスタンスID/転送バケットを取得 → SSM Online を待つ → inventory 生成
