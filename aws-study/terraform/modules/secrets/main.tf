@@ -13,8 +13,9 @@ resource "random_password" "jwt" {
 
 # Secrets Manager に DB 認証＋JWT 鍵を JSON で保管
 resource "aws_secretsmanager_secret" "db" {
-  name        = "${var.project}-db-credentials"
-  description = "App credentials (DB master + JWT signing key)"
+  name                    = "${var.project}-db-credentials"
+  description             = "App credentials (DB master + JWT signing key)"
+  recovery_window_in_days = 0 # destroy 時に即削除（同名再作成の復旧待ちブロックを防ぐ・学習用）
 }
 
 resource "aws_secretsmanager_secret_version" "db" {
