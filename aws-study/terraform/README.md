@@ -1,7 +1,7 @@
 # AWS インフラ構成（Terraform）
 
-AWS 上に **VPC / EC2 / RDS / ALB / WAF / CloudWatch** 一式を Terraform でコード化した構成です。
-`terraform apply` だけで、ネットワーク作成からアプリ起動・監視・保護までを再現できます。
+AWS 上に **VPC / EC2 / ALB / CloudWatch**（＋任意で RDS / WAF / serverless 層）を Terraform でコード化した構成です。
+`terraform apply` だけでネットワーク〜監視までを再現でき、アプリの配置・起動は Ansible（SSM 接続）が担います。
 
 ## アーキテクチャ
 
@@ -72,14 +72,16 @@ terraform plan  -var="my_ip=$(curl -s https://checkip.amazonaws.com)/32"
 terraform apply -var="my_ip=$(curl -s https://checkip.amazonaws.com)/32"
 ```
 
+> 既定では **VPC + ALB + EC2** のみを作成します。serverless 層（Lambda / API GW / CloudFront / S3 静的サイト・WAF）と RDS は任意で、`-var="enable_serverless=true"` / `-var="enable_rds=true"` を渡したときだけ作成します（アプリは H2 メモリ DB で動くため RDS は既定 off）。
+
 ## 動作確認
 
 ```bash
 # ALB 経由でアプリにアクセス（200）
-curl -s -o /dev/null -w "%{http_code}\n" "http://$(terraform output -raw alb_dns)/"
+curl -s -o /dev/null -w "%{http_code}\n" "http://$(terraform output -raw alb_dns)/posts"
 
-# XSS 風リクエストは WAF が 403 でブロック
-curl -s -o /dev/null -w "%{http_code}\n" "http://$(terraform output -raw alb_dns)/?x=<script>alert(1)</script>"
+# （enable_serverless=true のとき）XSS 風リクエストは WAF が 403 でブロック
+curl -s -o /dev/null -w "%{http_code}\n" "http://$(terraform output -raw alb_dns)/posts?x=<script>alert(1)</script>"
 
 # EC2 へは鍵なしで SSM 接続
 aws ssm start-session --target <instance-id>
@@ -97,8 +99,8 @@ terraform destroy -var="my_ip=$(curl -s https://checkip.amazonaws.com)/32"
 
 ## CI/CD（GitHub Actions）
 
--  **CI（`terraform-ci.yml`・PR 時）**：`fmt -check` / `validate` のオフライン検査（必須チェック）と、`terraform test`（plan モード）で構成と安全性を検証する。AWS へは OIDC の読み取り専用ロールで接続する。
-- **CD（`terraform-cd.yml`・main マージ時）**：`aws-study/terraform/**` の変更が main に入ると起動し、`environment: prod` の承認を経てから apply する（承認するまで何も適用しない）。apply 後に ALB の DNS へ `curl` して反映を確認する。
+- **CI（`terraform-ci.yml`・PR 時）**：`fmt -check` / `validate` のオフライン検査（必須チェック）と、`terraform test`（plan モード）で構成と安全性を検証する。AWS へは OIDC の読み取り専用ロールで接続する。
+- **CD（`app-deploy.yml`・main マージ時 or 手動実行）**：`environment: prod` の承認を経てから、Terraform で環境構築 → Ansible（SSM 接続）でアプリを systemd 起動 → ALB の `/posts` へ `curl` して疎通確認まで行う（承認するまで何も適用しない）。詳細は [../ansible/README.md](../ansible/README.md) を参照。
 - 認証は OIDC（短期トークン）で長期アクセスキーは使わない。詳細は [docs/state-management.md](../docs/state-management.md) を参照。
 
 ## モジュール構成
@@ -108,9 +110,9 @@ terraform destroy -var="my_ip=$(curl -s https://checkip.amazonaws.com)/32"
 | `network` | VPC / 2AZ public+private サブネット / IGW / ルートテーブル |
 | `security` | セキュリティグループ 3 種（ALB / EC2 / RDS） |
 | `secrets` | DB 認証情報の生成と Secrets Manager 保管 |
-| `iam` | EC2 用ロール（SSM / ECR / CloudWatch / Secrets 限定読み取り） |
-| `database` | RDS MySQL（private・暗号化） |
-| `compute` | EC2（user_data 自動デプロイ・SSM 接続） |
+| `iam` | EC2 用ロール（SSM / CloudWatch / Secrets 限定読み取り） |
+| `database` | RDS MySQL（private・暗号化・`enable_rds=true` のとき） |
+| `compute` | EC2（最小 user_data・アプリ配置は Ansible/SSM） |
 | `alb` | ALB（public 2AZ）＋ ターゲットグループ ＋ アクセスログ S3 |
 | `monitoring` | CloudWatch アラーム（CPU／自己修復）＋ SNS ＋ ロググループ |
 | `waf` | WAFv2 Web ACL（マネージドルール）＋ ALB 紐付け |

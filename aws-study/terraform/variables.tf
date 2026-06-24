@@ -30,3 +30,15 @@ variable "skip_final_snapshot" {
   type    = bool
   default = false
 }
+# 任意レイヤの ON/OFF。push パイプラインは VPC＋ALB＋EC2 だけを作るため既定 false。
+# true で serverless 一式(Lambda/API GW/CloudFront/S3静的サイト)＋ALB前段のWAFも作る。
+variable "enable_serverless" {
+  type    = bool
+  default = false
+}
+
+# RDS(MySQL)を作るか。アプリは H2(メモリDB)で動くため既定 false。
+variable "enable_rds" {
+  type    = bool
+  default = false
+}
