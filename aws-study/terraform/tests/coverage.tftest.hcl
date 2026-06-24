@@ -88,7 +88,8 @@ run "cdn_config" {
 run "accepts_valid_my_ip" {
   command = plan
   variables {
-    my_ip = "203.0.113.10/32"
+    my_ip             = "203.0.113.10/32"
+    enable_serverless = true
   }
   assert {
     condition     = output.lambda_function_name == "aws-study-hello"

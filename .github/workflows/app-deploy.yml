@@ -1,0 +1,105 @@
+name: app-deploy
+
+# main へ push されたら：review-park(private)をPATで取得 → runnerでjarビルド →
+# Terraformで環境構築 → Ansible(SSM)でsystemd起動 → ALB /posts が200を確認。
+# environment: prod の承認ゲートで止まり、承認するまで何も作らない。
+on:
+  push:
+    branches: [main]
+    paths:
+      - "aws-study/terraform/**"
+      - "aws-study/ansible/**"
+      - ".github/workflows/app-deploy.yml"
+      - "!aws-study/terraform/bootstrap/**"
+  workflow_dispatch:
+
+permissions:
+  id-token: write # OIDC
+  contents: read
+
+concurrency:
+  group: app-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: prod
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      # アプリ源 review-park(private) を PAT で取得（study-boards には無いため）
+      - name: Checkout review-park (app source)
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: 80-cloud/review-park
+          token: ${{ secrets.REVIEW_PARK_PAT }}
+          path: review-park
+          ref: main
+
+      # 1) jar は runner でビルド（t3.micro の OOM を回避）
+      - uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287 # v5.3.0
+        with:
+          distribution: corretto
+          java-version: "21"
+      - name: Build bootJar
+        working-directory: review-park/backend
+        run: |
+          chmod +x ./gradlew
+          ./gradlew clean bootJar
+
+      # 2) OIDC で apply ロールへ
+      - uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6.2.0
+        with:
+          role-to-assume: ${{ secrets.AWS_APPLY_ROLE_ARN }}
+          aws-region: ap-northeast-1
+
+      # 3) Terraform apply（serverless/RDS は既定 off ＝ VPC+ALB+EC2 のみ）
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: "1.15.2"
+      - name: Terraform apply
+        run: |
+          terraform -chdir=aws-study/terraform init
+          terraform -chdir=aws-study/terraform plan -out=tfplan -input=false -var="my_ip=${{ secrets.MY_IP_CIDR }}"
+          terraform -chdir=aws-study/terraform apply -input=false tfplan
+
+      # 4) Ansible/SSM 前提を導入
+      - name: Install session-manager-plugin and Ansible
+        run: |
+          curl -s "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o /tmp/smp.deb
+          sudo dpkg -i /tmp/smp.deb
+          pipx install --include-deps ansible
+          pipx inject ansible boto3 botocore
+          ansible-galaxy collection install -r aws-study/ansible/requirements.yml
+
+      # 5) インスタンスID/転送バケットを取得 → SSM Online を待つ → inventory 生成
+      - name: Wait for SSM online and render inventory
+        run: |
+          IID=$(terraform -chdir=aws-study/terraform output -raw instance_id)
+          BUCKET=$(terraform -chdir=aws-study/terraform output -raw ssm_transfer_bucket)
+          for i in $(seq 1 30); do
+            S=$(aws ssm describe-instance-information --filters "Key=InstanceIds,Values=$IID" --query 'InstanceInformationList[0].PingStatus' --output text 2>/dev/null || true)
+            [ "$S" = "Online" ] && echo "SSM online" && break
+            echo "waiting SSM online... ($i)"; sleep 10
+          done
+          sed -i "s|__INSTANCE_ID__|${IID}|; s|__TRANSFER_BUCKET__|${BUCKET}|" aws-study/ansible/inventory/hosts.ini
+
+      # 6) Ansible(SSM接続) で配置・systemd 起動
+      - name: Run Ansible over SSM
+        working-directory: aws-study/ansible
+        run: |
+          ansible-playbook playbooks/deploy-app.yml \
+            -e "app_jar_src=${GITHUB_WORKSPACE}/review-park/backend/build/libs/app.jar"
+
+      # 7) ALB 経由で 200 を確認
+      - name: Verify via ALB
+        run: |
+          DNS=$(terraform -chdir=aws-study/terraform output -raw alb_dns)
+          for i in $(seq 1 30); do
+            if curl -fsS "http://$DNS/posts"; then echo; echo "healthy"; exit 0; fi
+            echo "waiting ALB healthy... ($i)"; sleep 10
+          done
+          echo "did not become healthy"; exit 1
+      # 片付けは WF に入れない＝本人が手動で実施
