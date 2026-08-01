@@ -53,7 +53,24 @@ VPC Flow LogsをS3に配信し、Athenaで直接SQLクエリをかけられる�
 
 ## 3. WebSocket API チャットアプリ(API Gateway + Lambda + DynamoDB)
 
-準備中。実施後に追記する。
+**参照**: [Tutorial: Create a WebSocket chat app with a WebSocket API, Lambda and DynamoDB](https://docs.aws.amazon.com/apigateway/latest/developerguide/websocket-api-chat-app.html)、[Use wscat to connect to a WebSocket API and send messages to it](https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-how-to-call-websocket-api-wscat.md)
+
+CloudFormationで用意されたDynamoDBテーブル・Lambda関数群と、WebSocket APIを自分で紐付けてチャットアプリのバックエンドを構築する。
+
+### やったこと
+
+1. CFNテンプレート(zip)をダウンロードしてスタック作成。チュートリアル本文はLambda関数を「3つ」と読める書き方だったが、テンプレート本体を事前に読んだところ実際は`ConnectHandler`/`DisconnectHandler`/`SendMessageHandler`/`DefaultHandler`の**4つ**だった
+2. 各Lambda関数の物理名には、CloudFormationが論理ID由来のランダムな英数字サフィックスを付与しており(例:`websocket-api-chat-app-tuto-ConnectHandler2FFD52D8-dkYXyqXyvN6j`)、かつ64文字制限により関数名ごとに切り詰められ方が異なっていた。事前にCLIで正確な名前を確認してからAPI Gatewayでの紐付けに臨んだ結果、取り違えなく一致させられた
+3. DynamoDBテーブルはオンデマンドではなく、テンプレートで明示的にプロビジョンド(5 RCU + 5 WCU)に設定されていた。永続無料枠(25+25)の範囲内であることを確認した
+4. Lambda実行ロールには、API作成前の時点で`execute-api:ManageConnections`の権限がワイルドカード(`*/*/POST/@connections/*`)で事前に付与されており、「APIがまだ存在しないのに権限を持てるのか」という懸念は杞憂だった
+5. WebSocket API作成時、4つのルート($connect/$disconnect/$default/sendmessage)にそれぞれ対応するLambda関数を紐付け、CLIで統合先の一致を裏取りした
+6. wscatを2ターミナルで接続し、sendmessageルートのブロードキャスト・$defaultルートでの接続情報返却・$disconnect時のDynamoDBレコード削除(接続時2件→切断後1件)を実機で確認した
+7. 片付けはWebSocket API→CloudFormationスタックの順で実施(逆順だと依存関係エラーになりうる)。CLIで両方の消滅を確認した
+
+### 得られた知見
+
+- チュートリアル本文の記載を鵜呑みにせず、CloudFormationテンプレート本体を先に読むことで、実際のリソース数・命名規則を正確に把握してから作業に臨めた
+- ランダムサフィックス付きの物理名は文字数制限により切り詰められ方が個体ごとに異なるため、コンソールでの紐付け作業前にCLIで正確な名前を確認しておくと取り違え事故を防げる
 
 ---
 
@@ -142,3 +159,69 @@ SQSでの非同期メッセージングの基本と、EventBridge Schedulerに�
 - ECSサービスは「稼働中(スケール0より大きい)」のままでは削除できない。削除前に必要タスク数を0に更新し、実際にタスクが止まるのを待つ必要がある
 - タスク・サービスが0件になった空のECSクラスターは、明示的な削除操作をしなくてもAWS側で自動的に非アクティブ化される
 - コンソールで組んだ構成を、同じ内容のAWS CLIコマンド数個で過不足なく再現できることを確認した
+
+---
+
+## 8. Amazon EventBridge Pipes(DynamoDB Streams → SQS、イベントフィルタ)
+
+**参照**: [Tutorial: Create an EventBridge pipe that filters source events](https://docs.aws.amazon.com/eventbridge/latest/userguide/pipes-tutorial-create-dynamodb-sqs.html)
+
+DynamoDBストリームをソース、SQSをターゲットとし、間にイベントパターンによるフィルタを挟んでPipeを構築する。
+
+### やったこと
+
+1. このチュートリアルはzipダウンロードではなく、CFNテンプレートのJSON本文がドキュメントに直接埋め込まれている形式だった。ローカルにファイルとして保存してからアップロードする必要があった
+2. 前提条件のテンプレートはDynamoDBテーブルとSQSキューのみでIAMリソースを含まないため、前回(WebSocketチュートリアル)で必須だった「IAMリソース作成の承認」チェックボックス自体が出現しなかった
+3. イベントパターンの入力欄で貼り付けが効かない事象が発生。原因は「サンプルイベント」表示欄(読み取り専用)と「イベントパターン」入力欄(編集可能)を混同していたことで、正しい欄をクリックし直すことで解決した(貼り付けが効かない場合は手入力でも解決可)
+4. DynamoDBテーブルに対しINSERT→MODIFY→REMOVEの3操作を行い、SQS側をポーリング。フィルタ(`eventName: ["INSERT","MODIFY"]`)通り**2件のみ配信され、REMOVEイベントは一度も届かなかった**ことをCLIで確認した(SQSの`ApproximateNumberOfMessages`でも裏取り)
+5. 片付けはPipe→CloudFormationスタックの順で実施。CLIで全リソース(Pipe・スタック・テーブル・キュー)の消滅を確認した
+
+### 得られた知見
+
+- Pipeの料金はフィルタを通過したイベント数のみに課金され、除外されたイベントは課金対象外(公式料金ページ本文で確認。DynamoDBストリーム自体は追加課金なし)
+- コンソールのコードエディタ系入力欄では、似た見た目の「サンプル/読み取り専用表示」と「実際の編集対象」を取り違えやすい。貼り付けが効かない時はまずどちらの欄を操作しているか確認すべき
+
+---
+
+## 9. AWS CodeDeploy × AWS SAM(Lambdaへの段階的デプロイ)— 保留中
+
+**参照**: [Tutorial: Deploy an updated Lambda function with CodeDeploy and the AWS Serverless Application Model](https://docs.aws.amazon.com/codedeploy/latest/userguide/tutorial-lambda-sam.html)、[Deploying serverless applications gradually with AWS SAM](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/automating-updates-to-serverless-apps.html)
+
+SAMの`DeploymentPreference`(Canary/Linear/AllAtOnce)でLambdaのカナリアリリースを行うチュートリアル。**アカウント側の制限により未完了**。
+
+### やったこと
+
+1. ローカルにSAM CLIを導入した(Homebrew、v1.164.0)
+2. `aws deploy list-applications`実行時に`SubscriptionRequiredException: The AWS Access Key Id needs a subscription for the service`というエラーに遭遇した
+3. IAMポリシーシミュレーター(`simulate-principal-policy`)で権限自体は`allowed`であることを確認し、IAM権限の問題ではないと切り分けた
+4. rootユーザーでコンソールを確認したところ、アカウントが「Freeアカウントプラン」で登録が完了しておらず、一部サービス(CodeDeploy)へのアクセスが制限されていることが判明した
+5. 支払い設定の確認・アップグレードは課金判断を伴うため、本人確認の上で今回は保留とした
+
+### 得られた知見
+
+- `SubscriptionRequiredException`はIAM権限エラーではなく、アカウント自体がそのサービスを利用可能な状態になっていない(Freeプランの制限・支払い未完了等)ことを示すエラーである場合がある。IAMポリシーシミュレーターで権限が`allowed`と出ているのにAPIが弾かれる場合は、アカウントレベルの制限を疑うべき
+- Lambdaのエイリアス+重み付きルーティング(`RoutingConfig`)はCodeDeployと独立したLambda本体の機能であり、時間経過での自動シフトやCloudWatchアラームでの自動ロールバックといった「自動化」の部分だけをCodeDeployが肩代わりしていると整理できた
+
+---
+
+## 10. 可観測性比較:AWS X-Ray vs CloudWatch Application Signals(Lambda)
+
+**参照**: [Set up AWS X-Ray with API Gateway REST APIs](https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-enabling-xray.html)、[Enable your applications on Lambda(Application Signals)](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-Application-Signals-Enable-LambdaMain.html)、[AWS Distro for OpenTelemetry Lambda Support for Java](https://aws-otel.github.io/docs/getting-started/lambda/lambda-java)
+
+3つの可観測性チュートリアルを比較検証した。SAMでJava 21 + API Gateway + Lambdaの検証用の土台(`observability-lambda-lab/`)を自作し、同じLambda関数の上で段階的に機能を有効化して違いを比較した。
+
+### やったこと
+
+1. 事前調査で、手動ADOTレイヤーとApplication Signalsが実は同一の「AWS Lambda Layer for OpenTelemetry」を使っており、環境変数`AWS_LAMBDA_EXEC_WRAPPER`の値が違うだけ(前者は`/opt/otel-handler`系、後者は`/opt/otel-instrument`)と判明した。両方を同時に重ねると設定の奪い合いになるため、**同じ関数上で1つずつ有効化→観察→次**の順で比較する方針にした
+2. API Gatewayステージ+Lambda本体の両方でX-Rayを有効化し、リクエストを送信した。Trace Mapで「クライアント→API Gateway→Lambda」の1本のトレースを確認できた。1回目のリクエストのみDuration 0.885秒、2・3回目は0.046〜0.056秒と大差があり、Lambdaのコールドスタートがトレースの数値として実際に可視化されることを確認した
+3. 続けてApplication Signalsを追加有効化した。裏で`AWSOpenTelemetryDistroJava`レイヤーと環境変数`AWS_LAMBDA_EXEC_WRAPPER=/opt/otel-instrument`が自動設定された
+4. 公式ドキュメントには手動有効化時に管理ポリシー`CloudWatchLambdaApplicationSignalsExecutionRolePolicy`を実行ロールに付与する必要があると記載されていたが、コンソールのチェックボックス経由では実際にはこのポリシーは付与されなかった。Lambdaログに権限エラーは出ておらず(`AWS Application Signals enabled`のログのみ)、Application Signals側のサービス一覧でも`InstrumentationType`が`UNINSTRUMENTED`→`INSTRUMENTED`に変化したことを確認し、このポリシー無しでも動作することを実機で確認した
+5. Application Signalsの「サービス」画面で、Lambda関数がサービスとして自動検出され、可用性100%・SLO作成ボタンが表示されることを確認した。X-Rayが「1リクエスト単位の詳細」を見せるのに対し、Application Signalsは「サービス単位の健全性の自動集計+SLO」という一段上のレイヤーであることを体感した
+6. 手動ADOT(レガシー版)は上記の通りApplication Signalsとほぼ同一の仕組みのため、追加検証は見送った
+7. `sam delete`でスタック一括削除後、スタック管理外で自動生成されていた残骸(X-Ray有効化時にLambdaコンソールが作成したIAMポリシー、データ0バイトのCloudWatchロググループ)をCLIで発見し、削除した。最終的に全リソースの消滅をCLIで確認した
+
+### 得られた知見
+
+- CloudWatch Application Signalsは独立した新サービスではなく、X-Rayの上に「ADOTレイヤーによる自動計装+SLO機能」を乗せたものである。手動ADOTとApplication Signalsは同じレイヤー機構を奪い合うため併用しない方がよい
+- 公式ドキュメントに書かれた必要IAMポリシーが、実際のコンソール操作では付与されていなくても機能する場合がある。「ドキュメント記載の権限=実際に必要な権限」とは限らず、ログでエラーの有無を確認するのが確実
+- CloudFormation/SAMスタックの管理外でコンソール操作(X-Rayのアクティブトレーシング有効化等)によって自動生成されたIAMポリシーは、スタック削除後も残骸として残る。スタック削除後は`describe`系コマンドで管理外残骸の有無を確認する習慣が有効
