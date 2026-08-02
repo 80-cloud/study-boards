@@ -225,3 +225,32 @@ SAMの`DeploymentPreference`(Canary/Linear/AllAtOnce)でLambdaのカナリアリ
 - CloudWatch Application Signalsは独立した新サービスではなく、X-Rayの上に「ADOTレイヤーによる自動計装+SLO機能」を乗せたものである。手動ADOTとApplication Signalsは同じレイヤー機構を奪い合うため併用しない方がよい
 - 公式ドキュメントに書かれた必要IAMポリシーが、実際のコンソール操作では付与されていなくても機能する場合がある。「ドキュメント記載の権限=実際に必要な権限」とは限らず、ログでエラーの有無を確認するのが確実
 - CloudFormation/SAMスタックの管理外でコンソール操作(X-Rayのアクティブトレーシング有効化等)によって自動生成されたIAMポリシーは、スタック削除後も残骸として残る。スタック削除後は`describe`系コマンドで管理外残骸の有無を確認する習慣が有効
+
+---
+
+## 11. Private REST API × Amazon ECS Blue/Greenデプロイ(ネイティブ方式)
+
+**参照**: [Tutorial: Create a private REST API](https://docs.aws.amazon.com/apigateway/latest/developerguide/private-api-tutorial.html)、[Creating an Amazon ECS blue/green deployment](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/deploy-blue-green-service.html)、[Application Load Balancer resources for blue/green, linear, and canary deployments](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/alb-resources-for-blue-green.html)、[Amazon ECS infrastructure IAM role for load balancers](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/AmazonECSInfrastructureRolePolicyForLoadBalancers.html)
+
+VPC内からのみアクセス可能なAPIの構築と、ECS自体が持つ新しいBlue/Greenデプロイ機構(CodeDeploy不要)を実践した。
+
+### やったこと
+
+1. Private API用のCFNテンプレート本体を事前にダウンロードして確認したところ、テスト用EC2インスタンスタイプがデフォルトで`t3.nano`だった。このアカウントには無料利用枠対象インスタンスタイプ以外を起動禁止する制限がかかっており、`CREATE_FAILED`(`The specified instance type is not eligible for Free Tier`)→自動ロールバックが発生した。`describe-instance-types --filters free-tier-eligible=true`で対象タイプ(`t3.micro`等)を確認し、テンプレートを書き換えて再デプロイし成功させた
+2. API作成時、コンソールで「プライベート」エンドポイントタイプに切り替えてVPCエンドポイントIDを入力したはずが、`get-rest-api`で確認すると`endpointConfiguration.vpcEndpointIds`が空のまま作成されていた。設定画面で改めて紐付け直すことで解消した
+3. リソースポリシー(`aws:sourceVpce`条件)をアタッチしtestステージへデプロイ。手元の端末からの`curl`は名前解決失敗(`Could not resolve host`)、Session Manager経由でEC2内から叩いた`curl`は`"Hello from Lambda!"`が返り、VPC限定アクセスであることを内外両面から確認した
+4. Amazon ECSのBlue/Greenデプロイには「CodeDeploy経由(旧)」と「ECSネイティブ(新)」の2つの別ページ・別機構が存在し紛らわしいことに気づいた。両方の公式ページを実際に開いて比較し、`deploymentController.type=ECS`+`deploymentConfiguration.strategy=BLUE_GREEN`を使うネイティブ方式を採用した
+5. サービス定義に必要な`loadBalancers[].advancedConfiguration.productionListenerRule`は、リスナー自体のARNではなく別リソースである「リスナールール」のARNだった。リスナー作成時に自動生成されるデフォルトルールのARNを`describe-rules --listener-arn`で別途取得する必要があった
+6. ECSコンソールのサービス作成画面で「グリーンターゲットグループ」選択欄がクリックに反応しない不具合に遭遇した(キーボード操作・ブラウザ表示倍率変更でも解消せず)。`aws ecs create-service`をCLIで1コマンド実行し、同じ設定を投入することで回避した
+7. サービスを初めて作成した直後は、比較対象となる既存のBlueが存在しないため、新しいリビジョンがいきなりGreen(alternate)側に配置され、Bake time後にそのまま本番(リスナー重み100%)になる、という初回特有の挙動を確認した。Blue側は空のままだった
+8. タスク定義を更新(タスクメモリ0.5GB→1GB)してサービスを再デプロイし、実際のBlue/Green切り替わりをCLIでリアルタイムに追跡した:新リビジョンがBlue側に立ち上がりヘルスチェック通過→本番リスナーの重みがGreen 100%→Blue 100%へ反転→旧タスクが`draining`状態で切り離される、という一連の流れを`describe-services`/`describe-target-health`/`describe-rules`で裏取りした
+9. 使用したリソース(NATゲートウェイ2基・ALB・ターゲットグループ2つ・IAMロール・セキュリティグループ2つ・ECSクラスタ・タスク定義等)をすべて削除し、AWS CLIで消滅を確認した
+
+### 得られた知見
+
+- 公式サンプルのCloudFormationテンプレートのデフォルト値(EC2インスタンスタイプ等)が、自分のアカウント固有の制限(無料利用枠限定等)に適合するとは限らない。`CREATE_FAILED`の`ResourceStatusReason`を実機で読み、対応するAWS CLIコマンド(`describe-instance-types`等)で許容される値を確認してから修正するのが確実
+- API Gatewayのプライベートエンドポイントは、コンソール上で「VPCエンドポイントIDを入力した」ように見えても、実際に反映されているとは限らない。`get-rest-api`で`endpointConfiguration.vpcEndpointIds`を都度CLIで裏取りする習慣が有効
+- Amazon ECSのBlue/Greenデプロイには「CodeDeploy経由(旧)」と「ECSネイティブ(新)」の2つの仕組みが並存しており、ドキュメントページも別々に存在する。参照するページを取り違えないよう、着手前にどちらの方式かを明確にする必要がある
+- `productionListenerRule`はリスナーそのものではなく「リスナールール」という別リソースのARNを要求する。リスナー作成時に自動生成されるデフォルトルールのARNを`describe-rules`で別途取得する一手間が必要になる
+- サービスの初回作成時はBlue側が空のまま、新リビジョンがいきなりGreen側で本番稼働する。「Blue」「Green」という名前は固定の役割ではなく、単に「今の本番」と「次のデプロイ先」を交互に使う2つの箱に過ぎない
+- コンソールのUIが特定の入力欄でクリックに反応しない不具合に遭遇した場合、無理に固執せずAWS CLIの`create-service`(1コマンド)に切り替えることで、同じ設定を確実に投入できる
