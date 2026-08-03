@@ -21,3 +21,6 @@ _legacy_*.tf.txt
 .aws-sam/
 samconfig.toml
 **/node_modules/
+
+# Maven
+**/target/
