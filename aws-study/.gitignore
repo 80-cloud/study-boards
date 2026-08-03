@@ -16,3 +16,8 @@ _legacy_*.tf.txt
 # Lambda のビルド成果物（zip）はコミットしない
 **/build/
 *.zip
+
+# AWS SAM
+.aws-sam/
+samconfig.toml
+**/node_modules/
