@@ -254,3 +254,33 @@ VPC内からのみアクセス可能なAPIの構築と、ECS自体が持つ新�
 - `productionListenerRule`はリスナーそのものではなく「リスナールール」という別リソースのARNを要求する。リスナー作成時に自動生成されるデフォルトルールのARNを`describe-rules`で別途取得する一手間が必要になる
 - サービスの初回作成時はBlue側が空のまま、新リビジョンがいきなりGreen側で本番稼働する。「Blue」「Green」という名前は固定の役割ではなく、単に「今の本番」と「次のデプロイ先」を交互に使う2つの箱に過ぎない
 - コンソールのUIが特定の入力欄でクリックに反応しない不具合に遭遇した場合、無理に固執せずAWS CLIの`create-service`(1コマンド)に切り替えることで、同じ設定を確実に投入できる
+
+---
+
+## 12. IAM Permissions Boundaryによる権限委任(同一アカウント内)
+
+**参照**: [Permissions boundaries for IAM entities](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_boundaries.html)、[IAM and AWS STS condition context keys](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_iam-condition-keys.html)、[Testing IAM policies with the IAM policy simulator](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_testing-policies.html)、[Delegate permission management to developers using IAM permissions boundaries(AWS Security Blog)](https://aws.amazon.com/blogs/security/delegate-permission-management-to-developers-using-iam-permissions-boundaries/)
+
+IAMロールに付けられる権限の「天井」をPermissions Boundaryで固定し、その天井の下でなら開発担当者自身にIAMロールの作成・管理を任せられることを、委任元(管理者)・委任先(開発担当者)の2つの立場を実際に使い分けて検証した。
+
+### やったこと
+
+1. 天井となる管理ポリシー`DeveloperPermissionsBoundary`(S3の特定バケットのみ+Lambda実行に必要なCloudWatch Logs書き込みのみ許可)と、委任先に付ける`IAMDelegatedAdminPolicy`(Boundary必須でのロール作成・自分のロールへのAssumeRole・PassRole・Boundary自体の解除/編集の明示Deny等)を管理者側で作成した
+2. 委任先役のIAMユーザー`iam-boundary-dev`(プログラムアクセスのみ)を作成しアクセスキーを発行。CLIプロファイルへの登録で`InvalidClientTokenId`(Access Key IDの末尾を大文字の`I`と数字の`1`で書き間違え)、直した後も`SignatureDoesNotMatch`(Secret Access Keyの手入力ミス)と2段階でつまずいた。Secret Access Keyは発行時にしか表示されず後から答え合わせできないため、都度直すより新しいキーを作り直す方が早いと判断した
+3. 委任先ユーザーとしてCLIから`iam:CreateRole`を試行:Boundaryを指定しない場合は`AccessDenied`(完成条件2)、`--permissions-boundary`を指定した場合は成功(完成条件1)することを確認した
+4. 作成したロール`limited-app-role`に`AdministratorAccess`をアタッチ(アタッチ自体は成功)した上でAssumeRoleし、一時クレデンシャルでS3(Boundary許可範囲内)は成功、EC2(Boundary範囲外)は`UnauthorizedOperation`(エラー文に`because no permissions boundary allows the ec2:DescribeInstances action`と明記)になることを確認した。AdministratorAccessが付いていてもBoundaryが天井として効くことを実機で見た
+5. 委任先ユーザー自身による`delete-role-permissions-boundary`(Boundary解除)を試行し、`IAMDelegatedAdminPolicy`の明示Denyにより拒否されることを確認した(完成条件4)
+6. `iam:PassRole`の検証のため最小のLambda関数を用意し、`limited-app-role`を実行ロールとして`CreateFunction`を試行。当初の設計案(`iam:PassRole`に`iam:PermissionsBoundary`条件を付ける)では`AccessDenied`(`no identity-based policy allows the iam:PassRole action`)となり、期待通りに動かないことが実機で判明した
+7. AWS公式ブログの実装例を確認したところ、`iam:PassRole`にはBoundary条件を付けず、Resourceのパス(`role/delegated/*`)限定のみで済ませていた。ロール作成時にBoundary必須の条件+Boundary解除/編集の明示Denyが既にあるため、そのパス配下のロールは構造上常にBoundary付きであることが保証されており、PassRole側で改めてBoundaryを確認する必要が無いという設計だと理解し、同じ形に修正した
+8. ポリシーのコンソール編集で、目的のステートメントとは別の`CreateRoleOnlyWithBoundary`ステートメントを誤って上書き消去してしまう事故が発生した。「重複するステートメントIDはサポートされていません」というエディタのエラーで発覚し、全文貼り替えで復旧した
+9. ポリシー修正後に`CreateFunction`を実行すると成功した(完成条件5)。この直前にターミナルへ表示されていた`AccessDenied`は、実は修正前(旧ポリシー)の実行結果がそのまま画面に残っていただけで、修正後の呼び出しは1回目から成功していたと、CloudTrailの呼び出し回数と手元のターミナル全履歴を突き合わせて判明した。比較用の管理者ロール`admin-role-not-delegated`(Boundary無し・パスが`/delegated/`外)へのPassRoleは、Resourceパターン不一致により`AccessDenied`のままだった(完成条件6)
+10. `iam simulate-principal-policy`で条件5・6と同じ組み合わせを評価し、実機と同じ`allowed`/`implicitDeny`が返ることを確認した(完成条件7)
+11. 使用したリソース(Lambda関数・IAMロール2つ・IAMユーザー・管理ポリシー2つ・S3バケット)をすべて削除し、AWS CLIで全て`NotFound`/`NoSuchEntity`になることを確認した
+
+### 得られた知見
+
+- Permissions Boundaryの実効権限は「アイデンティティポリシー ∩ Boundary」の積集合であることを、`AdministratorAccess`付きロールでもBoundary外の操作(EC2)だけ拒否される形で実機確認できた。拒否時のエラー文にも`no permissions boundary allows`と明記され、原因の切り分けがしやすい
+- `iam:PassRole`のCondition要素で`iam:PermissionsBoundary`を直接指定する設計は、実機では機能しなかった(Statement自体が無かった扱いになり暗黙Deny)。AWS公式ブログはPassRole側にBoundary条件を付けず、ロール作成時の条件+Boundary解除/編集への明示Denyの組み合わせで「そのResourceパス配下は常にBoundary付き」を構造的に保証し、PassRoleはResourceパスの限定だけで済ませていた。これが実証済みの設計パターン
+- 修正後に「1回失敗してから成功した」ように見えても、ターミナルに残っていた古い出力を新しい実行結果と早合点している場合がある。CloudTrailの呼び出し回数など別の記録と突き合わせて初めて、実際には修正後1回目から成功していたと分かった。原因を語る前に、その出力が本当に今の実行分なのかを確認する必要がある
+- Secret Access Keyは発行時にしか表示されないため、手入力による書き写しミスは後から答え合わせできない。怪しいときは推測で直すより新しいキーを発行し直す方が早い
+- コンソールのポリシーJSONエディタで部分的な貼り替えを行うと、意図しない別のステートメントを上書きしてしまうことがある。修正範囲が広い場合は全文を選択して丸ごと貼り替える方が事故が少ない
