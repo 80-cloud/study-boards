@@ -284,3 +284,47 @@ IAMロールに付けられる権限の「天井」をPermissions Boundaryで固
 - 修正後に「1回失敗してから成功した」ように見えても、ターミナルに残っていた古い出力を新しい実行結果と早合点している場合がある。CloudTrailの呼び出し回数など別の記録と突き合わせて初めて、実際には修正後1回目から成功していたと分かった。原因を語る前に、その出力が本当に今の実行分なのかを確認する必要がある
 - Secret Access Keyは発行時にしか表示されないため、手入力による書き写しミスは後から答え合わせできない。怪しいときは推測で直すより新しいキーを発行し直す方が早い
 - コンソールのポリシーJSONエディタで部分的な貼り替えを行うと、意図しない別のステートメントを上書きしてしまうことがある。修正範囲が広い場合は全文を選択して丸ごと貼り替える方が事故が少ない
+
+---
+
+## 13. Systems Manager OpsCenter × CloudWatch Alarm × Automationの自己修復パイプライン
+
+**参照**: [AWS Systems Manager OpsCenter](https://docs.aws.amazon.com/systems-manager/latest/userguide/OpsCenter.html)、[Configure CloudWatch alarms to create OpsItems](https://docs.aws.amazon.com/systems-manager/latest/userguide/OpsCenter-create-OpsItems-from-CloudWatch-Alarms.html)、[Managing duplicate OpsItems](https://docs.aws.amazon.com/systems-manager/latest/userguide/OpsCenter-working-deduplication.html)、[Run automations based on EventBridge events](https://docs.aws.amazon.com/systems-manager/latest/userguide/running-automations-event-bridge.html)、[Amazon EventBridge event examples for Systems Manager](https://docs.aws.amazon.com/systems-manager/latest/userguide/monitoring-systems-manager-event-examples.html)、[aws:executeAwsApi](https://docs.aws.amazon.com/systems-manager/latest/userguide/automation-action-executeAwsApi.html)、[aws:invokeLambdaFunction](https://docs.aws.amazon.com/systems-manager/latest/userguide/automation-action-lamb.html)、[aws:waitForAwsResourceProperty](https://docs.aws.amazon.com/systems-manager/latest/userguide/automation-action-waitForAwsResourceProperty.html)、[aws:branch](https://docs.aws.amazon.com/systems-manager/latest/userguide/automation-action-branch.html)
+
+Lambda関数の障害をCloudWatch Alarmで検知してOpsItemを自動生成し、Automationランブックで事前確認・復旧・事後確認・条件分岐(成功なら解決/失敗ならSNS通知)まで自動化する、自己修復パイプラインを構築した。
+
+### やったこと
+
+1. 意図的に例外を投げるLambda関数(環境変数`FAIL_MODE`でON/OFF切替)と、`Errors`メトリクスを監視するCloudWatch Alarmを作成。アラームの`alarm-actions`にOpsItem用ARN(`arn:aws:ssm:{region}:{account}:opsitem:{severity}#CATEGORY={category}`)を指定するだけで、EventBridgeルールを自分で作らなくてもALARM遷移時にOpsItemが自動生成されることを確認した
+2. SNSトピックを「FIFO」で誤作成してしまい、Eメールをサブスクライブできない(FIFOはSQSのみ対応)ことに気づき作り直した。トピックのタイプは作成後に変更不可なため削除して再作成する必要があった
+3. SNSのサブスクリプション確認は、確認メールのリンク先ページに「Subscription confirmed」の表示と並んで「click here to unsubscribe」リンクが同じ画面に載っており、誤って両方踏んでしまうと購読が`Deleted`になる。`list-subscriptions-by-topic`はこの`Deleted`表示に強い遅延(結果整合性のズレ)があり、個別ARNを指定する`get-subscription-attributes`の方が実態に近いことを確認した
+4. Automationランブック(`aws:executeAwsApi`でOpsItem更新・Lambda操作、`aws:branch`で分岐)をYAMLで作成し、EventBridgeルール(`source: aws.ssm`, `detail-type: "OpsItem Create"`というOpsCenter専用のネイティブイベント)でランブックを自動起動する構成を組んだ
+5. IAMロール(`iam:PassRole`でAutomationAssumeRoleを渡す構成)の権限不足で`ssm:StartAutomationExecution`が2段階でAccessDeniedになった。1段階目は対象リソースのARN形式が`automation-definition/name:*`ではなく`document/name`だったこと、2段階目は`document/name`だけでなく`automation-execution/*`(実行結果側のリソース)にも別途許可が要ったことが、CloudTrailのエラーメッセージから判明した
+6. Lambdaを呼び出す`postCheck`ステップは、当初`aws:executeAwsApi`(Service: lambda, Api: Invoke)で設計したが、Invoke APIのレスポンスがストリーミング形式を含み得るため、Lambda専用の`aws:invokeLambdaFunction`アクション(`FunctionError`が自動出力される)に変更した
+7. `recovery`ステップ(`UpdateFunctionConfiguration`でFAIL_MODEをfalseに戻す)の直後に`postCheck`を実行すると、設定変更の反映が完了する前にLambdaが呼ばれてしまい、古い設定のまま失敗することがあった。`aws:waitForAwsResourceProperty`で`LastUpdateStatus`が`Successful`になるまで待つステップを挟んで解消した
+8. Lambda呼び出しがエラー(`FunctionError`)を返すと、`aws:invokeLambdaFunction`のステップ自体が`Failed`扱いになり、既定(`onFailure: Abort`)ではAutomation全体がそこで中断し、後続の`aws:branch`による分岐(SNS通知ルート)に到達しないことが実機で判明した。該当ステップに`onFailure: Continue`を追加し、失敗時も後続ステップへ進めるよう修正した
+9. E2Eで4回試行し、①IAM権限不足→②別リソースタイプのIAM権限不足→③設定反映ラグによる誤判定、の3つの実機障害を順に踏んで解決した上で、最終的にOpsItem作成→Automation自動起動→復旧→OpsItem解決までの一連の流れを完走させた
+10. 重複集約(dedup)を検証するため、一時的にEventBridgeルールを無効化し、OpsItemがOpenのまま同じアラームを2回発火させた。CloudTrailには`CreateOpsItem`が2回とも記録されていたが、実際のOpsItemは1件のまま(`LastModifiedTime`も更新されず)で、SSM側が重複を検知して静かに握りつぶしていることを確認した
+11. 復旧失敗ケースを検証するため、Lambdaのハンドラー名を一時的に壊し(`recovery`ステップがFAIL_MODEしか直さないため、これは直らない)、`postCheck`失敗→`branchOnResult`→`notifyFailure`(SNS Publish)のルートを通ることを確認した。ただしSNS Publish APIはAWS側で成功(MessageId返却)していたが、Eメールは受信トレイにも迷惑メールフォルダにも届かなかった。SNSのEメールプロトコルはHTTP/Lambda/SQS向けの配信ステータスログ(CloudWatch Logs)の対象外で、AWS側から配達状況を追跡する手段がないことも合わせて判明した
+12. EventBridge自動起動と人間による手動実行(`aws ssm start-automation-execution`をCLIから直接実行)を1回ずつ行い、`ExecutedBy`を比較した。自動時は`arn:aws:sts::...:assumed-role/OpsSelfHealDemo-EventBridgeInvokeRole/...`、手動時は`arn:aws:iam::...:user/tesuto`と、実行者の記録が明確に異なることを確認した
+13. 使用したリソース(Lambda・CloudWatch Alarm・SNSトピック・IAMロール2つ・Automationランブック・EventBridgeルール)を削除し、CLIで消滅を確認した
+
+### MTTA・MTTR・再発件数(全ステップ修正後・9番目のE2E試行の実測値)
+
+| 指標 | 実測値 | 算出根拠 |
+|---|---|---|
+| MTTA(検知までの時間) | 約2分3秒 | Errorsメトリクス計上(10:25:00)からOpsItem自動作成(10:27:02.941)まで |
+| MTTR(障害発生起点) | 約2分20秒 | Errorsメトリクス計上(10:25:00)からOpsItem解決(10:27:20.294)まで |
+| MTTR(検知起点・純粋な復旧処理時間) | 約17秒 | OpsItem作成(10:27:02.941)からOpsItem解決(10:27:20.294)まで。Automation自体の実行時間(開始10:27:12.589〜終了10:27:20.457)とほぼ一致 |
+| 再発件数(dedupで集約された件数) | 1件 | 同一OpsItemがOpenの状態でアラームを再発火させたところ、CloudTrail上は`CreateOpsItem`が2回呼ばれたが実際のOpsItemは1件のまま(重複1件を集約) |
+
+上記はIAM権限・タイミング競合の3つの実機障害を解決した後の、初めて完走したE2E実行の値。手動実行(CLI経由)は同条件で約8秒(11:07:03.787〜11:07:11.625)とほぼ同水準だった。
+
+### 得られた知見
+
+- CloudWatch Alarmの`alarm-actions`にOpsItem用ARNを指定する経路は、OpsCenterの「Integrated Setup」(Auto Scaling/EBS/RDS等のデフォルトルールを一括有効化する別の有料機能)を経由しなくても独立して機能する。両者は別物であり、混同すると不要な設定に手を出してしまう
+- IAM権限のResourceに正しいARN形式を書けたつもりでも、対象APIが内部的に複数のリソースタイプ(今回は`document/name`と`automation-execution/*`)への権限を要求している場合があり、これは公式ドキュメントを読むだけでは分からず、実際にAccessDeniedを起こしCloudTrailのエラーメッセージを読んで初めて確定できた。前回セッションの教訓通り「推測で語る前に一次証跡で確認する」がここでも効いた
+- SSM Automationの各アクションには「レスポンスの特定フィールドが埋まっていたら即座にステップを失敗扱いにする」という暗黙の挙動を持つものがある(`aws:invokeLambdaFunction`の`FunctionError`)。この挙動は`onFailure: Continue`を明示しないと後続の分岐ロジックに到達できず、正常系だけをテストしていると気づけない
+- AWS APIの「呼び出しが成功した(200 OK)」と「変更が完全に反映された」は別物であり、直後に依存する処理を実行すると設定反映ラグによる誤判定が起きる。`aws:waitForAwsResourceProperty`のような「状態を待つ」専用の仕組みを挟むのが確実
+- SNSの「Publish APIが成功した」は「メールボックスに届いた」を保証しない。Eメールプロトコルは配信ステータスログの対象外であり、AWS側からは配達の成否を追跡できない。到達しない場合、AWS側の記録(Publish成功・購読確認済み)までは実機で確認できても、その先(受信サーバー側のフィルタリング等)は別問題として切り分けて考える必要がある
+- `list-subscriptions-by-topic`のような一覧系APIと、`get-subscription-attributes`のような個別リソース参照系APIとで、同じ購読の状態表示が食い違うことがある(結果整合性のズレ)。判断に迷ったときは個別リソースを直接参照するAPIの方が信頼できる
