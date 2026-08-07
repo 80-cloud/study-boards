@@ -328,3 +328,51 @@ Lambda関数の障害をCloudWatch Alarmで検知してOpsItemを自動生成し
 - AWS APIの「呼び出しが成功した(200 OK)」と「変更が完全に反映された」は別物であり、直後に依存する処理を実行すると設定反映ラグによる誤判定が起きる。`aws:waitForAwsResourceProperty`のような「状態を待つ」専用の仕組みを挟むのが確実
 - SNSの「Publish APIが成功した」は「メールボックスに届いた」を保証しない。Eメールプロトコルは配信ステータスログの対象外であり、AWS側からは配達の成否を追跡できない。到達しない場合、AWS側の記録(Publish成功・購読確認済み)までは実機で確認できても、その先(受信サーバー側のフィルタリング等)は別問題として切り分けて考える必要がある
 - `list-subscriptions-by-topic`のような一覧系APIと、`get-subscription-attributes`のような個別リソース参照系APIとで、同じ購読の状態表示が食い違うことがある(結果整合性のズレ)。判断に迷ったときは個別リソースを直接参照するAPIの方が信頼できる
+
+---
+
+## 14. Systems Manager Patch Manager(Quick Setup Patch Policy)×Canary/Production段階適用パイプライン
+
+**参照**: [Configure patching using a Quick Setup patch policy](https://docs.aws.amazon.com/systems-manager/latest/userguide/quick-setup-patch-policy.html)、[Patch policy configurations in Quick Setup](https://docs.aws.amazon.com/systems-manager/latest/userguide/quick-setup-patch-policy-configuration-options.html)、[AWS Systems Manager Patch Manager tutorials](https://docs.aws.amazon.com/systems-manager/latest/userguide/patch-manager-tutorials.html)、[Tutorial: Update application dependencies, patch a managed node, and perform an application-specific health check](https://docs.aws.amazon.com/systems-manager/latest/userguide/automation-tutorial-update-app-health-check.html)、[Amazon EventBridge event examples for Systems Manager](https://docs.aws.amazon.com/systems-manager/latest/userguide/monitoring-systems-manager-event-examples.html)、[aws:runCommand](https://docs.aws.amazon.com/systems-manager/latest/userguide/automation-action-runCommand.html)、[aws:executeScript](https://docs.aws.amazon.com/systems-manager/latest/userguide/automation-action-executeScript.html)、[aws:loop](https://docs.aws.amazon.com/systems-manager/latest/userguide/automation-action-loop.html)、[EventBridge Scheduler execution role](https://docs.aws.amazon.com/scheduler/latest/UserGuide/setting-up.html)
+
+Quick Setup Patch Policy(Scan専用・常時可視化)とカスタムAutomationランブック(実際のCanary→Production段階適用)を2階建てで構築し、再起動確認・ヘルスチェック・例外タグ・段階適用失敗時の中止までを一通り実機検証した。
+
+### やったこと
+
+1. 三現主義で現状確認: `aws ssm-quicksetup`(CLIコマンド名は`quicksetup`ではなく`ssm-quicksetup`)、AWS Config未有効化、CloudWatchにパッチ専用メトリクス無し、を実機で確認。ネイティブEventBridgeイベント(`source: aws.ssm`, `detail-type: "Configuration Compliance State Change"`)の実在を公式ドキュメントで確認し、これをSNS直接通知に採用(AWS Config不要)
+2. IAMロール3種(AutomationAssumeRole・EC2インスタンスプロファイル・SchedulerInvokeRole)を作成。EventBridge Scheduler用ロールは信頼ポリシーに`aws:SourceArn`条件を付けて`AccessDenied`("must allow AWS EventBridge Scheduler to assume the role")→公式ドキュメントのシンプルな信頼ポリシー(Condition無し)に修正して解決
+3. EC2インスタンス2台(Canary/Production、あえて3ヶ月前のAL2023 AMI)をコンソールで起動。当初4台構成(Canary1+Production2+例外1)を検討したが、完成条件を満たすのに必須ではないと判断し2台に縮小(例外タグの検証は同じProductionインスタンスのタグを書き換えて使い回す設計に変更)
+4. SSM Run CommandでSpring Bootアプリ(review-parkバックエンド・h2プロファイル)をデプロイ。前回集大成のAnsibleロールをそのまま使う案は、ローカルにAnsible/session-manager-plugin/boto3が無く新規セットアップが重かったため、同じ手順をシェルスクリプト化してRun Commandで代替(JWT_SECRETはコードのフォールバック既定値を利用し、Secrets Manager連携は省略)
+5. 要検証#2(再起動判定): EC2の`LaunchTime`はOS内部からの`reboot`では変化しないため使えないと判断し、`uptime`(`/proc/uptime`)をパッチ適用前後で比較する方式に決定。実機で「適用前14分→適用後8分」の逆転を確認し採用を確定
+6. Quick Setup Patch Policy(Scan専用)を作成。ターゲットのタグ指定は**1組(Key+Value)までの制限**があることが実機で判明し、Valueを空にして「Keyのみ一致(値は問わない)」という形でCanary/Production両方をカバー。初回スキャンはS3ファイル(`baseline_overrides.json`)の生成タイミングと競合して`Failed`→再実行で解決(Quick Setup内部の非同期セットアップとの順序問題)
+7. 要検証#5(コンプライアンス取得API)を実機比較: `describe-instance-patch-states`(Installed/Missing件数)と`list-resource-compliance-summaries`(COMPLIANT判定+重要度別件数)は用途が異なり、`list-compliance-summaries`はアカウント全体集計のみで個別インスタンスには使えないと判明
+8. OnExitフック用SSMドキュメント(`PatchCanaryDemo-OnExit`)を1つだけ作成。PreInstall/PostInstallは今回のスコープに不要と判断し省略(未指定のフックは自動的にスキップされることを実機で確認済み)
+9. カスタムAutomationランブック(`PatchCanaryRollout`)を作成。汎用の「ドキュメントを作成」ページでは「オートメーション」タイプが選択できず(Command/Sessionのみ)、Systems Manager左メニューの「自動化」(日本語UIでは「高速セットアップ」がQuick Setupの訳)経由のビジュアルビルダーで作成する必要があると判明。`aws:runCommand`の出力に`CommandId`/`Status`が最初から用意されていることをエラーメッセージ(予約済み出力名との衝突)で発見し、当初設計していた確認専用ステップ(`checkCanaryInstall`等)を削除して設計を簡略化
+10. SNSトピック作成+メール購読。過去のOpsCenter教訓(Eメール到達を検証の前提にしない)を踏まえて進めたが、**今回は実際にメールが届いた**(パッチ適用失敗の通知)
+11. EventBridge Scheduler(週次自動実行)を作成。cron式は6フィールド入力欄(分/時間/日付/月/曜日/年)形式で、タイムゾーン設定(Asia/Tokyo)がcron評価に直接影響することを確認
+12. EventBridge Rule(重要パッチ未適用→SNS直接通知)を作成。ターゲットにSNSトピックを選ぶと、コンソールが専用の実行ロール(`Amazon_EventBridge_Invoke_Sns_*`)を自動作成する方式で、SNS側のリソースポリシーは不要だった
+13. E2E実行(成功系)で`ssm:DescribeInstanceInformation`・`ssm:ListCommands`の権限漏れを2回連続で実機のAccessDeniedから発見・修正。3回目の実行で**Productionのパッチ適用が実際に失敗**(`dnf update system-release`が`returncode -9`=OOM Killerによる強制終了)。t3.micro(メモリ1GB)にスワップ2GBを追加して解決し、再実行で完走(Canary→Production両方Missing 0まで到達、`uptime`が8913秒→23秒に低下し再起動を確認)
+14. 例外タグ(`PatchExempt`/`PatchExemptUntil`)の動作確認: 将来日付を設定→対象から除外(`branchOnProductionTargets`が`notifySuccess`へ直行、パッチ適用系ステップは未実行のまま完走)。ただし**旧バージョンのドキュメント(修正前)では対象0件時に`aws:runCommand`が`ValidationException`でクラッシュする設計不備を実機で確認**→`aws:branch`で0件時は分岐して丸ごとスキップする形に修正(ドキュメントv2)。過去日付に書き換えて自動復帰も確認
+15. コンソールの「Rerun execution」は**元の実行と同じドキュメントバージョンを再利用する**(最新のデフォルトバージョンではない)ことが実機で判明。修正版を確実に使うには`aws ssm start-automation-execution --document-version <番号>`で明示指定する必要があった
+
+### 運用報告書(2026-08-07〜08 実行分)
+
+| 指標 | 値 | 算出根拠 |
+|---|---|---|
+| 適用率(Production) | 34%→100% | 適用前 Installed 28/Missing 54(≒34%) → 適用後 Installed 84/Missing 0 |
+| 適用率(Canary) | 100%(変化なし) | 事前の単発検証で既に適用済みだったため、今回のロールアウトでは差分なし |
+| Automation実行の失敗率 | 3/7 (43%) | 本日の全実行7回中、失敗3回(IAM権限不足2回+旧ドキュメントバージョンでの実行1回)。いずれもセットアップ起因で、権限修正・バージョン明示後は4回連続成功 |
+| パッチ適用(Run Command)の失敗率 | 1/3 (33%) | Production向けInstall試行3回中、OOM起因の失敗1回。スワップ追加後は2回連続成功 |
+| 未準拠台数 | 2台→0台 | ロールアウト前: Production 1台がNON_COMPLIANT(Canaryは事前検証で既にCOMPLIANT)。ロールアウト後: 両インスタンスともCOMPLIANT(重要度Critical/High件数も0) |
+
+### 得られた知見
+
+- `describe-instance-patch-states`のInstalled/MissingCountと、`list-resource-compliance-summaries`のCompliant/NonCompliantCountは近いが同一ではない値を返す(集計の粒度が異なる)。運用報告書は前者を「適用率」、後者を「準拠判定・重要度別」に使い分けるのが素直
+- SSM Run Commandの標準出力は**24,000文字で切り捨てられる**。ログの結論部分(再起動の有無・エラーの核心)が切れて読めないことがあるため、`uptime`の前後比較のような別の裏取り手段を用意しておく必要がある
+- `aws:runCommand`アクションには`CommandId`・`Status`等の予約済み出力名があり、同名で独自の`outputs`を定義すると`InvalidDocumentContent`になる。逆に言えば、これらは最初から自動的に使えるため、確認専用の別ステップ(`aws:executeAwsApi`でのGetCommandInvocation等)を重ねて書く必要が無い場合がある
+- Quick Setup Patch Policyのタグベースターゲティングは1組(Key+Value)までしか追加できないが、Valueを空にすることで「Keyの存在だけを条件にする(値は問わない)」ターゲティングができる
+- EventBridge Schedulerの実行ロールに`aws:SourceArn`/`aws:SourceAccount`のConditionを付けると、コンソールの「ロールが引き受け可能か」の事前検証がその文脈を渡さずに失敗する。公式ドキュメントのデフォルト例はConditition無しのシンプルな信頼ポリシーで、SourceArn制限は「本番運用で検討する追加の安全策」という位置づけ
+- コンソールの「Rerun execution」は実行時点の最新デフォルトバージョンではなく、**元の実行が使ったドキュメントバージョンをそのまま再利用する**。ドキュメントを修正した直後に確実に新しい内容で試すには、CLIで`--document-version`を明示指定するのが確実
+- `aws:branch`で対象リストが空になり得る設計(タグによる動的な除外)では、空リストのまま後続の`aws:runCommand`等に渡すとAPI側の`ValidationException`(要素数0のリストは受け付けない)でAutomation全体がクラッシュする。「対象0件」を正常系の一系統として扱い、専用の分岐でスキップさせる設計が必須
+- t3.micro(メモリ1GB)でのパッチ適用は、AL2023のマイナーバージョン更新(`dnf update system-release`)のようなメモリを多く使う処理でOOM Killerに強制終了されることがある(returncode -9)。過去のGradleビルドOOMと同型の問題で、対策も同じ(スワップ追加)
+- SNSのメール到達は前回セッションでは失敗したが、今回は同じGmailアドレスへの通知が実際に届いた。到達可否はAWS側から保証・追跡できないという結論自体は変わらないが、「届かない」と決めつけて設計するのも早計で、実際に届く場合もある
