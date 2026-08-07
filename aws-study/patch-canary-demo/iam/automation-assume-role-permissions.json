@@ -1,0 +1,46 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AMICreationAndTargetLookup",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:CreateImage",
+        "ec2:CreateTags",
+        "ec2:DescribeImages",
+        "ec2:DescribeInstances"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "RunCommand",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:SendCommand",
+        "ssm:GetCommandInvocation",
+        "ssm:ListCommandInvocations",
+        "ssm:ListCommands",
+        "ssm:DescribeInstanceInformation",
+        "ssm:ListDocuments",
+        "ssm:GetDocument"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "PatchCompliance",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:DescribeInstancePatchStates",
+        "ssm:ListComplianceSummaries",
+        "ssm:ListResourceComplianceSummaries"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "Notify",
+      "Effect": "Allow",
+      "Action": "sns:Publish",
+      "Resource": "arn:aws:sns:ap-northeast-1:383158157670:patch-canary-demo-alerts"
+    }
+  ]
+}

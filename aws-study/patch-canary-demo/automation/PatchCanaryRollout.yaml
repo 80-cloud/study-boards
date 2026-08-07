@@ -1,0 +1,238 @@
+description: >-
+  Patch Canary demo: Canary先行適用→再起動確認→ヘルスチェック→成功時のみProduction適用。
+  例外タグ(PatchExempt/PatchExemptUntil)を持つインスタンスは対象から除外する。
+  現在の構成では各環境1台のため、成否判定は対象リストの先頭インスタンスで行う
+  (複数台に増やす場合はaws:loopでの集計拡張が必要)。
+schemaVersion: '0.3'
+assumeRole: '{{ AutomationAssumeRole }}'
+parameters:
+  AutomationAssumeRole:
+    type: String
+    default: 'arn:aws:iam::383158157670:role/PatchCanaryDemo-AutomationAssumeRole'
+    description: (Required) Automationが引き受けるロールのARN
+mainSteps:
+
+  - name: getCanaryTargets
+    action: 'aws:executeScript'
+    inputs:
+      Runtime: python3.11
+      Handler: get_targets
+      InputPayload:
+        env: Canary
+      Script: |-
+        def get_targets(events, context):
+            import boto3, datetime
+            ec2 = boto3.client('ec2')
+            env = events['env']
+            resp = ec2.describe_instances(Filters=[
+                {'Name': 'tag:Environment', 'Values': [env]},
+                {'Name': 'instance-state-name', 'Values': ['running']},
+            ])
+            today = datetime.date.today()
+            targets = []
+            for r in resp['Reservations']:
+                for i in r['Instances']:
+                    tags = {t['Key']: t['Value'] for t in i.get('Tags', [])}
+                    if tags.get('PatchExempt', '').lower() == 'true':
+                        until = tags.get('PatchExemptUntil')
+                        if until:
+                            try:
+                                until_date = datetime.datetime.strptime(until, '%Y-%m-%d').date()
+                                if until_date >= today:
+                                    continue
+                            except ValueError:
+                                continue
+                        else:
+                            continue
+                    targets.append(i['InstanceId'])
+            return {'InstanceIds': targets, 'PrimaryInstanceId': targets[0] if targets else ''}
+    outputs:
+      - Name: InstanceIds
+        Selector: $.Payload.InstanceIds
+        Type: StringList
+      - Name: PrimaryInstanceId
+        Selector: $.Payload.PrimaryInstanceId
+        Type: String
+
+  - name: snapshotCanary
+    action: 'aws:loop'
+    inputs:
+      Iterators: '{{ getCanaryTargets.InstanceIds }}'
+      IteratorDataType: String
+      Steps:
+        - name: snapshotOneCanary
+          action: 'aws:createImage'
+          inputs:
+            InstanceId: '{{ snapshotCanary.CurrentIteratorValue }}'
+            ImageName: 'patch-canary-demo-{{ snapshotCanary.CurrentIteratorValue }}-{{global:DATE_TIME}}'
+            NoReboot: true
+
+  - name: captureCanaryUptimeBefore
+    action: 'aws:runCommand'
+    inputs:
+      DocumentName: AWS-RunShellScript
+      InstanceIds: '{{ getCanaryTargets.InstanceIds }}'
+      Parameters:
+        commands:
+          - 'cat /proc/uptime'
+
+  - name: installCanary
+    action: 'aws:runCommand'
+    onFailure: Continue
+    inputs:
+      DocumentName: AWS-RunPatchBaselineWithHooks
+      InstanceIds: '{{ getCanaryTargets.InstanceIds }}'
+      Parameters:
+        Operation: Install
+        RebootOption: RebootIfNeeded
+        OnExitHookDocName: PatchCanaryDemo-OnExit
+
+  - name: captureCanaryUptimeAfter
+    action: 'aws:runCommand'
+    inputs:
+      DocumentName: AWS-RunShellScript
+      InstanceIds: '{{ getCanaryTargets.InstanceIds }}'
+      Parameters:
+        commands:
+          - 'cat /proc/uptime'
+
+  - name: branchOnCanary
+    action: 'aws:branch'
+    inputs:
+      Choices:
+        - NextStep: getProductionTargets
+          Variable: '{{ installCanary.Status }}'
+          StringEquals: Success
+      Default: notifyCanaryFailure
+
+  - name: notifyCanaryFailure
+    action: 'aws:executeAwsApi'
+    isEnd: true
+    inputs:
+      Service: sns
+      Api: Publish
+      TopicArn: 'arn:aws:sns:ap-northeast-1:383158157670:patch-canary-demo-alerts'
+      Subject: 'Patch Canary demo: Canary失敗のためProduction適用を中止'
+      Message: 'Canaryのパッチ適用またはヘルスチェックが失敗しました。Production適用は行いません。'
+
+  - name: getProductionTargets
+    action: 'aws:executeScript'
+    inputs:
+      Runtime: python3.11
+      Handler: get_targets
+      InputPayload:
+        env: Production
+      Script: |-
+        def get_targets(events, context):
+            import boto3, datetime
+            ec2 = boto3.client('ec2')
+            env = events['env']
+            resp = ec2.describe_instances(Filters=[
+                {'Name': 'tag:Environment', 'Values': [env]},
+                {'Name': 'instance-state-name', 'Values': ['running']},
+            ])
+            today = datetime.date.today()
+            targets = []
+            for r in resp['Reservations']:
+                for i in r['Instances']:
+                    tags = {t['Key']: t['Value'] for t in i.get('Tags', [])}
+                    if tags.get('PatchExempt', '').lower() == 'true':
+                        until = tags.get('PatchExemptUntil')
+                        if until:
+                            try:
+                                until_date = datetime.datetime.strptime(until, '%Y-%m-%d').date()
+                                if until_date >= today:
+                                    continue
+                            except ValueError:
+                                continue
+                        else:
+                            continue
+                    targets.append(i['InstanceId'])
+            return {'InstanceIds': targets, 'PrimaryInstanceId': targets[0] if targets else ''}
+    outputs:
+      - Name: InstanceIds
+        Selector: $.Payload.InstanceIds
+        Type: StringList
+      - Name: PrimaryInstanceId
+        Selector: $.Payload.PrimaryInstanceId
+        Type: String
+
+  - name: branchOnProductionTargets
+    action: 'aws:branch'
+    inputs:
+      Choices:
+        - NextStep: notifySuccess
+          Variable: '{{ getProductionTargets.PrimaryInstanceId }}'
+          StringEquals: ''
+      Default: snapshotProduction
+
+  - name: snapshotProduction
+    action: 'aws:loop'
+    inputs:
+      Iterators: '{{ getProductionTargets.InstanceIds }}'
+      IteratorDataType: String
+      Steps:
+        - name: snapshotOneProduction
+          action: 'aws:createImage'
+          inputs:
+            InstanceId: '{{ snapshotProduction.CurrentIteratorValue }}'
+            ImageName: 'patch-canary-demo-{{ snapshotProduction.CurrentIteratorValue }}-{{global:DATE_TIME}}'
+            NoReboot: true
+
+  - name: captureProductionUptimeBefore
+    action: 'aws:runCommand'
+    inputs:
+      DocumentName: AWS-RunShellScript
+      InstanceIds: '{{ getProductionTargets.InstanceIds }}'
+      Parameters:
+        commands:
+          - 'cat /proc/uptime'
+
+  - name: installProduction
+    action: 'aws:runCommand'
+    onFailure: Continue
+    inputs:
+      DocumentName: AWS-RunPatchBaselineWithHooks
+      InstanceIds: '{{ getProductionTargets.InstanceIds }}'
+      Parameters:
+        Operation: Install
+        RebootOption: RebootIfNeeded
+        OnExitHookDocName: PatchCanaryDemo-OnExit
+
+  - name: captureProductionUptimeAfter
+    action: 'aws:runCommand'
+    inputs:
+      DocumentName: AWS-RunShellScript
+      InstanceIds: '{{ getProductionTargets.InstanceIds }}'
+      Parameters:
+        commands:
+          - 'cat /proc/uptime'
+
+  - name: branchOnProduction
+    action: 'aws:branch'
+    inputs:
+      Choices:
+        - NextStep: notifySuccess
+          Variable: '{{ installProduction.Status }}'
+          StringEquals: Success
+      Default: notifyProductionFailure
+
+  - name: notifySuccess
+    action: 'aws:executeAwsApi'
+    isEnd: true
+    inputs:
+      Service: sns
+      Api: Publish
+      TopicArn: 'arn:aws:sns:ap-northeast-1:383158157670:patch-canary-demo-alerts'
+      Subject: 'Patch Canary demo: Canary/Production適用完了'
+      Message: 'CanaryとProductionへのパッチ適用が両方成功しました。'
+
+  - name: notifyProductionFailure
+    action: 'aws:executeAwsApi'
+    isEnd: true
+    inputs:
+      Service: sns
+      Api: Publish
+      TopicArn: 'arn:aws:sns:ap-northeast-1:383158157670:patch-canary-demo-alerts'
+      Subject: 'Patch Canary demo: Production適用が失敗'
+      Message: 'Canaryは成功しましたが、Productionのパッチ適用またはヘルスチェックが失敗しました。'
