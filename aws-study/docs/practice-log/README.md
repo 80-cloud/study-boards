@@ -376,3 +376,41 @@ Quick Setup Patch Policy(Scan専用・常時可視化)とカスタムAutomation�
 - `aws:branch`で対象リストが空になり得る設計(タグによる動的な除外)では、空リストのまま後続の`aws:runCommand`等に渡すとAPI側の`ValidationException`(要素数0のリストは受け付けない)でAutomation全体がクラッシュする。「対象0件」を正常系の一系統として扱い、専用の分岐でスキップさせる設計が必須
 - t3.micro(メモリ1GB)でのパッチ適用は、AL2023のマイナーバージョン更新(`dnf update system-release`)のようなメモリを多く使う処理でOOM Killerに強制終了されることがある(returncode -9)。過去のGradleビルドOOMと同型の問題で、対策も同じ(スワップ追加)
 - SNSのメール到達は前回セッションでは失敗したが、今回は同じGmailアドレスへの通知が実際に届いた。到達可否はAWS側から保証・追跡できないという結論自体は変わらないが、「届かない」と決めつけて設計するのも早計で、実際に届く場合もある
+
+---
+
+## 15. CloudWatch Alarm × OpsCenter × CloudTrail × Session Manager による一次対応フロー
+
+**参照**: [Creating or editing an existing alarm from the console](https://docs.aws.amazon.com/systems-manager/latest/userguide/OpsCenter-creating-or-editing-existing-alarm-console.html)、[Create OpsItems from CloudWatch Alarms](https://docs.aws.amazon.com/systems-manager/latest/userguide/OpsCenter-create-OpsItems-from-CloudWatch-Alarms.html)、[Viewing CloudTrail events in the CloudTrail console](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/view-cloudtrail-events-console.html)、[Connect to your Linux instance with Session Manager](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/connect-with-systems-manager-session-manager.html)、[Remediating OpsItems](https://docs.aws.amazon.com/systems-manager/latest/userguide/OpsCenter-remediating.html)
+
+異常検知→OpsItem起票→CloudTrail調査→Session Managerでの対象環境確認→復旧→正常化確認→対応記録、という一連の一次対応フローを、複数の公式チュートリアルを繋いで1つのシナリオとして実機で完走した。
+
+### やったこと
+
+1. 検証用EC2インスタンス(t3.micro・AL2023)を1台起動。IAMインスタンスプロファイルは既存の`AmazonSSMRoleForInstancesQuickSetup`を流用し、`describe-instance-information`でSSM管理下(`PingStatus: Online`)にあることを確認
+2. CPUUtilizationのCloudWatch Alarmを作成。閾値は意図的に低く(10%・1分周期・1/1データポイント)設定し、アクションに「OpsItemを作成」(Systems Manager Action)のみを残し、Auto Scaling/EC2/通知/Lambdaの各アクションは削除
+3. Session Managerでインスタンスに接続し、`nohup sh -c 'while true; do :; done' &`でバックグラウンド負荷を発生させ、`top`でCPU使用率上昇を確認
+4. アラームが`ALARM`に遷移(実測: CPU 10.38%が閾値10.0を超過)すると同時にOpsItemが自動作成されることを`describe-alarms`/`describe-ops-items`で確認
+5. CloudTrailのイベント履歴で直近の操作を調査。`StartSession`は`Username: tesuto`(人間の操作)、`CreateOpsItem`は`userIdentity.type: AssumedRole`(ロール`AWSServiceRoleForCloudWatchAlarms_ActionSSM`・`invokedBy: ssm.alarms.cloudwatch.amazonaws.com`)であることを確認し、不審な人為的操作が無いことを裏付け
+6. Session Managerで再接続し、`top`で原因プロセス(PID)を特定して`kill`。CPU使用率が0%台まで下がったことを確認してセッション終了
+7. CloudWatch Alarmが`OK`へ復帰したことを`get-metric-statistics`/`describe-alarms`で確認
+8. OpsItemの説明欄に対応内容を記録し、ステータスを`Resolved`に変更(ステータス変更が1回目の保存で反映されず、再度編集し直す場面があった)
+9. 検証用EC2インスタンスを終了、CloudWatch Alarmを削除し、`describe-instances`(`terminated`)・`describe-alarms`(該当なし)で課金対象ゼロを確認
+
+### 運用報告書(2026-09-03 実行分)
+
+| 指標 | 値 | 算出根拠 |
+|---|---|---|
+| MTTA相当(検知→調査開始) | 数分以内 | OpsItem作成(08:21:39)後、CloudTrail確認・Session Manager再接続まで連続して実施 |
+| MTTR(検知→アラームOK復帰) | 10分00秒 | ALARM遷移(08:21:39)→OK復帰(08:31:39) |
+| MTTR(検知→OpsItem解決) | 16分11秒 | ALARM遷移(08:21:39)→OpsItem Resolved(08:37:50) |
+| CloudTrailでの不審操作 | 0件 | 期間中の関連イベントは`StartSession`(人間)と`CreateOpsItem`(CloudWatch Alarmのサービスロール)のみ |
+
+### 得られた知見
+
+- 最近のCloudWatch Alarm作成コンソールは、アラーム作成と同じ画面で「Systems Manager アクション」として「OpsItemを作成」を選べる。以前のバージョンの公式ドキュメントにある「既存アラームを後から編集してOpsItem連携を追加する」という手順を踏まなくても、新規作成時点で一体化できる
+- CloudTrailの`Username`列だけでなく、生イベントの`userIdentity.type`を見ることで「人間の操作(`IAMUser`)」と「AWSサービスの自動アクション(`AssumedRole`+サービスリンクロール)」を明確に区別できる。今回は`invokedBy: ssm.alarms.cloudwatch.amazonaws.com`が付いており、CloudWatch Alarmが自分でSSMのAPIを呼んでいることが分かった
+- CloudTrailはAWS API呼び出ししか記録しない。今回のCPU高負荷の原因(OS内部の`while true`ループ)はAWS APIを一切経由しないため、CloudTrail側には原因そのものは一切現れない。「CloudTrailで原因の全てが分かるわけではなく、OSレベルの調査(Session Manager接続)と役割分担がある」という境界線を実機で確認できた
+- OpsItemの「解決済み」への変更は、コンソールの編集フォームで一度目の保存が反映されないことがあった(原因未特定だが、保存後に`get-ops-item`でCLI裏取りをして初めて未反映に気づけた)。ステータス変更のような重要な操作は、コンソールの見た目だけで完了と判断せず、CLIで確定させるのが安全
+- CloudWatch Alarmの`OK`復帰とOpsItemの`Resolved`は別物で、前者が自動で戻っても後者は自動でクローズされない。一次対応の「対応内容を記録して終了」は、人間が明示的にOpsItemへ記録してクローズする作業として最後まで残る
+- t3.microでも`while true; do :; done`のような単純な無限ループ1本で、1コアの使用率を100%近くまで専有できる(2vCPU環境全体では約50%表示)。検証用の負荷生成として十分に軽量かつ確実
