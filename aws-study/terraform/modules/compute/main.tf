@@ -1,10 +1,11 @@
-# 最新の Amazon Linux 2023（x86_64）を自動取得（AMI ID を直書きしない）
+# 最新の Amazon Linux 2023 標準版（x86_64）を自動取得（AMI ID を直書きしない）。
+# 「al2023-ami-2023.*」で標準版に限定（minimal 版は SSM agent/python3 が無く SSM デプロイ不可）。
 data "aws_ami" "al2023" {
   most_recent = true
   owners      = ["amazon"]
   filter {
     name   = "name"
-    values = ["al2023-ami-*-x86_64"]
+    values = ["al2023-ami-2023.*-x86_64"]
   }
   filter {
     name   = "architecture"

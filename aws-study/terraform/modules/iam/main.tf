@@ -20,12 +20,6 @@ resource "aws_iam_role_policy_attachment" "ssm" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
-# ECR からイメージを pull する読み取り権限
-resource "aws_iam_role_policy_attachment" "ecr" {
-  role       = aws_iam_role.ec2.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
-}
-
 # CloudWatch エージェント用
 resource "aws_iam_role_policy_attachment" "cwagent" {
   role       = aws_iam_role.ec2.name
@@ -51,3 +45,4 @@ resource "aws_iam_instance_profile" "ec2" {
   name = "${var.project}-ec2-profile"
   role = aws_iam_role.ec2.name
 }
+

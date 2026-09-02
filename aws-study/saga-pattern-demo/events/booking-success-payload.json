@@ -1,0 +1,13 @@
+{
+  "tripId": "trip-001",
+  "hotel": "Grand Hotel",
+  "checkIn": "2026-09-01",
+  "checkOut": "2026-09-05",
+  "depart": "NRT",
+  "departAt": "2026-09-01T08:00:00Z",
+  "arrive": "LAX",
+  "arriveAt": "2026-09-01T20:00:00Z",
+  "car": "Compact",
+  "carFrom": "2026-09-01",
+  "carTo": "2026-09-05"
+}
