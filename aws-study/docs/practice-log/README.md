@@ -414,3 +414,50 @@ Quick Setup Patch Policy(Scan専用・常時可視化)とカスタムAutomation�
 - OpsItemの「解決済み」への変更は、コンソールの編集フォームで一度目の保存が反映されないことがあった(原因未特定だが、保存後に`get-ops-item`でCLI裏取りをして初めて未反映に気づけた)。ステータス変更のような重要な操作は、コンソールの見た目だけで完了と判断せず、CLIで確定させるのが安全
 - CloudWatch Alarmの`OK`復帰とOpsItemの`Resolved`は別物で、前者が自動で戻っても後者は自動でクローズされない。一次対応の「対応内容を記録して終了」は、人間が明示的にOpsItemへ記録してクローズする作業として最後まで残る
 - t3.microでも`while true; do :; done`のような単純な無限ループ1本で、1コアの使用率を100%近くまで専有できる(2vCPU環境全体では約50%表示)。検証用の負荷生成として十分に軽量かつ確実
+
+---
+
+## 16. ALB Target Health起点のMSP一次対応フルサイクル演習
+
+**参照**: [Create OpsItems from CloudWatch Alarms](https://docs.aws.amazon.com/systems-manager/latest/userguide/OpsCenter-create-OpsItems-from-CloudWatch-Alarms.html)、[Remediating OpsItems](https://docs.aws.amazon.com/systems-manager/latest/userguide/OpsCenter-remediating.html)、[Setting up Session Manager](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started.html)
+
+前回(#654・CPU使用率アラーム起点)より一段実践的に、ALBのTarget Health(実際のHTTPヘルスチェック失敗)を起点にした一次対応フローを実機で完走した。監視の起点をOS内部のメトリクス(CPU)からロードバランサー越しの外形監視(ヘルスチェック)に変え、検知経路を1つ増やした形。
+
+### やったこと
+
+1. デフォルトVPCのパブリックサブネット3つ(1d/1c/1a、いずれも`MapPublicIpOnLaunch=True`)を流用し、専用VPCの新規構築を省略。既存のEC2用SSMロール(`AmazonSSMRoleForInstancesQuickSetup`・`AmazonSSMManagedInstanceCore`アタッチ済み)も流用し、IAM新規作成ゼロで着手
+2. EC2(t3.micro・AL2023)をuser data(`dnf install -y nginx`)付きで起動。`describe-instance-information`で`PingStatus: Online`を確認
+3. セキュリティグループを2枚、参照関係を持たせて作成: ALB用SG(`0.0.0.0/0`→80番)を先に作り、EC2用SGのインバウンドはIPではなく**ALB用SGのGroup IDを直接参照**する形にして、EC2への直接アクセス経路を持たせない設計にした。SSH(22番)はどちらにも追加せず
+4. Target Group(ヘルスチェック: パス`/`・間隔10秒・正常/異常しきい値ともに2・タイムアウト5秒)を作成。この時点ではALBが存在しないため`TargetHealth.State`が`unused`(`Target.NotInUse`)になることを確認し、「ヘルスチェックを実際に実行するのはALB本体で、Target Groupは条件の器でしかない」という役割分担を実機で確認
+5. ALB(2AZ・上記SGのうちALB用のみ・HTTP:80リスナーをTarget Groupへ転送)を作成。`provisioning`→`active`になるまで数十秒待ち、`curl`でALB DNS名から200(nginxデフォルトページ)を確認
+6. CloudWatch Alarm(`UnHealthyHostCount`≥1・平均値・期間60秒・1/1データポイント、ディメンションはTargetGroupとLoadBalancerの両方を指定)を作成し、アクションにSystems Manager「OpsItemを作成」(重要度2)のみを設定。**しきい値入力欄の既定値(10000)がそのまま残っていて上書きし忘れそうになった**(気づいて`1`に修正)。作成直後は対象が`healthy`だったため`OK`で開始
+7. サービスリンクロール`AWSServiceRoleForCloudWatchAlarms_ActionSSM`が自動作成されていることを`get-role`で確認(公式ドキュメントの記載どおり)
+8. Session ManagerでEC2に接続し、`sudo systemctl stop nginx`で意図的に停止。Target Groupが`unhealthy`に変わり、約3分半後(nginx停止12:48:58→Alarm ALARM遷移12:52:26、いずれもJST)にCloudWatch Alarmが`ALARM`に遷移。ほぼ同時(0.14秒差)にOpsItemが自動作成され、タイトルが公式ドキュメントどおり`CloudWatch alarm - '{alarm_name}' is in ALARM state`になっていることを確認
+9. OpsCenterでOpsItemのステータスを`In Progress`に変更しようとしたところ、**誤ってドロップダウンで`Resolved`を選んでしまい**、`get-ops-item`のCLI確認で発覚(実機はまだ障害中なのに解決済み扱いになっていた)。同じ画面で選び直し、今度は`In Progress`への変更を確認
+10. CloudTrailの直近イベントを確認し、`msp-web-demo`関連では`UpdateOpsItem`(ステータス変更)以外に人為的なAWS API操作が無いことを確認。別プロジェクトのECSインスタンスによる`RegisterContainerInstance`という無関係なノイズイベントが混在しており、対象リソースに関係あるものだけを読み分ける必要があった
+11. Session Managerで再接続し、`systemctl status nginx`(`ExecStart`/`Main PID`とも`code=exited, status=0/SUCCESS`)で異常終了ではないことをまず確認。続けて`journalctl -u nginx`を`sudo`無しで実行したところ**権限不足で`-- No entries --`となり**(Session Managerのデフォルトユーザーが`adm`/`systemd-journal`/`wheel`グループ未所属のため)、`sudo`を付けて再実行し「Stopping→Deactivated successfully→Stopped」という正常な停止シーケンスのログを確認
+12. `sudo systemctl start nginx`で復旧。インスタンス内`curl http://localhost`で200、ALB Target Healthが`healthy`、CloudWatch Alarmが`OK`(ALARM遷移から11分00秒後)に戻ったことを確認
+13. OpsItemに対応メモを記録してから`Resolved`に変更。対応メモの入力欄は自由記述のコメント欄ではなく「運用データ」というキー・値ペア形式だった
+14. `describe-ops-items`のタイトル絞り込みフィルタを試した際、`Filter 'Title': ... length of the value must be between 4 and 20`というバリデーションエラーに遭遇(アラーム名をそのままタイトルに使うと21文字を超えることがあり、フィルタの都合とは別物と判明)
+
+### 運用報告書(2026-09-09 実行分)
+
+| 指標 | 値 | 算出根拠 |
+|---|---|---|
+| 検知までの実測ラグ | 約3分28秒 | nginx停止(12:48:58 JST)→CloudWatch Alarm ALARM遷移(12:52:26.399 JST)。ヘルスチェック(間隔10秒×異常しきい値2=最短20秒)＋ALBメトリクスの反映ラグ＋アラーム評価周期(60秒)の合算で、「1データポイントで即時検知」設計でも数分単位の遅延は残ることを実測 |
+| MTTA相当(ALARM→OpsItem自動作成) | 約0.14秒 | ALARM遷移(12:52:26.399)→OpsItem作成(12:52:26.540)。ほぼ同時 |
+| MTTR(ALARM→OK復帰) | 11分00秒 | ALARM遷移(12:52:26.399)→OK復帰(13:03:26.402) |
+| OpsItem解決までの所要時間 | 13分43秒 | ALARM遷移(12:52:26.399)→OpsItem Resolved確定(13:06:09.632) |
+| ステータス誤操作によるロスタイム | 1分43秒 | 誤って`Resolved`を選択(12:55:54.500)→`In Progress`へ訂正確定(12:57:37.992) |
+| CloudTrailでの不審操作 | 0件 | `msp-web-demo`関連イベントは`UpdateOpsItem`(本人操作)のみ。別プロジェクトのノイズイベントは対象外と判別済み |
+
+### 得られた知見
+
+- Target Groupは、参照するALBが存在しない間`TargetHealth.State`が`unused`(`Target.NotInUse`)になる。ヘルスチェックの実行主体はALB側であり、Target Groupは「条件と登録先の器」でしかないという役割分担を実機で確認できた
+- EC2用セキュリティグループのインバウンドは、IPレンジではなく**ALB用セキュリティグループのGroup IDを直接参照**する形で設定できる。これによりALBを経由しないインターネットからの直接アクセス経路そのものが存在しなくなる(IPで絞るより一段強い分離)
+- CloudWatch Alarm作成画面のしきい値入力欄には既定値(10000など)が残っていることがあり、自分の意図した値への上書きを忘れると全く違う条件でアラームが作成されてしまう。作成直前に必ず値を見直す必要がある
+- OpsItemのステータス変更は、ドロップダウンの選択肢を誤って隣の項目(`Resolved`)を選んでしまうミスが起こり得る。しかも選択直後に別途「保存」ボタンを挟まず即時反映される画面だったため、誤操作にすぐ気づけなかった。前回セッションの教訓(コンソールの見た目だけで完了と判断しない)が今回も同じ形で効いた
+- Session Manager接続時のデフォルトユーザーは`journalctl`のフルログを見る権限グループ(`adm`/`systemd-journal`/`wheel`)に入っておらず、`sudo`無しでは`-- No entries --`という空の結果になる。エラーではなく権限不足の警告だと気づかないと、ログが本当に無いと誤解しかねない
+- `describe-ops-items`の`Title`フィルタは値の長さが4〜20文字までという制約があり、アラーム名をそのまま使うと(20文字を超えると)フィルタが使えない。フィルタなしで一覧を取得し、目視/別項目で絞り込む方が確実な場面がある
+- CloudTrailで障害調査をする際、同一アカウント内の無関係な別プロジェクトのリソースが定常的にAPIを呼び続けていることがあり(今回は別プロジェクトのECSインスタンスによる`RegisterContainerInstance`)、対象のリソース名・ARNで明確に絞り込まないと誤ったイベントを人為的操作と誤認しかねない
+- ヘルスチェック間隔やアラーム評価周期を短く設定しても、「異常しきい値の連続失敗回数」「メトリクスの反映ラグ」「アラーム評価周期」が積み重なるため、検知までの実測時間は数十秒〜数分単位になる。「1データポイントで即時検知」という設計上の意図と、実際に体感する検知までの秒数は別物として記録しておく価値がある
