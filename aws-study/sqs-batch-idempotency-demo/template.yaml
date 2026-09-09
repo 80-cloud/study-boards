@@ -1,0 +1,144 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  SQS partial batch response + idempotency + DLQ monitoring demo (Java 25)
+
+# 参考: このセッションでは実際の構築・検証はマネジメントコンソールの手作業で行った(sam deployは未使用)。
+# このテンプレートは同じ構成をIaCで書くとどうなるかの記録として残している。
+# 実機検証で最終的に固定した値(公式ベストプラクティス集の推奨値)を反映済み:
+# VisibilityTimeout=60(関数タイムアウト10秒の6倍) / maxReceiveCount=5 / Alarm Period=300。
+
+Transform:
+- AWS::Serverless-2016-10-31
+
+Globals:
+  Function:
+    Runtime: java25
+    MemorySize: 512
+    Timeout: 10
+    Tracing: Active
+
+Resources:
+
+  IdempotencyTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: expiration
+        Enabled: true
+
+  MainQueueDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 1209600
+
+  MainQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      # 関数タイムアウト(10秒)の6倍。公式ベストプラクティス集の推奨値。
+      VisibilityTimeout: 60
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt MainQueueDLQ.Arn
+        # 公式推奨=5以上。Lambdaに複数回リトライの機会を与える。
+        maxReceiveCount: 5
+
+  # 「失敗させるかどうか」を外部から切り替えるスイッチ。
+  # メッセージ本文のマーカーはあくまで目印で、実際に失敗させるかはこの値で制御する。
+  # これにより DLQ からの redrive 前に OFF に切り替えれば、
+  # 「原因を直してから再処理→今度は成功する」という流れを再現できる。
+  FailureSwitchParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/failure-switch"
+      Type: String
+      Value: "ON"
+
+  ConsumerFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+        # 公式推奨の管理ポリシー(SQSキューへのReceive/Delete/GetAttributes等)。
+        # Resource: "*" 相当で全SQSキューが対象になる点はトレードオフとして把握しておく。
+        # 「このキューだけに絞りたい」場合はインラインポリシーで sqs:ReceiveMessage 等を
+        # !GetAtt MainQueue.Arn に限定する方式に切り替え可能。
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole
+      Policies:
+        - PolicyName: IdempotencyTableAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                Resource: !GetAtt IdempotencyTable.Arn
+        - PolicyName: FailureSwitchParameterAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${FailureSwitchParameter}"
+
+  ConsumerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: consumer-function
+      Handler: com.example.sqsbatch.consumer.ConsumerHandler::handleRequest
+      Role: !GetAtt ConsumerFunctionRole.Arn
+      Environment:
+        Variables:
+          IDEMPOTENCY_TABLE_NAME: !Ref IdempotencyTable
+          FAILURE_SWITCH_PARAM_NAME: !Ref FailureSwitchParameter
+      Events:
+        Queue:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt MainQueue.Arn
+            BatchSize: 10
+            FunctionResponseTypes:
+              - ReportBatchItemFailures
+
+  DLQBacklogAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: "DLQにメッセージが1件以上溜まったら通知"
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt MainQueueDLQ.QueueName
+      Statistic: Maximum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+Outputs:
+  MainQueueUrl:
+    Value: !Ref MainQueue
+  MainQueueDLQUrl:
+    Value: !Ref MainQueueDLQ
+  IdempotencyTableName:
+    Value: !Ref IdempotencyTable
+  FailureSwitchParameterName:
+    Value: !Ref FailureSwitchParameter

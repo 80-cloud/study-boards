@@ -1,0 +1,10 @@
+let s3_buckets_s3_default_encryption = Resources.*[ Type == 'AWS::S3::Bucket']
+
+rule S3_DEFAULT_ENCRYPTION_KMS when %s3_buckets_s3_default_encryption !empty {
+  %s3_buckets_s3_default_encryption.Properties.BucketEncryption exists
+  %s3_buckets_s3_default_encryption.Properties.BucketEncryption.ServerSideEncryptionConfiguration[*].ServerSideEncryptionByDefault.SSEAlgorithm in ["aws:kms","AES256"]
+  <<
+    Violation: S3 Bucket default encryption must be set.
+    Fix: Set the S3 Bucket property BucketEncryption.ServerSideEncryptionConfiguration.ServerSideEncryptionByDefault.SSEAlgorithm to either "aws:kms" or "AES256"
+  >>
+}

@@ -1,0 +1,36 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Observability lab: minimal API Gateway (REST) + Java Lambda, used to compare
+  X-Ray tracing vs CloudWatch Application Signals (ADOT layer) on the same function.
+
+Globals:
+  Function:
+    Timeout: 10
+    MemorySize: 256
+    Architectures:
+      - arm64
+
+Resources:
+  HelloFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: observability-lab-hello
+      CodeUri: .
+      Handler: com.awsstudy.observability.App::handleRequest
+      Runtime: java21
+      Events:
+        HelloApi:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: get
+
+Outputs:
+  ApiUrl:
+    Description: Invoke URL for the /hello endpoint
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello"
+  ApiId:
+    Value: !Ref ServerlessRestApi
+  FunctionName:
+    Value: !Ref HelloFunction

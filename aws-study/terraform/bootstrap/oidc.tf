@@ -177,6 +177,8 @@ data "aws_iam_policy_document" "apply_infra" {
       "lambda:*",
       "apigateway:*",
       "wafv2:*",
+      "ssm:StartSession", "ssm:TerminateSession", "ssm:ResumeSession",
+      "ssm:DescribeInstanceInformation", "ssm:GetConnectionStatus",
     ]
     resources = ["*"]
     condition {

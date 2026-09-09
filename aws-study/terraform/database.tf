@@ -1,5 +1,6 @@
 module "database" {
   source             = "./modules/database"
+  count              = var.enable_rds ? 1 : 0
   project            = var.project
   private_subnet_ids = module.network.private_subnet_ids
   rds_sg_id          = module.security.rds_sg_id

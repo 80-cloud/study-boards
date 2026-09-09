@@ -1,0 +1,8 @@
+---
+- name: Deploy review-park backend over SSM
+  hosts: app
+  gather_facts: false
+  become: true
+  roles:
+    - deploy_app
+    

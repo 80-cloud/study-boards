@@ -1,0 +1,8 @@
+---
+# Java バージョン（21→25 の部分変更はここを変える＝採点「version は変数参照」）
+java_version: "25"
+app_user: appuser
+aws_region: ap-northeast-1
+secret_name: aws-study-db-credentials
+# 既定（リポ直下からの相対）。CI は -e app_jar_src=<絶対パス> で上書きする。
+app_jar_src: "../../../review-park/backend/build/libs/app.jar"

@@ -1,0 +1,77 @@
+---
+- name: Install Amazon Corretto (headless runtime)
+  ansible.builtin.dnf:
+    name: "java-{{ java_version }}-amazon-corretto-headless"
+    state: present
+
+- name: Create dedicated service user
+  ansible.builtin.user:
+    name: "{{ app_user }}"
+    system: true
+    shell: /usr/sbin/nologin
+    create_home: false
+
+- name: Ensure app directory exists
+  ansible.builtin.file:
+    path: /opt/app
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: "0755"
+
+- name: Copy application jar (built on the runner)
+  ansible.builtin.copy:
+    src: "{{ app_jar_src }}"
+    dest: /opt/app/app.jar
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: "0644"
+  notify: Restart app
+
+- name: Read JWT secret from Secrets Manager (on the controller)
+  ansible.builtin.set_fact:
+    jwt_secret: "{{ (lookup('amazon.aws.aws_secret', secret_name, region=aws_region) | from_json).jwt_secret }}"
+  no_log: true
+
+- name: Ensure env directory exists
+  ansible.builtin.file:
+    path: /etc/app
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Render EnvironmentFile (contains the JWT secret)
+  ansible.builtin.template:
+    src: app.env.j2
+    dest: /etc/app/app.env
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+  notify: Restart app
+
+- name: Install systemd unit
+  ansible.builtin.template:
+    src: app.service.j2
+    dest: /etc/systemd/system/app.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart app
+
+- name: Enable and start the app
+  ansible.builtin.systemd:
+    name: app
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: Wait until the app serves /posts with 200
+  ansible.builtin.uri:
+    url: http://localhost:8080/posts
+    status_code: 200
+  register: app_health
+  until: app_health.status == 200
+  retries: 30
+  delay: 5

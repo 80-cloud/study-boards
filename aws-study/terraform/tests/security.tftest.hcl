@@ -1,7 +1,6 @@
-# §9: ALB / TargetGroup / SecurityGroup のセキュリティをテストで保証（plan モード＝$0）。
+# §9: ALB / TargetGroup / SecurityGroup / IAM / EC2 のセキュリティを plan モードで保証（$0）。
 # 実行: terraform test
-# 注意: ① の ALB テストは modules/alb の data(aws_elb_service_account / aws_caller_identity)
-#       のため AWS 認証情報が必要。②③ の security モジュールは data 無しで完全オフライン。
+# 注意: ①(ALB) ⑤(compute) は data source のため AWS 認証情報が必要。②③④はオフライン可。
 
 # ① ターゲットグループのポートがアプリ(8080)と一致
 run "target_group_port_is_8080" {
@@ -12,7 +11,7 @@ run "target_group_port_is_8080" {
   }
   variables {
     project           = "aws-study"
-    vpc_id            = "vpc-12345678" # plan 用ダミー（実在不要）
+    vpc_id            = "vpc-12345678"
     public_subnet_ids = ["subnet-aaa", "subnet-bbb"]
     alb_sg_id         = "sg-12345678"
     instance_id       = "i-1234567890abcdef0"
@@ -34,7 +33,6 @@ run "alb_sg_is_http_https_only" {
   variables {
     project = "aws-study"
     vpc_id  = "vpc-12345678"
-    my_ip   = "203.0.113.10/32"
   }
 
   assert {
@@ -45,8 +43,8 @@ run "alb_sg_is_http_https_only" {
   }
 }
 
-# ③ EC2-SG の SSH(22) は my_ip(/32) のみ・0.0.0.0/0 で開けない
-run "ec2_sg_ssh_is_my_ip_only" {
+# ③ EC2-SG は SSH(22) の ingress を一切持たない（SSM 採用＝22 完全閉鎖）
+run "ec2_sg_has_no_ssh_ingress" {
   command = plan
 
   module {
@@ -55,24 +53,53 @@ run "ec2_sg_ssh_is_my_ip_only" {
   variables {
     project = "aws-study"
     vpc_id  = "vpc-12345678"
-    my_ip   = "203.0.113.10/32"
   }
 
-  # 22 番に 0.0.0.0/0 が無いこと
   assert {
     condition = alltrue([
-      for r in aws_security_group.ec2.ingress :
-      r.from_port != 22 || !contains(coalesce(r.cidr_blocks, []), "0.0.0.0/0")
+      for r in aws_security_group.ec2.ingress : r.from_port != 22
     ])
-    error_message = "EC2-SG の SSH(22) を 0.0.0.0/0 に開けてはいけない"
-  }
-
-  # 22 番が my_ip(/32) から許可されていること
-  assert {
-    condition = anytrue([
-      for r in aws_security_group.ec2.ingress :
-      r.from_port == 22 && contains(coalesce(r.cidr_blocks, []), var.my_ip)
-    ])
-    error_message = "EC2-SG の SSH(22) は my_ip(/32) のみから許可されているべき"
+    error_message = "SSM 採用のため EC2-SG に 22(SSH) の ingress を作らない"
   }
 }
+
+# ④ EC2 ロールに SSM 接続用マネージドポリシーが付く（SSM 必須3点①）
+run "ec2_role_has_ssm_core_policy" {
+  command = plan
+
+  module {
+    source = "./modules/iam"
+  }
+  variables {
+    project    = "aws-study"
+    secret_arn = "arn:aws:secretsmanager:ap-northeast-1:123456789012:secret:dummy"
+  }
+
+  assert {
+    condition     = aws_iam_role_policy_attachment.ssm.policy_arn == "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+    error_message = "EC2 ロールに AmazonSSMManagedInstanceCore が付くべき（SSM 接続の前提）"
+  }
+}
+
+# ⑤ EC2 にインスタンスプロファイルが装着されている（SSM 必須3点①の実体）
+run "ec2_has_instance_profile" {
+  command = plan
+
+  module {
+    source = "./modules/compute"
+  }
+  variables {
+    project               = "aws-study"
+    region                = "ap-northeast-1"
+    public_subnet_id      = "subnet-aaa"
+    ec2_sg_id             = "sg-12345678"
+    instance_profile_name = "aws-study-ec2-profile"
+    secret_id             = "arn:aws:secretsmanager:ap-northeast-1:123456789012:secret:dummy"
+  }
+
+  assert {
+    condition     = aws_instance.this.iam_instance_profile != null
+    error_message = "EC2 にインスタンスプロファイルが装着されているべき"
+  }
+}
+

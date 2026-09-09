@@ -1,0 +1,17 @@
+schemaVersion: '2.2'
+description: 'Patch Canary demo - OnExit hook: verify app health after reboot'
+mainSteps:
+  - action: aws:runShellScript
+    name: verifyAppHealth
+    inputs:
+      runCommand:
+        - |
+          for i in $(seq 1 12); do
+            if curl -sf -o /dev/null http://localhost:8080/posts; then
+              echo "HEALTH_OK"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "HEALTH_FAILED"
+          exit 1

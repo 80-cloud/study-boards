@@ -20,10 +20,10 @@ resource "aws_security_group" "alb" {
   tags = { Name = "${var.project}-alb-sg" }
 }
 
-# EC2 用 SG：アプリ 8080 は ALB からのみ／SSH 22 は自分の IP からのみ
+# EC2 用 SG：アプリ 8080 は ALB からのみ。SSH(22) は開けない（接続は SSM 経由）。
 resource "aws_security_group" "ec2" {
   name        = "${var.project}-ec2-sg"
-  description = "EC2 SG (8080 from ALB, 22 from my_ip)"
+  description = "EC2 SG (8080 from ALB only; no SSH, SSM only)"
   vpc_id      = var.vpc_id
 
   ingress {
@@ -33,13 +33,7 @@ resource "aws_security_group" "ec2" {
     protocol        = "tcp"
     security_groups = [aws_security_group.alb.id] # ALB SG からのみ
   }
-  ingress {
-    description = "SSH from my IP only"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = [var.my_ip] # /32 限定（全開放しない）
-  }
+  # egress は SSM/dnf に必須（EC2 -> SSM/インターネットへの到達）。
   egress {
     from_port   = 0
     to_port     = 0
