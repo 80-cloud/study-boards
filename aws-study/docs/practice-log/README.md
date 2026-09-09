@@ -503,3 +503,51 @@ Quick Setup Patch Policy(Scan専用・常時可視化)とカスタムAutomation�
 - メモリ逼迫が深刻化すると、CloudWatch Agent自身もリソース不足で停止し、`mem_used_percent`・`disk_used_percent`ともに一定時間後`INSUFFICIENT_DATA`に転じた。監視対象のOSが死にかけている場合、監視エージェント自体も道連れで機能を失いうるため、「メトリクスが取れていること」自体を監視の生存確認として扱うのは危険
 - SSM Run CommandとSession Manager(インタラクティブ接続)は結局同じSSM Agentを経由するため、片方が無応答ならもう片方も無応答になりやすい。両方が使えなくなった場合の最終手段はEC2コンソールからの「インスタンスの再起動」で、これはデータを失わない通常の復旧操作である
 - ブラインド演習の運用上の教訓として、シナリオ注入コマンドをJSON文字列へ直接ネストクォートで埋め込むと構文エラーになりやすく、ローカルでシェル構文チェック(`bash -n`)をしてからbase64エンコードして送る方式に切り替えると安定した
+
+---
+
+## 18. 専用VPC上でのReachability Analyzer×ALB Target Healthブラインド障害切り分け演習
+
+**参照**: [Getting started with Reachability Analyzer](https://docs.aws.amazon.com/vpc/latest/reachability/getting-started.html)、[Check the health of your Application Load Balancer targets](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/target-group-health-checks.html)
+
+前回(#658)・前々回(#660・EC2ステータスチェック演習)はいずれもデフォルトVPCを流用したが、今回はルートテーブル・NACLを意図的に破壊する演習のため、専用のカスタムVPCを新規構築した。ネットワーク層(セキュリティグループ/ルートテーブル/NACL)とアプリ・ヘルスチェック層(Target Group設定/nginx)の両方にまたがる7シナリオを、正常系・異常系のリソースをあらかじめ両方用意しておき、association系コマンド(delete系を使わない)で挙げ替える方式で実施した。
+
+### やったこと(環境構築)
+
+1. 専用VPC(10.1.0.0/16)、パブリックサブネット2つ(10.1.1.0/24・1a、10.1.2.0/24・1c)、インターネットゲートウェイを構築
+2. ルートテーブルを正常系(0.0.0.0/0→IGW)・異常系(localのみ)の2つ、ネットワークACLを異常系(インバウンド80番DENY・他ALLOW)1つ、あらかじめ作成
+3. セキュリティグループ2枚(ALB用は`0.0.0.0/0`→80番、EC2用はALB用SGのGroup IDのみを参照)
+4. EC2(t3.micro・AL2023・nginx)、Target Group(ヘルスチェック:パス`/`・間隔10秒・しきい値2/2)、ALB(2AZ)を構築
+5. Reachability Analyzerのパス2本(IGW→EC2のENI、IGW→ALBのサブネットAノードのENI)を作成。宛先ポートの指定は、コンソールでは「送信先での追加のパケットヘッダー設定」内の**「送信先ポート」欄**(送信元ポート欄と紛らわしい)で行う必要があり、CLIで確認するとトップレベルの`DestinationPort`ではなく`FilterAtDestination.DestinationPortRange`に格納されていることを確認した
+6. Reachability Analyzerの実際のコンソール配置は、VPCコンソール単体の機能ではなく「**Network Manager→モニタリングとトラブルシューティング→Reachability Analyzer**」という独立した入口であることを実機で確認した(VPCコンソール左メニューには存在しない)
+
+### やったこと(ブラインド演習・7シナリオ)
+
+Claudeが7シナリオ(セキュリティグループ欠落×2・ルートテーブル破壊・NACL明示DENY・Target Groupポート不一致・ヘルスチェックパス不一致・nginx停止)のうち1つを非開示で選びAWS CLIで注入し、「Webサイトにアクセスできないという申告がありました」とだけ伝えた。実施者はcurl→ALB状態→Target Group Health→セキュリティグループ→Reachability Analyzer→(該当時)EC2内部(Session Manager)の順に自力で原因を特定・復旧するラウンドを7回実施した。セキュリティグループ・ルートテーブル・NACLが絡む回はReachability Analyzerでも再確認し、Target Group設定やnginx停止が絡む回は事前に公式ドキュメントで「Reachability Analyzerは登録ターゲットの正常性を評価対象にしない」ことを確認した上でRAでの再確認を省略した(分析回数の節約)。
+
+### 7ラウンドの実施結果
+
+| # | シナリオ | 決め手 | 復旧操作 |
+|---|---|---|---|
+| 1 | ALB用セキュリティグループのインバウンド剥奪 | curlが2つのALBノード双方で一律タイムアウト→ALBの「セキュリティ」タブでインバウンドルール0件と判明 | インバウンドルール再追加(HTTP・送信元0.0.0.0/0) |
+| 2 | ヘルスチェックパス不一致(`/healthz`に変更) | ヘルスチェック失敗理由が`Target.ResponseCodeMismatch [404]` | ヘルスチェックパスを`/`へ戻す |
+| 3 | Target Groupのターゲットポート不一致(8080で登録) | ターゲットのポート列が8080、ヘルスチェック設定の「ポート=トラフィックポート」(登録ポートに追従する意味)に気づく | ポート8080を登録解除→ポート80で登録し直す |
+| 4 | nginxプロセス停止 | ヘルスチェック失敗理由が`Target.FailedHealthChecks`(Timeoutでない)→Session Managerで`systemctl status`を確認 | `sudo systemctl start nginx` |
+| 5 | EC2用セキュリティグループのインバウンド剥奪 | ヘルスチェック失敗理由が`Target.Timeout`、EC2用SGのインバウンドルールが0件と判明 | インバウンドルール再追加(ソース=ALB用SGのGroup ID参照) |
+| 6 | ルートテーブル破壊(両サブネットをIGWルート無しのルートテーブルへ付け替え) | curlは両ノードともタイムアウトするがTarget Groupは無傷。Reachability Analyzerは両パスとも到達不可能 | 両サブネットの関連付けを正常系ルートテーブルへ戻す |
+| 7 | NACL明示DENY(両サブネットをTCP:80 DENYのNACLへ付け替え) | curl・Reachability Analyzer両パスとも到達不可能だがTarget Groupは無傷 | 両サブネットの関連付けをデフォルトNACLへ戻す |
+
+### 得られた知見
+
+- Reachability Analyzerはルートテーブルをpath componentとして評価するため、送信元がインターネットゲートウェイであっても、経路上のルートテーブルの状態(0.0.0.0/0→IGWの経路の有無)によって到達可否の判定が変化する。「送信元がIGWだからルートテーブルの影響を受けない」という思い込みは誤りだった
+- VPCの各ルートテーブルには削除できない暗黙のローカルルート(自VPC CIDR宛はlocal)が常に存在するため、0.0.0.0/0→IGWの経路が失われても**VPC内部の通信(ALB⇔EC2間のヘルスチェック等)は影響を受けない**。影響を受けるのはインターネットとの行き来(クライアント→ALB、EC2の外向き通信)だけだった。想定シグネチャでは「Target Groupもunhealthyになる」としていたが、実機では無傷という結果になった
+- SSM Agentの疎通は、ルートテーブル破壊(EC2の外向き経路の喪失)によって実際に切れることを実機で確認した。ただし復旧後の自動再接続は約30秒と非常に速く、過去に踏んだセキュリティグループ起因の切断(7分近く復帰しなかった)とは体感が大きく異なった。切断からの復帰にかかる時間は原因の種類によって差がある
+- NACLはサブネットの境界を越える通信にしか適用されない(同一サブネット内のENI同士の通信はNACL評価の対象外)。今回の構成ではEC2とALBの片方のノードが同じサブネットにいたため、NACLで明示的に80番をDENYしてもTarget Groupの状態(集約値)はhealthyのまま変化しなかった。ルートテーブル破壊とは異なる理由で、同じ「Target Groupだけ無傷」という見た目になった
+- ALBのヘルスチェック失敗理由(`Target.Timeout`/`Target.ResponseCodeMismatch`/`Target.FailedHealthChecks`)は、原因のレイヤーを強く示唆する。セキュリティグループによる遮断は`Timeout`(パケットが黙って捨てられる)、アプリのパス不一致は`ResponseCodeMismatch`(正常応答はしている)、プロセス停止は`FailedHealthChecks`(接続は拒否される)と、症状が明確に分かれた
+- 同じ「セキュリティグループの穴」でも、ALB用とEC2用のどちらが原因かによって症状の出方が異なった。ALB用SG(入口側)の欠落はALBへの接続自体がタイムアウトするが、EC2用SG(内側)の欠落はALBへの接続は成功し、ALBからバックエンドへの転送(Target Group)側がタイムアウトする
+- コンソールには名前が近く画面構成もよく似た複数のネットワークACL(異常系NACLと無名のデフォルトNACL)が並ぶ場面があり、**異常系NACL自身の「サブネットの関連付けを編集」画面を、デフォルトNACLの編集画面と誤認して操作してしまう事故**が2回発生した。「利用可能なサブネット」という表示のされ方が両者でほぼ同じに見えるため、パンくずリストのリソースIDを毎回確認する必要があった
+- ブラインド演習の運用について、当初は「Claudeが注入し、実施者がコンソールで診断する」という役割分担だったが、未確定事項の解明を理由にした一部シナリオ(ルートテーブル・NACL回)で、診断に相当する確認(curl・Target Group確認・Reachability Analyzer実行)までClaude側がCLIで完結させてしまう場面があった。理由付けが実質的に役割分担を崩す隠れ蓑にならないよう、次回以降は理由の如何によらず「診断はコンソールで実施者が行い、Claudeは事後の裏取りに徹する」という原則を一貫させる必要がある
+
+### 補足
+
+演習で使用したVPC・EC2・ALB・Target Group・Reachability Analyzerのパス等は、本記録の時点ではまだ削除していない(片付けは別途、削除系コマンドを含むためAI単独では実行せず本人がターミナルで実施する)。
