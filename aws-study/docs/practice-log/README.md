@@ -461,3 +461,45 @@ Quick Setup Patch Policy(Scan専用・常時可視化)とカスタムAutomation�
 - `describe-ops-items`の`Title`フィルタは値の長さが4〜20文字までという制約があり、アラーム名をそのまま使うと(20文字を超えると)フィルタが使えない。フィルタなしで一覧を取得し、目視/別項目で絞り込む方が確実な場面がある
 - CloudTrailで障害調査をする際、同一アカウント内の無関係な別プロジェクトのリソースが定常的にAPIを呼び続けていることがあり(今回は別プロジェクトのECSインスタンスによる`RegisterContainerInstance`)、対象のリソース名・ARNで明確に絞り込まないと誤ったイベントを人為的操作と誤認しかねない
 - ヘルスチェック間隔やアラーム評価周期を短く設定しても、「異常しきい値の連続失敗回数」「メトリクスの反映ラグ」「アラーム評価周期」が積み重なるため、検知までの実測時間は数十秒〜数分単位になる。「1データポイントで即時検知」という設計上の意図と、実際に体感する検知までの秒数は別物として記録しておく価値がある
+
+---
+
+## 17. EC2ステータスチェック×CloudWatch Agent×ブラインド障害切り分け演習
+
+**参照**: [Troubleshoot Amazon EC2 Linux instances with failed status checks](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/TroubleshootingInstances.html)、[Status checks for Amazon EC2 instances](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/monitoring-system-instance-status-check.html)、[Installing the CloudWatch agent](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/install-CloudWatch-Agent-on-EC2-Instance.html)
+
+前回まで(#654・#658)はいずれも「何が起きたか分かった状態」で監視を組んだ。今回は逆に、原因を伏せた状態で自分で辿り着く演習にした。同じ構成のEC2に対し、6種類の障害(nginx停止・nginx設定ミス・CPU高負荷・メモリ逼迫・ディスク逼迫・ログ肥大化)のうち1つだけを実施者に伏せたまま注入し、「Webサイトにアクセスできないという申告がありました」とだけ伝えて、CloudWatch→EC2ステータスチェック→ALB→Session Manager→OS→Process→Logの順に自力で原因特定・復旧させる形にした。
+
+### やったこと
+
+1. 着手前に三現主義で現状確認: 前回(`msp-web-demo`)の課金対象リソースが実機で0件(全削除済み)であることを`describe-instances`等で確認。既存の共有IAMロール`AmazonSSMRoleForInstancesQuickSetup`に`CloudWatchAgentServerPolicy`が**付いていない**ことが判明し、同ロールへ追加アタッチ(専用ロールは作らず既存の共有ロールを拡張する方針を選択)
+2. 最新のAmazon Linux 2023 AMIのデフォルトルートボリュームを`describe-images`で確認したところ**実測30GiB**(引き継ぎ資料の想定は8GiB)。ディスク逼迫演習(埋めるのに時間がかかりすぎる)を成立させるため、EC2起動時にルートボリュームを**8GiBへ明示的に変更**
+3. EC2(t3.micro・AL2023・詳細モニタリング有効・IAMインスタンスプロファイルは上記ロール)をuser data(nginx install/enable/start)付きで起動。SG2枚(ALB用は`0.0.0.0/0`→80番、EC2用はALB用SGのGroup IDのみ参照)・Target Group・ALB(2AZ)は前回と同じ構成で再構築
+4. Target Group作成直後、正常のしきい値が意図した`2`ではなく既定値`5`のまま反映されていないことに気づき修正(前回の「しきい値10000の消し忘れ」と同系統の見落とし)
+5. CloudWatch Agentをインストール(`dnf install -y amazon-cloudwatch-agent`をSSM Run Command経由)。設定はSSM Parameter Store(`AmazonCloudWatch-ops-triage-demo-config`)に保存し、`append_dimensions`で`InstanceId`を明示指定した上で`AmazonCloudWatch-ManageAgent`(Action=configure)で起動。`list-metrics`で実際に届いたメトリクスを確認したところ、`mem_used_percent`はInstanceIdのみだが**`disk_used_percent`はInstanceId・path・device・fstypeの4つのディメンションが揃わないと一致しない**ことが判明(引き継ぎ資料で「実機確認するまで断定しない」としていた点)
+6. CloudWatch Alarm 4種(UnHealthyHostCount≥1・CPUUtilization≥10・mem_used_percent≥70・disk_used_percent≥80、いずれもアクションはSystems Manager「OpsItemを作成」)を作成。**unhealthy-hostのアラームで2重のミスが発生**: ①メトリクス選択で削除済みの前回リソース(`msp-web-demo-tg`/`msp-web-demo-alb`)の履歴データがまだ選択候補に残っており誤って選択(CloudWatchは削除済みリソースのメトリクス履歴を最大15か月保持するため)②選び直した際に`UnHealthyHostCount`ではなく隣接する`HealthyHostCount`を選んでしまい、条件の意味が逆転(異常時ではなく正常時に鳴る設定になっていた)。両方とも`describe-alarms`のCLI裏取りで発覚し、都度選び直して修正
+7. 6ラウンドのブラインド演習を実施。Claude側が`random.randint`で毎回非開示のまま1シナリオを選定し、SSM Run Command(スクリプトはbase64エンコードして送信。複雑なネストクォートを直接JSONへ埋め込むと構文エラーになった経験から、ローカルで構文チェック後にbase64化する方式に切替)で注入。実施者はCloudWatch→EC2ステータスチェック→ALB Target Health→Session Manager→OS(`systemctl status`/`journalctl`/`free`/`df`/`du`/`ps`/`top`)の順に辿って原因を特定・復旧
+8. 6ラウンド目(メモリ逼迫)で設計想定を超える深刻化が発生。詳細は次節の障害報告書を参照
+9. 演習後、6ラウンド分の稼働リソース(EC2・ALB・TG・SG2枚・CloudWatch Alarm4種・Parameter Store)を削除
+
+### 6ラウンドの実施結果
+
+| # | シナリオ | 検知経路 | 復旧操作 | 検知(ALARM)〜復旧(OK)の実測 |
+|---|---|---|---|---|
+| 1 | nginx設定ミス(`nginx.conf`に不正なディレクティブ追記→再起動失敗) | `unhealthy-host`アラーム | `nginx -t`でエラー行特定→該当行削除→`systemctl start` | 8分00秒(14:39:28→14:47:28) |
+| 2 | nginx停止(`systemctl stop`) | `unhealthy-host`アラーム | `systemctl status`で正常終了(`exit 0`)と判別→`systemctl start` | 4分00秒(14:52:28→14:56:28) |
+| 3 | ログ肥大化(`/var/log/`配下の特定ファイルへ1秒間隔で追記し続けるプロセス) | アラーム発火前にOS側の兆候(ディスク使用率の継続的な微増)で発見 | `du -sh`で巨大ログを特定→`ps aux`で書き込み元プロセスを特定しkill→ログ削除 | (アラーム未発火のため計測対象外) |
+| 4 | ディスク逼迫(空き容量の80%を`fallocate`で一括確保) | `disk-high`アラーム | `du -sh`で単一の巨大ファイルを特定(プロセスは残らず一撃で完了)→削除 | 4分00秒(15:15:09→15:19:09) |
+| 5 | CPU高負荷(無限ループ×2を2vCPU分バックグラウンド起動) | `cpu-high`アラーム | `top`でbashプロセス2つ(各94%)を特定→kill | 4分00秒(15:21:38→15:25:38) |
+| 6 | メモリ逼迫(約700MBを確保するPythonプロセス) | SSM Agentの応答不能(`ConnectionLost`)で発覚。CPU/ディスクアラームも波及して発火 | Session Manager・Run Command双方が無応答のため**EC2コンソールから再起動** | 全アラームOK復帰まで約23分(15:26頃注入→15:49頃) |
+
+### 得られた知見
+
+- CloudWatchは削除済みリソースのメトリクス履歴を最大15か月保持し続けるため、メトリクス選択画面には既に存在しないリソース(前回削除済みのALB/Target Group)の候補が今も表示される。似た名前の新旧リソースが並ぶと選び間違えやすく、ARNの末尾ID まで確認する必要がある
+- `HealthyHostCount`と`UnHealthyHostCount`は名前が似ているため選択画面で隣接して並び、選び間違えると「正常時に鳴り、異常が深刻化すると鳴り止む」という条件が完全に逆転したアラームになる。`describe-alarms`でメトリクス名まで裏取りしないと、コンソールの見た目だけでは気づきにくい
+- `disk_used_percent`(CWAgent)はデバイス・マウントパス・ファイルシステム種別まで含めた4つのディメンションが完全一致しないと対象を特定できない。`append_dimensions`でInstanceIdを付与していても、それだけでは不十分な場合がある
+- EC2の標準ステータスチェック(System/Instance/AttachedEBS)は、メモリ枯渇によってOS内部(SSM Agent含む)が完全に応答不能になっている状況でも**「ok」のまま変化しないことがある**。ホスト・ハイパーバイザーレベルの疎通と、OS内部のアプリケーション/エージェントレベルの応答性は別物であり、前者が正常でも後者が死んでいるケースを実機で確認した
+- t3.micro(メモリ913MiB)に対して約700MBを確保する設計は「安全に観測できる負荷」を意図していたが、実機では**メモリの逼迫がCPU使用率アラームにも波及した**(空きメモリを確保しようとするカーネル側の処理でCPU使用率が上昇したと推測される)。単一リソースを狙った注入のつもりでも、実際には複数のアラームに連鎖することがあり、「どのアラームが発火したかで原因を一意に絞り込める」という前提が必ずしも成り立たない場合がある
+- メモリ逼迫が深刻化すると、CloudWatch Agent自身もリソース不足で停止し、`mem_used_percent`・`disk_used_percent`ともに一定時間後`INSUFFICIENT_DATA`に転じた。監視対象のOSが死にかけている場合、監視エージェント自体も道連れで機能を失いうるため、「メトリクスが取れていること」自体を監視の生存確認として扱うのは危険
+- SSM Run CommandとSession Manager(インタラクティブ接続)は結局同じSSM Agentを経由するため、片方が無応答ならもう片方も無応答になりやすい。両方が使えなくなった場合の最終手段はEC2コンソールからの「インスタンスの再起動」で、これはデータを失わない通常の復旧操作である
+- ブラインド演習の運用上の教訓として、シナリオ注入コマンドをJSON文字列へ直接ネストクォートで埋め込むと構文エラーになりやすく、ローカルでシェル構文チェック(`bash -n`)をしてからbase64エンコードして送る方式に切り替えると安定した
